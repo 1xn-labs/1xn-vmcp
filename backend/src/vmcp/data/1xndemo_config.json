@@ -1,0 +1,2013 @@
+{
+  "name": "1xndemo",
+  "description": "Everything demo vmcp",
+  "vmcp_config": {
+    "selected_servers": [
+      {
+        "name": "AllFeature",
+        "transport_type": "http",
+        "description": "",
+        "server_id": "fffc907eb1d1e92e",
+        "favicon_url": null,
+        "command": null,
+        "args": null,
+        "env": null,
+        "url": "https://1xn.ai/demo_server/allfeature/mcp",
+        "headers": null,
+        "status": "connected",
+        "last_connected": null,
+        "last_error": null,
+        "capabilities": {
+          "tools": true,
+          "resources": true,
+          "prompts": true
+        },
+        "tools": [
+          "query_db",
+          "add_numbers",
+          "get_weather",
+          "hello",
+          "book_table",
+          "add",
+          "create_thumbnail",
+          "process_data",
+          "generate_poem",
+          "get_weather_structured",
+          "get_location",
+          "get_statistics",
+          "get_user",
+          "get_config",
+          "sum_of_array",
+          "get_weather_array",
+          "get_weather_json",
+          "list_cities",
+          "long_running_task",
+          "get_current_time",
+          "convert_time",
+          "roll_dice"
+        ],
+        "tool_details": [
+          {
+            "name": "query_db",
+            "title": null,
+            "description": "Tool that uses initialized resources.",
+            "inputSchema": {
+              "properties": {},
+              "title": "query_dbArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "query_dbOutput",
+              "type": "object"
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AllFeature"
+            }
+          },
+          {
+            "name": "add_numbers",
+            "title": null,
+            "description": "Add two numbers together.",
+            "inputSchema": {
+              "properties": {
+                "a": {
+                  "title": "A",
+                  "type": "integer"
+                },
+                "b": {
+                  "title": "B",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "a",
+                "b"
+              ],
+              "title": "add_numbersArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "add_numbersOutput",
+              "type": "object"
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AllFeature"
+            }
+          },
+          {
+            "name": "get_weather",
+            "title": null,
+            "description": "Get weather for a city using Open-Meteo API.",
+            "inputSchema": {
+              "properties": {
+                "city": {
+                  "title": "City",
+                  "type": "string"
+                },
+                "unit": {
+                  "default": "celsius",
+                  "title": "Unit",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ],
+              "title": "get_weatherArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "get_weatherOutput",
+              "type": "object"
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AllFeature"
+            }
+          },
+          {
+            "name": "hello",
+            "title": null,
+            "description": "Say hello to someone.",
+            "inputSchema": {
+              "properties": {
+                "name": {
+                  "default": "World",
+                  "title": "Name",
+                  "type": "string"
+                }
+              },
+              "title": "helloArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "helloOutput",
+              "type": "object"
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AllFeature"
+            }
+          },
+          {
+            "name": "book_table",
+            "title": null,
+            "description": "Book a table with date availability check.",
+            "inputSchema": {
+              "properties": {
+                "date": {
+                  "title": "Date",
+                  "type": "string"
+                },
+                "time": {
+                  "title": "Time",
+                  "type": "string"
+                },
+                "party_size": {
+                  "title": "Party Size",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "date",
+                "time",
+                "party_size"
+              ],
+              "title": "book_tableArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "book_tableOutput",
+              "type": "object"
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AllFeature"
+            }
+          },
+          {
+            "name": "add",
+            "title": null,
+            "description": "Add two numbers",
+            "inputSchema": {
+              "properties": {
+                "a": {
+                  "title": "A",
+                  "type": "integer"
+                },
+                "b": {
+                  "title": "B",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "a",
+                "b"
+              ],
+              "title": "addArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "addOutput",
+              "type": "object"
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AllFeature"
+            }
+          },
+          {
+            "name": "create_thumbnail",
+            "title": null,
+            "description": "Create a thumbnail from an image",
+            "inputSchema": {
+              "properties": {
+                "image_path": {
+                  "title": "Image Path",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "image_path"
+              ],
+              "title": "create_thumbnailArguments",
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AllFeature"
+            }
+          },
+          {
+            "name": "process_data",
+            "title": null,
+            "description": "Process data with logging.",
+            "inputSchema": {
+              "properties": {
+                "data": {
+                  "title": "Data",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "data"
+              ],
+              "title": "process_dataArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "process_dataOutput",
+              "type": "object"
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AllFeature"
+            }
+          },
+          {
+            "name": "generate_poem",
+            "title": null,
+            "description": "Generate a poem using LLM sampling.",
+            "inputSchema": {
+              "properties": {
+                "topic": {
+                  "title": "Topic",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "topic"
+              ],
+              "title": "generate_poemArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "generate_poemOutput",
+              "type": "object"
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AllFeature"
+            }
+          },
+          {
+            "name": "get_weather_structured",
+            "title": null,
+            "description": "Get weather for a city - returns structured data.",
+            "inputSchema": {
+              "properties": {
+                "city": {
+                  "title": "City",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ],
+              "title": "get_weather_structuredArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "description": "Weather information structure.",
+              "properties": {
+                "temperature": {
+                  "description": "Temperature in Celsius",
+                  "title": "Temperature",
+                  "type": "number"
+                },
+                "humidity": {
+                  "description": "Humidity percentage",
+                  "title": "Humidity",
+                  "type": "number"
+                },
+                "condition": {
+                  "title": "Condition",
+                  "type": "string"
+                },
+                "wind_speed": {
+                  "title": "Wind Speed",
+                  "type": "number"
+                }
+              },
+              "required": [
+                "temperature",
+                "humidity",
+                "condition",
+                "wind_speed"
+              ],
+              "title": "WeatherData",
+              "type": "object"
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AllFeature"
+            }
+          },
+          {
+            "name": "get_location",
+            "title": null,
+            "description": "Get location coordinates for a city using the world cities database.",
+            "inputSchema": {
+              "properties": {
+                "city": {
+                  "title": "City",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ],
+              "title": "get_locationArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "latitude": {
+                  "title": "Latitude",
+                  "type": "number"
+                },
+                "longitude": {
+                  "title": "Longitude",
+                  "type": "number"
+                },
+                "name": {
+                  "title": "Name",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "latitude",
+                "longitude",
+                "name"
+              ],
+              "title": "LocationInfo",
+              "type": "object"
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AllFeature"
+            }
+          },
+          {
+            "name": "get_statistics",
+            "title": null,
+            "description": "Get various statistics",
+            "inputSchema": {
+              "properties": {
+                "data_type": {
+                  "title": "Data Type",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "data_type"
+              ],
+              "title": "get_statisticsArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "title": "get_statisticsDictOutput",
+              "type": "object"
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AllFeature"
+            }
+          },
+          {
+            "name": "get_user",
+            "title": null,
+            "description": "Get user profile - returns structured data",
+            "inputSchema": {
+              "properties": {
+                "user_id": {
+                  "title": "User Id",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "user_id"
+              ],
+              "title": "get_userArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "name": {
+                  "title": "Name",
+                  "type": "string"
+                },
+                "age": {
+                  "title": "Age",
+                  "type": "integer"
+                },
+                "email": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Email"
+                }
+              },
+              "required": [
+                "name",
+                "age"
+              ],
+              "title": "UserProfile",
+              "type": "object"
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AllFeature"
+            }
+          },
+          {
+            "name": "get_config",
+            "title": null,
+            "description": "This returns unstructured output - no schema generated",
+            "inputSchema": {
+              "properties": {},
+              "title": "get_configArguments",
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AllFeature"
+            }
+          },
+          {
+            "name": "sum_of_array",
+            "title": null,
+            "description": "Sum of array",
+            "inputSchema": {
+              "properties": {
+                "array": {
+                  "items": {
+                    "type": "integer"
+                  },
+                  "title": "Array",
+                  "type": "array"
+                }
+              },
+              "required": [
+                "array"
+              ],
+              "title": "sum_of_arrayArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "sum_of_arrayOutput",
+              "type": "object"
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AllFeature"
+            }
+          },
+          {
+            "name": "get_weather_array",
+            "title": null,
+            "description": "Get weather for multiple cities - returns structured data. Input should\n    be a list of city names . example input: ['London', 'Paris', 'Tokyo']",
+            "inputSchema": {
+              "properties": {
+                "array": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Array",
+                  "type": "array"
+                }
+              },
+              "required": [
+                "array"
+              ],
+              "title": "get_weather_arrayArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "get_weather_arrayOutput",
+              "type": "object"
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AllFeature"
+            }
+          },
+          {
+            "name": "get_weather_json",
+            "title": null,
+            "description": "Get weather for multiple cities from JSON input. Each city can have location and unit settings.\n    Example: {'pune':{'location':1,'unit':'celsius'},'mumbai':{'location':0,'unit':'fahrenheit'}}",
+            "inputSchema": {
+              "properties": {
+                "json_data": {
+                  "additionalProperties": true,
+                  "title": "Json Data",
+                  "type": "object"
+                }
+              },
+              "required": [
+                "json_data"
+              ],
+              "title": "get_weather_jsonArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "get_weather_jsonOutput",
+              "type": "object"
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AllFeature"
+            }
+          },
+          {
+            "name": "list_cities",
+            "title": null,
+            "description": "Get a list of cities",
+            "inputSchema": {
+              "properties": {},
+              "title": "list_citiesArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Result",
+                  "type": "array"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "list_citiesOutput",
+              "type": "object"
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AllFeature"
+            }
+          },
+          {
+            "name": "long_running_task",
+            "title": null,
+            "description": "Execute a task with progress updates.",
+            "inputSchema": {
+              "properties": {
+                "task_name": {
+                  "title": "Task Name",
+                  "type": "string"
+                },
+                "steps": {
+                  "default": 5,
+                  "title": "Steps",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "task_name"
+              ],
+              "title": "long_running_taskArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "long_running_taskOutput",
+              "type": "object"
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AllFeature"
+            }
+          },
+          {
+            "name": "get_current_time",
+            "title": null,
+            "description": "Get current time in specified timezone.",
+            "inputSchema": {
+              "properties": {
+                "timezone_name": {
+                  "default": "UTC",
+                  "title": "Timezone Name",
+                  "type": "string"
+                }
+              },
+              "title": "get_current_timeArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "get_current_timeOutput",
+              "type": "object"
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AllFeature"
+            }
+          },
+          {
+            "name": "convert_time",
+            "title": null,
+            "description": "Convert time from one timezone to another.",
+            "inputSchema": {
+              "properties": {
+                "time_str": {
+                  "title": "Time Str",
+                  "type": "string"
+                },
+                "from_timezone": {
+                  "title": "From Timezone",
+                  "type": "string"
+                },
+                "to_timezone": {
+                  "title": "To Timezone",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "time_str",
+                "from_timezone",
+                "to_timezone"
+              ],
+              "title": "convert_timeArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "convert_timeOutput",
+              "type": "object"
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AllFeature"
+            }
+          },
+          {
+            "name": "roll_dice",
+            "title": null,
+            "description": "Roll dice with specified number of dice and sides.",
+            "inputSchema": {
+              "properties": {
+                "num_dice": {
+                  "default": 1,
+                  "title": "Num Dice",
+                  "type": "integer"
+                },
+                "num_sides": {
+                  "default": 6,
+                  "title": "Num Sides",
+                  "type": "integer"
+                }
+              },
+              "title": "roll_diceArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "roll_diceOutput",
+              "type": "object"
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AllFeature"
+            }
+          }
+        ],
+        "resources": [
+          "config://settings"
+        ],
+        "resource_details": [
+          {
+            "name": "get_settings",
+            "title": null,
+            "uri": "config://settings",
+            "description": "Get application settings.",
+            "mimeType": "text/plain",
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          }
+        ],
+        "resource_templates": [
+          "read_document",
+          "github_repo",
+          "get_greeting"
+        ],
+        "resource_template_details": [
+          {
+            "name": "read_document",
+            "title": null,
+            "uriTemplate": "file://documents/{name}",
+            "description": "Read a document by name.",
+            "mimeType": "text/plain",
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "github_repo",
+            "title": null,
+            "uriTemplate": "github://repos/{owner}/{repo}",
+            "description": "GitHub repository resource.",
+            "mimeType": "text/plain",
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "get_greeting",
+            "title": null,
+            "uriTemplate": "greeting://{name}",
+            "description": "Get a personalized greeting",
+            "mimeType": "text/plain",
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          }
+        ],
+        "prompts": [
+          "review_code",
+          "debug_error",
+          "review_code_prompt",
+          "greet_user"
+        ],
+        "prompt_details": [
+          {
+            "name": "review_code",
+            "title": "Code Review",
+            "description": "",
+            "arguments": [
+              {
+                "name": "code",
+                "description": null,
+                "required": true
+              }
+            ],
+            "icons": null,
+            "meta": null
+          },
+          {
+            "name": "debug_error",
+            "title": "Debug Assistant",
+            "description": "",
+            "arguments": [
+              {
+                "name": "error",
+                "description": null,
+                "required": true
+              }
+            ],
+            "icons": null,
+            "meta": null
+          },
+          {
+            "name": "review_code_prompt",
+            "title": null,
+            "description": "Code review prompt",
+            "arguments": [
+              {
+                "name": "language",
+                "description": null,
+                "required": true
+              },
+              {
+                "name": "code",
+                "description": null,
+                "required": true
+              }
+            ],
+            "icons": null,
+            "meta": null
+          },
+          {
+            "name": "greet_user",
+            "title": null,
+            "description": "Generate a greeting prompt",
+            "arguments": [
+              {
+                "name": "name",
+                "description": null,
+                "required": true
+              },
+              {
+                "name": "style",
+                "description": null,
+                "required": false
+              }
+            ],
+            "icons": null,
+            "meta": null
+          }
+        ],
+        "auto_connect": true,
+        "enabled": true,
+        "vmcps_using_server": [
+          "53db770e-0f54-438b-9526-aa937e739145"
+        ],
+        "auth": null,
+        "session_id": null
+      },
+      {
+        "name": "EverythingRemoteServer",
+        "transport_type": "sse",
+        "description": "Test EverythingRemoteServer MCP Server",
+        "server_id": "f63b17704959d943",
+        "favicon_url": null,
+        "command": null,
+        "args": [],
+        "env": {},
+        "url": "https://example-server.modelcontextprotocol.io/sse",
+        "headers": {},
+        "status": "connected",
+        "last_connected": "2025-11-11T08:39:56.706834",
+        "last_error": null,
+        "capabilities": {
+          "tools": true,
+          "resources": true,
+          "prompts": true
+        },
+        "tools": [
+          "echo",
+          "add",
+          "longRunningOperation",
+          "sampleLLM",
+          "getTinyImage",
+          "annotatedMessage",
+          "getResourceReference",
+          "elicitInputs"
+        ],
+        "tool_details": [
+          {
+            "name": "echo",
+            "title": null,
+            "description": "Echoes back the input",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "description": "Message to echo"
+                }
+              },
+              "required": [
+                "message"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "EverythingRemoteServer"
+            }
+          },
+          {
+            "name": "add",
+            "title": null,
+            "description": "Adds two numbers",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "number",
+                  "description": "First number"
+                },
+                "b": {
+                  "type": "number",
+                  "description": "Second number"
+                }
+              },
+              "required": [
+                "a",
+                "b"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "EverythingRemoteServer"
+            }
+          },
+          {
+            "name": "longRunningOperation",
+            "title": null,
+            "description": "Demonstrates a long running operation with progress updates",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "duration": {
+                  "type": "number",
+                  "default": 10,
+                  "description": "Duration of the operation in seconds"
+                },
+                "steps": {
+                  "type": "number",
+                  "default": 5,
+                  "description": "Number of steps in the operation"
+                }
+              },
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "EverythingRemoteServer"
+            }
+          },
+          {
+            "name": "sampleLLM",
+            "title": null,
+            "description": "Samples from an LLM using MCP's sampling feature",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "prompt": {
+                  "type": "string",
+                  "description": "The prompt to send to the LLM"
+                },
+                "maxTokens": {
+                  "type": "number",
+                  "default": 100,
+                  "description": "Maximum number of tokens to generate"
+                }
+              },
+              "required": [
+                "prompt"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "EverythingRemoteServer"
+            }
+          },
+          {
+            "name": "getTinyImage",
+            "title": null,
+            "description": "Returns the MCP_TINY_IMAGE",
+            "inputSchema": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "EverythingRemoteServer"
+            }
+          },
+          {
+            "name": "annotatedMessage",
+            "title": null,
+            "description": "Demonstrates how annotations can be used to provide metadata about content",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "messageType": {
+                  "type": "string",
+                  "enum": [
+                    "error",
+                    "success",
+                    "debug"
+                  ],
+                  "description": "Type of message to demonstrate different annotation patterns"
+                },
+                "includeImage": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Whether to include an example image"
+                }
+              },
+              "required": [
+                "messageType"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "EverythingRemoteServer"
+            }
+          },
+          {
+            "name": "getResourceReference",
+            "title": null,
+            "description": "Returns a resource reference that can be used by MCP clients",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "resourceId": {
+                  "type": "number",
+                  "minimum": 1,
+                  "maximum": 100,
+                  "description": "ID of the resource to reference (1-100)"
+                }
+              },
+              "required": [
+                "resourceId"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "EverythingRemoteServer"
+            }
+          },
+          {
+            "name": "elicitInputs",
+            "title": null,
+            "description": "Elicitation test tool that demonstrates how to request user input with various field types",
+            "inputSchema": {
+              "type": "object",
+              "properties": {}
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "EverythingRemoteServer"
+            }
+          }
+        ],
+        "resources": [
+          "test://static/resource/1",
+          "test://static/resource/2",
+          "test://static/resource/3",
+          "test://static/resource/4",
+          "test://static/resource/5",
+          "test://static/resource/6",
+          "test://static/resource/7",
+          "test://static/resource/8",
+          "test://static/resource/9",
+          "test://static/resource/10"
+        ],
+        "resource_details": [
+          {
+            "name": "Resource 1",
+            "title": null,
+            "uri": "test://static/resource/1",
+            "description": null,
+            "mimeType": "text/plain",
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null,
+            "text": "Resource 1: This is a plaintext resource"
+          },
+          {
+            "name": "Resource 2",
+            "title": null,
+            "uri": "test://static/resource/2",
+            "description": null,
+            "mimeType": "application/octet-stream",
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null,
+            "blob": "UmVzb3VyY2UgMjogVGhpcyBpcyBhIGJhc2U2NCBibG9i"
+          },
+          {
+            "name": "Resource 3",
+            "title": null,
+            "uri": "test://static/resource/3",
+            "description": null,
+            "mimeType": "text/plain",
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null,
+            "text": "Resource 3: This is a plaintext resource"
+          },
+          {
+            "name": "Resource 4",
+            "title": null,
+            "uri": "test://static/resource/4",
+            "description": null,
+            "mimeType": "application/octet-stream",
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null,
+            "blob": "UmVzb3VyY2UgNDogVGhpcyBpcyBhIGJhc2U2NCBibG9i"
+          },
+          {
+            "name": "Resource 5",
+            "title": null,
+            "uri": "test://static/resource/5",
+            "description": null,
+            "mimeType": "text/plain",
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null,
+            "text": "Resource 5: This is a plaintext resource"
+          },
+          {
+            "name": "Resource 6",
+            "title": null,
+            "uri": "test://static/resource/6",
+            "description": null,
+            "mimeType": "application/octet-stream",
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null,
+            "blob": "UmVzb3VyY2UgNjogVGhpcyBpcyBhIGJhc2U2NCBibG9i"
+          },
+          {
+            "name": "Resource 7",
+            "title": null,
+            "uri": "test://static/resource/7",
+            "description": null,
+            "mimeType": "text/plain",
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null,
+            "text": "Resource 7: This is a plaintext resource"
+          },
+          {
+            "name": "Resource 8",
+            "title": null,
+            "uri": "test://static/resource/8",
+            "description": null,
+            "mimeType": "application/octet-stream",
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null,
+            "blob": "UmVzb3VyY2UgODogVGhpcyBpcyBhIGJhc2U2NCBibG9i"
+          },
+          {
+            "name": "Resource 9",
+            "title": null,
+            "uri": "test://static/resource/9",
+            "description": null,
+            "mimeType": "text/plain",
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null,
+            "text": "Resource 9: This is a plaintext resource"
+          },
+          {
+            "name": "Resource 10",
+            "title": null,
+            "uri": "test://static/resource/10",
+            "description": null,
+            "mimeType": "application/octet-stream",
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null,
+            "blob": "UmVzb3VyY2UgMTA6IFRoaXMgaXMgYSBiYXNlNjQgYmxvYg=="
+          }
+        ],
+        "resource_templates": [
+          "Static Resource"
+        ],
+        "resource_template_details": [
+          {
+            "name": "Static Resource",
+            "title": null,
+            "uriTemplate": "test://static/resource/{id}",
+            "description": "A static resource with a numeric ID",
+            "mimeType": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          }
+        ],
+        "prompts": [
+          "simple_prompt",
+          "complex_prompt",
+          "resource_prompt"
+        ],
+        "prompt_details": [
+          {
+            "name": "simple_prompt",
+            "title": null,
+            "description": "A prompt without arguments",
+            "arguments": null,
+            "icons": null,
+            "meta": null
+          },
+          {
+            "name": "complex_prompt",
+            "title": null,
+            "description": "A prompt with arguments",
+            "arguments": [
+              {
+                "name": "temperature",
+                "description": "Temperature setting",
+                "required": true
+              },
+              {
+                "name": "style",
+                "description": "Output style",
+                "required": false
+              }
+            ],
+            "icons": null,
+            "meta": null
+          },
+          {
+            "name": "resource_prompt",
+            "title": null,
+            "description": "A prompt that includes an embedded resource reference",
+            "arguments": [
+              {
+                "name": "resourceId",
+                "description": "Resource ID to include (1-100)",
+                "required": true
+              }
+            ],
+            "icons": null,
+            "meta": null
+          }
+        ],
+        "auto_connect": true,
+        "enabled": true,
+        "vmcps_using_server": [
+          "97ab5cfb-1039-472a-a57b-f6b6ef5d4a56",
+          "ebc14250-aa3c-4d40-9ebf-5d72ab46a2a0",
+          "53db770e-0f54-438b-9526-aa937e739145",
+          "9fa2ae24-1312-43bf-bfc7-658f93120235"
+        ]
+      }
+    ],
+    "selected_tools": {
+      "fffc907eb1d1e92e": [
+        "query_db",
+        "add_numbers",
+        "get_weather",
+        "hello",
+        "book_table",
+        "add",
+        "create_thumbnail",
+        "process_data",
+        "generate_poem",
+        "get_weather_structured",
+        "get_location",
+        "get_statistics",
+        "get_user",
+        "get_config",
+        "sum_of_array",
+        "get_weather_array",
+        "get_weather_json",
+        "list_cities",
+        "long_running_task",
+        "get_current_time",
+        "convert_time",
+        "roll_dice"
+      ],
+      "f63b17704959d943": [
+        "echo",
+        "add",
+        "longRunningOperation",
+        "sampleLLM",
+        "getTinyImage",
+        "annotatedMessage",
+        "getResourceReference",
+        "elicitInputs"
+      ]
+    },
+    "selected_prompts": {
+      "fffc907eb1d1e92e": [
+        "review_code",
+        "debug_error",
+        "review_code_prompt",
+        "greet_user"
+      ],
+      "f63b17704959d943": [
+        "simple_prompt",
+        "complex_prompt",
+        "resource_prompt"
+      ]
+    },
+    "selected_resources": {
+      "fffc907eb1d1e92e": [
+        "config://settings"
+      ],
+      "f63b17704959d943": [
+        "test://static/resource/1",
+        "test://static/resource/2",
+        "test://static/resource/3",
+        "test://static/resource/4",
+        "test://static/resource/5",
+        "test://static/resource/6",
+        "test://static/resource/7",
+        "test://static/resource/8",
+        "test://static/resource/9",
+        "test://static/resource/10"
+      ]
+    },
+    "selected_resource_templates": {}
+  },
+  "custom_prompts": [
+    {
+      "name": "hello",
+      "text": "Say a energetic hello to the user! ",
+      "variables": [],
+      "description": "simple custom prompt",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    },
+    {
+      "name": "introduce",
+      "text": "You are a helphul assistant called @config.BOTNAME and you are and expert in @config.DOMAIN\n\nUser name is @param.username\n\n",
+      "variables": [
+        {
+          "name": "username",
+          "description": "Your name",
+          "required": false
+        }
+      ],
+      "description": "Prompt to showcase use of variables and environment variables",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    },
+    {
+      "name": "averagetemperatures",
+      "text": "@tool.AllFeature.list_cities()\n\nfor the above list fetch the temperatures for each and give me the average temperature using the avgerage() tool",
+      "variables": [],
+      "description": "Get the average temps across cities - use MCP tools and custom vMCP tools within prompts",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": [
+        {
+          "id": "block_1758522090749_q2jkr1n15",
+          "startLine": 1,
+          "startColumn": 7,
+          "endLine": 1,
+          "endColumn": 31,
+          "type": "tool",
+          "server": "AllFeature",
+          "serverId": "cde088673cf8d9e9",
+          "name": "AllFeature.list_cities",
+          "text": "AllFeature.list_cities()",
+          "data": {
+            "label": "AllFeature.list_cities",
+            "name": "list_cities",
+            "server": "AllFeature",
+            "serverId": "cde088673cf8d9e9",
+            "description": "Get a list of cities",
+            "inputSchema": {
+              "properties": {},
+              "title": "list_citiesArguments",
+              "type": "object"
+            }
+          },
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "name": "complex_prompt_extended",
+      "text": "@prompt.EverythingRemoteServer.complex_prompt(temperature=\"Temperature setting\", style=\"Output style\")",
+      "variables": [
+        {
+          "name": "temperature",
+          "description": "",
+          "required": true
+        }
+      ],
+      "description": "extended complex prompt ",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    },
+    {
+      "name": "book_table",
+      "text": "The current time is @tool.AllFeature.get_current_time(timezone_name: str = \"UTC\")\n\nUser is at @tool.AllFeature.get_location(city: str = \"@config.CITY\")\n\nBook a table with AllFeature.book_table() for @param.party_size 1 hour from now\n",
+      "variables": [
+        {
+          "name": "party_size",
+          "description": "Whats the party size?",
+          "required": true
+        }
+      ],
+      "description": "Use tool outputs in prompts and variables as tool parameter",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": [
+        {
+          "id": "block_1758532525375_yhvmans9v",
+          "startLine": 1,
+          "startColumn": 27,
+          "endLine": 1,
+          "endColumn": 82,
+          "type": "tool",
+          "server": "AllFeature",
+          "serverId": "cde088673cf8d9e9",
+          "name": "AllFeature.get_current_time",
+          "text": "AllFeature.get_current_time(timezone_name: str = \"UTC\")",
+          "data": {
+            "label": "AllFeature.get_current_time",
+            "name": "get_current_time",
+            "server": "AllFeature",
+            "serverId": "cde088673cf8d9e9",
+            "description": "Get current time in specified timezone.",
+            "inputSchema": {
+              "properties": {
+                "timezone_name": {
+                  "default": "UTC",
+                  "title": "Timezone Name",
+                  "type": "string"
+                }
+              },
+              "title": "get_current_timeArguments",
+              "type": "object"
+            }
+          },
+          "parameters": {
+            "timezone_name": "UTC"
+          }
+        },
+        {
+          "id": "block_1758533266828_1qml3n0ip",
+          "startLine": 3,
+          "startColumn": 18,
+          "endLine": 3,
+          "endColumn": 69,
+          "type": "tool",
+          "server": "AllFeature",
+          "serverId": "cde088673cf8d9e9",
+          "name": "AllFeature.get_location",
+          "text": "AllFeature.get_location(city: str = \"@config.CITY\")",
+          "data": {
+            "label": "AllFeature.get_location",
+            "name": "get_location",
+            "server": "AllFeature",
+            "serverId": "cde088673cf8d9e9",
+            "description": "Get location coordinates for a city using the world cities database.",
+            "inputSchema": {
+              "properties": {
+                "city": {
+                  "title": "City",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ],
+              "title": "get_locationArguments",
+              "type": "object"
+            }
+          },
+          "parameters": {
+            "city": "@config.CITY"
+          }
+        }
+      ]
+    }
+  ],
+  "custom_tools": [
+    {
+      "tool_type": "prompt",
+      "name": "get_agent_info",
+      "description": "Get agent info, call this tool once at the start of a conversation to get details about the agent ",
+      "variables": [],
+      "text": "You are @config.BOTNAME, a helpful assistant.",
+      "environment_variables": [],
+      "tool_calls": [],
+      "keywords": [
+        "agent name",
+        "agent profile"
+      ],
+      "atomic_blocks": []
+    },
+    {
+      "tool_type": "prompt",
+      "name": "get_sydney_weather",
+      "description": "Fetch the weather ",
+      "variables": [],
+      "text": "@tool.AllFeature.get_weather(city: str = \"sydney\", unit: str = \"celsius\")",
+      "environment_variables": [],
+      "tool_calls": [],
+      "keywords": [
+        "sydney",
+        "australia",
+        "tasman"
+      ],
+      "atomic_blocks": [
+        {
+          "id": "block_1758521257803_buo7jm1hn",
+          "startLine": 1,
+          "startColumn": 7,
+          "endLine": 1,
+          "endColumn": 74,
+          "type": "tool",
+          "server": "AllFeature",
+          "serverId": "cde088673cf8d9e9",
+          "name": "AllFeature.get_weather",
+          "text": "AllFeature.get_weather(city: str = \"sydney\", unit: str = \"celsius\")",
+          "data": {
+            "label": "AllFeature.get_weather",
+            "name": "get_weather",
+            "server": "AllFeature",
+            "serverId": "cde088673cf8d9e9",
+            "description": "Get weather for a city using Open-Meteo API.",
+            "inputSchema": {
+              "properties": {
+                "city": {
+                  "title": "City",
+                  "type": "string"
+                },
+                "unit": {
+                  "default": "celsius",
+                  "title": "Unit",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ],
+              "title": "get_weatherArguments",
+              "type": "object"
+            }
+          },
+          "parameters": {
+            "unit": "celsius",
+            "city": "sydney"
+          }
+        }
+      ]
+    },
+    {
+      "tool_type": "prompt",
+      "name": "get_logo",
+      "description": "Fetch the logo",
+      "variables": [],
+      "text": "@resource.vmcp.1xn_logo-med-size.png\n",
+      "environment_variables": [],
+      "tool_calls": [],
+      "keywords": [
+        "1xn",
+        "icon",
+        "identifier"
+      ],
+      "atomic_blocks": []
+    },
+    {
+      "tool_type": "prompt",
+      "name": "average",
+      "description": "Calculate the average of a comma separated list of integers",
+      "variables": [
+        {
+          "name": "values",
+          "description": "comma separated integers",
+          "required": true
+        }
+      ],
+      "text": "Find the average of the following comma seperated values : @param.values\n",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    },
+    {
+      "tool_type": "prompt",
+      "name": "get_config",
+      "description": "Fetch user config",
+      "variables": [],
+      "text": "@resource.AllFeature.config://settings",
+      "environment_variables": [],
+      "tool_calls": [],
+      "keywords": [
+        "userinfo",
+        "settings"
+      ],
+      "atomic_blocks": []
+    },
+    {
+      "tool_type": "http",
+      "name": "create_blog_post",
+      "description": "Use this tool to create a new blog post with a title and body content. Returns the created post with a generated ID.",
+      "variables": [
+        {
+          "name": "Title",
+          "description": "",
+          "required": false,
+          "type": "str"
+        }
+      ],
+      "text": "",
+      "environment_variables": [],
+      "tool_calls": [],
+      "api_config": {
+        "method": "POST",
+        "url": "https://jsonplaceholder.typicode.com/posts",
+        "headers": {},
+        "body": {
+          "title": "Getting Started with MCP Tools",
+          "body": "This guide will walk you through creating your first MCP HTTP tool",
+          "userId": 1
+        },
+        "query_params": {},
+        "body_parsed": {
+          "title": "Getting Started with MCP Tools",
+          "body": "This guide will walk you through creating your first MCP HTTP tool",
+          "userId": 1
+        }
+      },
+      "imported_from": null
+    },
+    {
+      "tool_type": "http",
+      "name": "get_blog_posts",
+      "description": "Retrieves a specific blog post by its ID. Returns the complete post data including title, body, userId, and post ID.",
+      "variables": [
+        {
+          "name": "post_id",
+          "description": "id of the post",
+          "required": false,
+          "type": "str"
+        }
+      ],
+      "text": "",
+      "environment_variables": [],
+      "tool_calls": [],
+      "api_config": {
+        "method": "GET",
+        "url": "https://jsonplaceholder.typicode.com/posts/@param.post_id",
+        "headers": {},
+        "body": null,
+        "query_params": {}
+      },
+      "imported_from": null
+    },
+    {
+      "tool_type": "http",
+      "name": "list_blog_post",
+      "description": "Retrieves a list of blog posts Supports pagination and filtering to find specific posts. Returns an array of post objects",
+      "variables": [],
+      "text": "",
+      "environment_variables": [],
+      "tool_calls": [],
+      "api_config": {
+        "method": "GET",
+        "url": "https://jsonplaceholder.typicode.com/posts",
+        "headers": {},
+        "body": null,
+        "query_params": {}
+      },
+      "imported_from": null
+    },
+    {
+      "tool_type": "http",
+      "name": "get_headers",
+      "description": "Get the details of the headers sent with API",
+      "variables": [],
+      "text": "",
+      "environment_variables": [],
+      "tool_calls": [],
+      "api_config": {
+        "method": "GET",
+        "url": "https://httpbin.org/headers",
+        "headers": {},
+        "body": null,
+        "query_params": {},
+        "auth": {
+          "type": "apikey",
+          "apiKey": "SAMPLE_API_KEY"
+        }
+      },
+      "imported_from": null
+    },
+    {
+      "tool_type": "http",
+      "name": "get_header_through_config",
+      "description": "Get headers passed to the api. this is dummy tool for testing http tools ",
+      "variables": [],
+      "text": "",
+      "environment_variables": [],
+      "tool_calls": [],
+      "api_config": {
+        "method": "GET",
+        "url": "https://httpbin.org/headers",
+        "headers": {},
+        "body": null,
+        "query_params": {},
+        "auth": {
+          "type": "apikey",
+          "apiKey": "@config.API_Key"
+        }
+      },
+      "imported_from": null
+    },
+    {
+      "tool_type": "http",
+      "name": "check_auth",
+      "description": "use this tool to check if the user is authenticated",
+      "variables": [],
+      "text": "",
+      "environment_variables": [],
+      "tool_calls": [],
+      "api_config": {
+        "method": "GET",
+        "url": "https://httpbin.org/bearer",
+        "headers": {},
+        "body": null,
+        "query_params": {},
+        "auth": {
+          "type": "bearer",
+          "token": "dummy-bearer-token-12345"
+        }
+      },
+      "imported_from": null
+    },
+    {
+      "tool_type": "python",
+      "name": "count_characters_in_word",
+      "description": "Use this tool to calculate how many characters are in a particular word",
+      "variables": [],
+      "text": "",
+      "environment_variables": [],
+      "tool_calls": [],
+      "code": "def main(word str, character:str):\n  return word. count (character)",
+      "imports": [],
+      "dependencies": [],
+      "keywords": [
+        "characters",
+        "word",
+        "strawberry"
+      ]
+    }
+  ],
+  "custom_resources": [
+    {
+      "name": null,
+      "uri": null,
+      "description": null,
+      "id": "153a7b02-6abd-4159-b057-04c06dbb06f6",
+      "original_filename": "1xn_logo-med-size.png",
+      "filename": "1xn_logo-med-size.png",
+      "resource_name": "1xn_logo-med-size.png",
+      "content_type": "image/png",
+      "size": 14107,
+      "vmcp_id": "08f78064-ad62-4944-b08b-0c4a2e403abd",
+      "user_id": "7",
+      "created_at": "2025-09-22T06:12:32.242777"
+    }
+  ],
+  "environment_variables": [
+    {
+      "name": "BOTNAME",
+      "value": "SITARA",
+      "description": null
+    },
+    {
+      "name": "CITY",
+      "value": "MUMBAI",
+      "description": null
+    },
+    {
+      "name": "DOMAIN",
+      "value": "Credit Card Sales",
+      "description": null
+    },
+    {
+      "name": "API_Key",
+      "value": "API_KEY_CONFIG",
+      "description": null
+    }
+  ],
+  "system_prompt": {
+    "text": "You are a helpful AI assistant called @config.BOTNAME with access to various tools and resources. You can help users with a wide range of tasks using the available MCP (Model Context Protocol) tools.\n\nAvailable capabilities:\n- Execute tools to perform specific actions\n- Access resources for information\n- Use prompts for structured interactions\n\nAlways be helpful, accurate, and explain what you're doing when using tools.",
+    "variables": [],
+    "environment_variables": [],
+    "tool_calls": []
+  },
+  "metadata": {
+    "url": "http://localhost:8000/private/1xndemo/vmcp",
+    "type": "vmcp",
+    "icon": "",
+    "author": ""
+  }
+}

@@ -1,0 +1,4 @@
+# Do not commit the frontend build
+public/
+test_reports/
+.venv/

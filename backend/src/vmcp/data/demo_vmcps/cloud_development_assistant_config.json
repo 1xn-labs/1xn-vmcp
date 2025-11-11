@@ -1,0 +1,411 @@
+{
+  "name": "Cloud_development_assistant",
+  "description": null,
+  "vmcp_config": {
+    "selected_servers": [
+      {
+        "name": "AWSDocs",
+        "transport_type": "http",
+        "description": "AWS Docs MCP server",
+        "server_id": "27fe7b2d4f7b3db1",
+        "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://aws.com&size=64",
+        "command": null,
+        "args": [],
+        "env": {},
+        "url": "https://knowledge-mcp.global.api.aws",
+        "headers": {},
+        "status": "connected",
+        "last_connected": null,
+        "last_error": null,
+        "capabilities": {
+          "tools": true,
+          "resources": false,
+          "prompts": false
+        },
+        "tools": [
+          "aws___get_regional_availability",
+          "aws___list_regions",
+          "aws___read_documentation",
+          "aws___recommend",
+          "aws___search_documentation"
+        ],
+        "tool_details": [
+          {
+            "name": "aws___get_regional_availability",
+            "title": null,
+            "description": "Retrieve AWS regional availability information for products (service and features), sdk service APIs and CloudFormation resources.\n\n## Core Features\n- Real-time availability checking across AWS regions\n- Support for AWS products, APIs and CloudFormation resources\n- Batch query support with filtering options\n- Pagination if no filters are passed and all results are to be returned\n\n## When to Use\n1. Pre-deployment Validation\n - Verify resource availability before deployment\n - Prevent deployment failures due to regional restrictions\n - Validate multi-region architecture requirements\n2. Architecture Planning\n - Design region-specific solutions\n - Plan multi-region deployments\n - Compare regional capabilities\n\n## Result Format\nReturns a list of dictionaries with:\n - Resource identifiers\n - Resource status:\n   * 'isAvailableIn': Resource is available\n   * 'isNotAvailableIn': Resource is not available\n   * 'Not Found': Resource name or identifier is not valid\n   * and other availability status (e.g. 'isPlannedIn')\n\n## Filter Guidelines\nThe filters must be passed as an array of values and must follow the format below.\n1. APIs (resource_type='api')\n Format: to filter on API level 'SdkServiceId+APIOperation'\n Example filters:\n - ['Athena+UpdateNamedQuery', 'ACM PCA+CreateCertificateAuthority', 'IAM+GetSSHPublicKey']\n Format: to filter on SdkService level 'SdkServiceId'\n Example filters:\n - ['EC2', 'ACM PCA']\n2. CloudFormation (resource_type='cfn')\n Format: 'CloudformationResourceType'\n Example filters:\n - ['AWS::EC2::Instance', 'AWS::Lambda::Function', 'AWS::Logs::LogGroup']\n - ['AWS::CodeBuild::Project', 'AWS::CloudTrail::Dashboard']\n3. Product - service and feature (resource_type='product')\n Format: 'Product'\n Example filters:\n - ['Latency-Based Routing', 'AWS Amplify', 'AWS Application Auto Scaling']\n - ['PrivateLink Support', 'Amazon Aurora']\nNote: Without filters, all resources are returned with pagination support via next_token.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "resource_type": {
+                  "description": "Type of AWS resource to check: 'product' for AWS products, 'api' for API operations, or 'cfn' for CloudFormation resources",
+                  "type": "string"
+                },
+                "filters": {
+                  "description": "Optional list of one or multiple specific resources to check. Format depends on resource_type:\n- Products: ['AWS Lambda', 'Amazon S3']\n- APIs: ['IAM+GetSSHPublicKey', 'EC2']\n- CloudFormation: ['AWS::EC2::Instance']\nMust follow the format specified in the tool description",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "next_token": {
+                  "description": "Pagination token for retrieving additional results. Only applicable when no filters are specified",
+                  "type": "string"
+                },
+                "region": {
+                  "description": "Target AWS region code (e.g., us-east-1, eu-west-1, ap-southeast-2)",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "region",
+                "resource_type"
+              ]
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AWSDocs"
+            }
+          },
+          {
+            "name": "aws___list_regions",
+            "title": null,
+            "description": "Retrieve a list of all AWS regions.\n\n## Usage\nThis tool provides information about all AWS regions, including their identifiers and names.\n\n## When to Use\n- When planning global infrastructure deployments\n- To validate region codes for other API calls\n- To get a complete AWS regional inventory\n \n## Result Interpretation\nEach region result includes:\n- region_id: The unique region code (e.g., 'us-east-1') \n- region_long_name: The human-friendly name (e.g., 'US East (N. Virginia)')\n \n## Common Use Cases\n1. Infrastructure Planning: Review available regions for global deployment\n2. Region Validation: Verify region codes before using in other operations\n3. Regional Inventory: Get a complete list of AWS's global infrastructure",
+            "inputSchema": {
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AWSDocs"
+            }
+          },
+          {
+            "name": "aws___read_documentation",
+            "title": null,
+            "description": "Fetch and convert an AWS documentation page to markdown format.\n\n    ## Usage\n\n    This tool retrieves the content of an AWS documentation page and converts it to markdown format.\n    For long documents, you can make multiple calls with different start_index values to retrieve\n    the entire content in chunks.\n\n    ## URL Requirements\n\n    - Must be from the docs.aws.amazon.com or aws.amazon.com domain\n\n    ## Example URLs\n\n    - https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html\n    - https://docs.aws.amazon.com/lambda/latest/dg/lambda-invocation.html\n    - https://aws.amazon.com/about-aws/whats-new/2023/02/aws-telco-network-builder/\n    - https://aws.amazon.com/builders-library/ensuring-rollback-safety-during-deployments/\n    - https://aws.amazon.com/blogs/developer/make-the-most-of-community-resources-for-aws-sdks-and-tools/\n\n    ## Output Format\n\n    The output is formatted as markdown text with:\n    - Preserved headings and structure\n    - Code blocks for examples\n    - Lists and tables converted to markdown format\n\n    ## Handling Long Documents\n\n    If the response indicates the document was truncated, you have several options:\n\n    1. **Continue Reading**: Make another call with start_index set to the end of the previous response\n    2. **Stop Early**: For very long documents (>30,000 characters), if you've already found the specific information needed, you can stop reading",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "start_index": {
+                  "description": "On return output starting at this character index, useful if a previous fetch was truncated and more content is required.",
+                  "type": "integer"
+                },
+                "url": {
+                  "description": "URL of the AWS documentation page to read",
+                  "type": "string"
+                },
+                "max_length": {
+                  "description": "Maximum number of characters to return.",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "url"
+              ]
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AWSDocs"
+            }
+          },
+          {
+            "name": "aws___recommend",
+            "title": null,
+            "description": "Get content recommendations for an AWS documentation page.\n\n    ## Usage\n\n    This tool provides recommendations for related AWS documentation pages based on a given URL.\n    Use it to discover additional relevant content that might not appear in search results.\n    URL must be from the docs.aws.amazon.com domain.\n\n    ## Recommendation Types\n\n    The recommendations include four categories:\n\n    1. **Highly Rated**: Popular pages within the same AWS service\n    2. **New**: Recently added pages within the same AWS service - useful for finding newly released features\n    3. **Similar**: Pages covering similar topics to the current page\n    4. **Journey**: Pages commonly viewed next by other users\n\n    ## When to Use\n\n    - After reading a documentation page to find related content\n    - When exploring a new AWS service to discover important pages\n    - To find alternative explanations of complex concepts\n    - To discover the most popular pages for a service\n    - To find newly released information by using a service's welcome page URL and checking the **New** recommendations\n\n    ## Finding New Features\n\n    To find newly released information about a service:\n    1. Find any page belong to that service, typically you can try the welcome page\n    2. Call this tool with that URL\n    3. Look specifically at the **New** recommendation type in the results\n\n    ## Result Interpretation\n\n    Each recommendation includes:\n    - url: The documentation page URL\n    - title: The page title\n    - context: A brief description (if available)",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "description": "URL of the AWS documentation page to get recommendations for",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "url"
+              ]
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AWSDocs"
+            }
+          },
+          {
+            "name": "aws___search_documentation",
+            "title": null,
+            "description": "Search AWS documentation using the official AWS Documentation Search API.\n\n    ## Usage\n\n    This tool searches across all AWS documentation and other AWS Websites including AWS Blog, AWS Solutions Library, Getting started with AWS, AWS Architecture Center and AWS Prescriptive Guidance for pages matching your search phrase.\n    Use it to find relevant documentation when you don't have a specific URL.\n\n    ## Search Tips\n\n    - Use specific technical terms rather than general phrases\n    - Include service names to narrow results (e.g., \"S3 bucket versioning\" instead of just \"versioning\")\n    - Use quotes for exact phrase matching (e.g., \"AWS Lambda function URLs\")\n    - Include abbreviations and alternative terms to improve results\n\n    ## Result Interpretation\n\n    Each result includes:\n    - rank_order: The relevance ranking (lower is more relevant)\n    - url: The documentation page URL\n    - title: The page title\n    - context: A brief excerpt or summary (if available)",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "limit": {
+                  "description": "Maximum number of results to return",
+                  "type": "integer"
+                },
+                "search_phrase": {
+                  "description": "Search phrase to use",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "search_phrase"
+              ]
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "AWSDocs"
+            }
+          }
+        ],
+        "resources": [],
+        "resource_details": [],
+        "resource_templates": [],
+        "resource_template_details": [],
+        "prompts": [],
+        "prompt_details": [],
+        "auto_connect": true,
+        "enabled": true,
+        "vmcps_using_server": [
+          "ebc14250-aa3c-4d40-9ebf-5d72ab46a2a0",
+          "3acef305-2ad3-416b-bcb3-58617f967b2f",
+          "9c7af1bc-404b-4cf4-baae-fe578a42a4f8"
+        ]
+      },
+      {
+        "name": "GoogleWorkspaceDeveloperTools",
+        "transport_type": "http",
+        "description": "Provides tools for searching Google Workspace documentation and much more.",
+        "server_id": "fdfc7e356cf0a8bd",
+        "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://developers.google.com/workspace&size=64",
+        "command": null,
+        "args": null,
+        "env": null,
+        "url": "https://workspace-developer.goog/mcp",
+        "headers": null,
+        "status": "connected",
+        "last_connected": null,
+        "last_error": null,
+        "capabilities": {
+          "tools": true,
+          "resources": false,
+          "prompts": false
+        },
+        "tools": [
+          "search_workspace_docs",
+          "fetch_workspace_docs"
+        ],
+        "tool_details": [
+          {
+            "name": "search_workspace_docs",
+            "title": "Search Google Workspace Documentation",
+            "description": "Searches the latest official Google Workspace documentation, including API references, conceptual guides, tutorials, and code examples.",
+            "inputSchema": {
+              "properties": {
+                "query": {
+                  "description": "The query to search.",
+                  "maxLength": 100,
+                  "minLength": 5,
+                  "title": "Query",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "query"
+              ],
+              "title": "search_toolArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "$defs": {
+                "SearchResult": {
+                  "properties": {
+                    "title": {
+                      "description": "The title of the search result.",
+                      "title": "Title",
+                      "type": "string"
+                    },
+                    "url": {
+                      "description": "The URL of the search result.",
+                      "title": "Url",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "title",
+                    "url"
+                  ],
+                  "title": "SearchResult",
+                  "type": "object"
+                }
+              },
+              "properties": {
+                "results": {
+                  "description": "The search results.",
+                  "items": {
+                    "$ref": "#/$defs/SearchResult"
+                  },
+                  "title": "Results",
+                  "type": "array"
+                },
+                "summary": {
+                  "description": "The summary of the search results.",
+                  "title": "Summary",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "results",
+                "summary"
+              ],
+              "title": "SearchResponse",
+              "type": "object"
+            },
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": true,
+              "destructiveHint": false,
+              "idempotentHint": true,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "GoogleWorkspaceDeveloperTools"
+            }
+          },
+          {
+            "name": "fetch_workspace_docs",
+            "title": "Fetch Google Workspace documentation page",
+            "description": "Fetches the content of a Google Workspace documentation page such as those returned by the `search_workspace_docs` tool.",
+            "inputSchema": {
+              "properties": {
+                "url": {
+                  "description": "The URL of the Google Workspace documentation page to fetch.",
+                  "pattern": "^https://developers\\.google\\.com/.*",
+                  "title": "Url",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "url"
+              ],
+              "title": "fetch_toolArguments",
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": true,
+              "destructiveHint": false,
+              "idempotentHint": true,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "GoogleWorkspaceDeveloperTools"
+            }
+          }
+        ],
+        "resources": [],
+        "resource_details": [],
+        "resource_templates": [],
+        "resource_template_details": [],
+        "prompts": [],
+        "prompt_details": [],
+        "auto_connect": true,
+        "enabled": true,
+        "vmcps_using_server": [
+          "3acef305-2ad3-416b-bcb3-58617f967b2f"
+        ]
+      }
+    ],
+    "selected_tools": {
+      "27fe7b2d4f7b3db1": [
+        "aws___get_regional_availability",
+        "aws___list_regions",
+        "aws___read_documentation",
+        "aws___recommend",
+        "aws___search_documentation"
+      ],
+      "fdfc7e356cf0a8bd": [
+        "search_workspace_docs",
+        "fetch_workspace_docs"
+      ]
+    },
+    "selected_prompts": {
+      "27fe7b2d4f7b3db1": [],
+      "fdfc7e356cf0a8bd": []
+    },
+    "selected_resources": {
+      "27fe7b2d4f7b3db1": [],
+      "fdfc7e356cf0a8bd": []
+    }
+  },
+  "custom_prompts": [
+    {
+      "name": "multi_region_deployment_planner",
+      "description": "Plan and validate multi-region AWS deployments with comprehensive regional availability checks",
+      "text": "Plan a multi-region AWS deployment:\n1. List all available AWS regions and their characteristics\n2. Check regional availability for specified AWS services and resources\n3. Validate CloudFormation resources and APIs availability in target regions\n4. Search AWS documentation for multi-region best practices\n5. Provide recommendations for optimal region selection based on service availability\n6. Document any regional limitations or constraints\n\nHelp users design resilient, globally distributed cloud architectures with full awareness of regional capabilities.",
+      "variables": [],
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    },
+    {
+      "name": "aws_architecture_documenter",
+      "description": "Create comprehensive architecture documentation by researching AWS services and best practices",
+      "text": "Create detailed AWS architecture documentation:\n1. Search AWS documentation for the specified services and architecture patterns\n2. Read relevant documentation pages about service configurations and integrations\n3. Get recommendations for related AWS documentation to ensure comprehensive coverage\n4. Research AWS best practices from the Well-Architected Framework\n5. Document security considerations and compliance requirements\n6. Include cost optimization strategies and operational excellence guidelines\n\nProvide complete, well-researched architecture documentation with official AWS guidance.",
+      "variables": [],
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    },
+    {
+      "name": "api_integration_guide_creator",
+      "description": "Generate comprehensive API integration guides for AWS and Google Workspace services",
+      "text": "Create detailed API integration guides:\n1. Search AWS and Google Workspace documentation for relevant API references\n2. Fetch detailed API documentation pages for specified services\n3. Extract code examples, authentication methods, and best practices\n4. Check regional API availability for AWS services\n5. Document rate limits, quotas, and error handling patterns\n6. Provide step-by-step integration instructions with code samples\n\nDeliver complete API integration guides with official documentation references and practical examples.",
+      "variables": [],
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    },
+    {
+      "name": "cloud_migration_assessor",
+      "description": "Assess cloud migration requirements and create detailed migration plans",
+      "text": "Conduct comprehensive cloud migration assessment:\n1. Search AWS documentation for migration strategies and tools\n2. Check regional availability of required AWS services in target regions\n3. Research AWS migration best practices and patterns\n4. Get recommendations for related migration documentation\n5. Document service dependencies and compatibility requirements\n6. Create migration timeline with phases and validation checkpoints\n7. Include rollback strategies and risk mitigation approaches\n\nProvide actionable migration plans with thorough research from official AWS resources.",
+      "variables": [],
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    },
+    {
+      "name": "cloud_best_practices_compiler",
+      "description": "Compile and synthesize cloud best practices from AWS and Google Workspace documentation",
+      "text": "Compile comprehensive cloud best practices:\n1. Search AWS documentation for Well-Architected Framework pillars\n2. Fetch detailed best practice guides for specific services\n3. Get content recommendations to discover latest guidelines\n4. Search Google Workspace documentation for development best practices\n5. Synthesize security, performance, and cost optimization recommendations\n6. Create categorized best practices checklist with documentation references\n7. Include real-world implementation examples and common pitfalls\n\nDeliver curated best practices compilation with authoritative sources and actionable guidance.",
+      "variables": [],
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    }
+  ],
+  "custom_tools": [],
+  "custom_resources": [],
+  "environment_variables": [],
+  "system_prompt": {
+    "text": "You are a helpful AI assistant with access to various tools and resources. You can help users with a wide range of tasks using the available MCP (Model Context Protocol) tools.\n\nAvailable capabilities:\n- Execute tools to perform specific actions\n- Access resources for information\n- Use prompts for structured interactions\n\nAlways be helpful, accurate, and explain what you're doing when using tools.",
+    "variables": [],
+    "environment_variables": [],
+    "tool_calls": []
+  },
+  "metadata": {
+    "url": "http://localhost:8000/private/Cloud_development_assistant/vmcp",
+    "type": "vmcp"
+  }
+}

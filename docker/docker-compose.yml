@@ -1,0 +1,52 @@
+services:
+  # vMCP Application (Backend + Frontend)
+  vmcp:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: vmcp-app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # Database (SQLite)
+      DATABASE_URL: sqlite:///app/data/vmcp.db
+
+      # Server
+      HOST: 0.0.0.0
+      PORT: 8000
+      BASE_URL: http://localhost:8000
+
+      # Environment
+      ENV: production
+
+      # Logging
+      LOG_LEVEL: INFO
+      LOG_FORMAT: json
+
+      # Security
+      SECRET_KEY: ${SECRET_KEY:-change-this-secret-key-in-production}
+
+      # Tracing (optional)
+      ENABLE_TRACING: ${ENABLE_TRACING:-false}
+      OTLP_ENDPOINT: ${OTLP_ENDPOINT:-http://localhost:4317}
+
+      # CORS
+      CORS_ORIGINS: '["http://localhost:8000", "http://localhost:3000"]'
+    volumes:
+      # Persist SQLite database
+      - vmcp_data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    # Optional: Mount local directories for development
+    # volumes:
+    #   - ./src:/app/src:ro
+    #   - ./frontend/dist:/app/frontend/build:ro
+
+volumes:
+  vmcp_data:
+    driver: local

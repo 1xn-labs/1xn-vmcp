@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{vmcp_username or 'private'}}/{{ vmcp_name or 'vMCP Server' }} | vMCP Server</title>
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ base_url }}">
+    <meta property="og:title" content="{{vmcp_username or 'private'}}/{{ vmcp_name or 'vMCP Server' }}">
+    <meta property="og:description" content="Connect to {{vmcp_username or 'private'}}/{{ vmcp_name or 'vMCP Server' }} - vMCP Integration">
+    <meta property="og:site_name" content="vMCP Server">
+    <meta property="og:image" content="https://1xn.ai/1xn-og.jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="vMCP Server">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:logo" content="https://1xn.ai/1xn_logo.svg" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{ base_url }}">
+    <meta property="twitter:title" content="{{vmcp_username or 'private'}}/{{ vmcp_name or 'vMCP Server' }}">
+    <meta property="twitter:description" content="Connect to {{vmcp_username or 'private'}}/{{ vmcp_name or 'vMCP Server' }} - vMCP Integration">
+    <meta property="twitter:image" content="https://1xn.ai/1xn-og.jpeg">
+    <meta property="twitter:logo" content="https://1xn.ai/1xn_logo.svg" />
+    <link rel="stylesheet" href="/api/proxystatic/css/unauthorized.css">
+    
+    <!-- Prism.js for syntax highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+            </head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <img src="https://1xn.ai/1xn_logo.svg" alt="1xn.ai" class="chain-icon" style="width: 48px; height: 48px;">
+            <h1>Connect</h1>
+        </div>
+
+        <!-- Run in Playground Section -->
+        <div class="section">
+            <div class="playground-section">
+                <div class="playground-title">Copy the URL below and add the 📦 vMCP connection in your favourite client</div>
+                <div class="command-box">
+                    <div class="command-text">{{ request_url }}</div>
+                    <button class="copy-button" data-copy-text="{{ base_url }}" title="Copy URL">
+                        <svg class="copy-icon" viewBox="0 0 24 24">
+                            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                        </svg>
+                    </button>
+            </div>
+            </div>
+        </div>
+
+        <!-- Add to your client Section -->
+        <div class="section">
+            <div class="section-title">Add to your client</div>
+            
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab" onclick="switchTab('client')">
+                    <svg class="tab-icon" viewBox="0 0 24 24">
+                        <path d="M13 2.05v3.03c3.39.49 6 3.39 6 6.92 0 .9-.18 1.75-.48 2.54l2.6 1.53c.56-1.24.88-2.62.88-4.07 0-5.18-3.95-9.45-9-9.95zM12 19c-3.87 0-7-3.13-7-7 0-3.53 2.61-6.43 6-6.92V2.05c-5.06.5-9 4.76-9 9.95 0 5.52 4.47 10 9.99 10 3.31 0 6.24-1.61 8.06-4.09l-2.6-1.53C16.17 17.98 14.21 19 12 19z"/>
+                    </svg>
+                    Client
+                </button>
+                <button class="tab" onclick="switchTab('json')">
+                    <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1"></path>
+                        <path d="M16 21h1a2 2 0 0 0 2-2v-5c0-1.1.9-2 2-2a2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1"></path>
+                    </svg>
+                    JSON
+                </button>
+                <button class="tab active" onclick="switchTab('typescript')">
+                    <svg class="tab-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M1.125 0C.502 0 0 .502 0 1.125v21.75C0 23.498.502 24 1.125 24h21.75c.623 0 1.125-.502 1.125-1.125V1.125C24 .502 23.498 0 22.875 0zm17.363 9.75c.612 0 1.154.037 1.627.111a6.38 6.38 0 0 1 1.306.34v2.458a3.95 3.95 0 0 0-.643-.361 5.093 5.093 0 0 0-.717-.26 5.453 5.453 0 0 0-1.426-.2c-.3 0-.573.028-.819.086a2.1 2.1 0 0 0-.623.242c-.17.104-.3.229-.393.374a.888.888 0 0 0-.14.49c0 .196.053.373.156.529.104.156.252.304.443.444s.423.276.696.41c.273.135.582.274.926.416.47.197.892.407 1.266.628.374.222.695.473.963.753.268.279.472.598.614.957.142.359.214.776.214 1.253 0 .657-.125 1.21-.373 1.656a3.033 3.033 0 0 1-1.012 1.085 4.38 4.38 0 0 1-1.487.596c-.566.12-1.163.18-1.79.18a9.916 9.916 0 0 1-1.84-.164 5.544 5.544 0 0 1-1.512-.493v-2.63a5.033 5.033 0 0 0 3.237 1.2c.333 0 .624-.03.872-.09.249-.06.456-.144.623-.25.166-.108.29-.234.373-.38a1.023 1.023 0 0 0-.074-1.089 2.12 2.12 0 0 0-.537-.5 5.597 5.597 0 0 0-.807-.444 27.72 27.72 0 0 0-1.007-.436c-.918-.383-1.602-.852-2.053-1.405-.45-.553-.676-1.222-.676-2.005 0-.614.123-1.141.369-1.582.246-.441.58-.804 1.004-1.089a4.494 4.494 0 0 1 1.47-.629 7.536 7.536 0 0 1 1.77-.201zm-15.113.188h9.563v2.166H9.506v9.646H6.789v-9.646H3.375z"/>
+                    </svg>
+                    TypeScript
+                </button>
+                <button class="tab" onclick="switchTab('python')">
+                    <svg class="tab-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14.25.18l.9.2.73.26.59.3.45.32.34.34.25.34.16.33.1.3.04.26.02.2-.01.13V8.5l-.05.63-.13.55-.21.46-.26.38-.3.31-.33.25-.35.19-.35.14-.33.1-.3.07-.26.04-.21.02H8.77l-.69.05-.59.14-.5.22-.41.27-.33.32-.27.35-.2.36-.15.37-.1.35-.07.32-.04.27-.02.21v3.06H3.17l-.21-.03-.28-.07-.32-.12-.35-.18-.36-.26-.36-.36-.35-.46-.32-.59-.28-.73-.21-.88-.14-1.05-.05-1.23.06-1.22.16-1.04.24-.87.32-.71.36-.57.4-.44.42-.33.42-.24.4-.16.36-.1.32-.05.24-.01h.16l.06.01h8.16v-.83H6.18l-.01-2.75-.02-.37.05-.34.11-.31.17-.28.25-.26.31-.23.38-.2.44-.18.51-.15.58-.12.64-.1.71-.06.77-.04.84-.02 1.27.05zm-6.3 1.98l-.23.33-.08.41.08.41.23.34.33.22.41.09.41-.09.33-.22.23-.34.08-.41-.08-.41-.23-.33-.33-.22-.41-.09-.41.09zm13.09 3.95l.28.06.32.12.35.18.36.27.36.35.35.47.32.59.28.73.21.88.14 1.04.05 1.23-.06 1.23-.16 1.04-.24.86-.32.71-.36.57-.4.45-.42.33-.42.24-.4.16-.36.09-.32.05-.24.02-.16-.01h-8.22v.82h5.84l.01 2.76.02.36-.05.34-.11.31-.17.29-.25.25-.31.24-.38.2-.44.17-.51.15-.58.13-.64.09-.71.07-.77.04-.84.01-1.27-.04-1.07-.14-.9-.2-.73-.25-.59-.3-.45-.33-.34-.34-.25-.34-.16-.33-.1-.3-.04-.25-.02-.2.01-.13v-5.34l.05-.64.13-.54.21-.46.26-.38.3-.32.33-.24.35-.2.35-.14.33-.1.3-.06.26-.04.21-.02.13-.01h5.84l.69-.05.59-.14.5-.21.41-.28.33-.32.27-.35.2-.36.15-.36.1-.35.07-.32.04-.28.02-.21V6.07h2.09l.14.01zm-6.47 14.25l-.23.33-.08.41.08.41.23.33.33.23.41.08.41-.08.33-.23.23-.33.08-.41-.08-.41-.23-.33-.33-.23-.41-.08-.41.08z"/>
+                    </svg>
+                    Python
+                </button>
+            </div>
+
+            <!-- Client Tab Content -->
+            <div id="client-tab" class="tab-content">
+                <div class="client-selector-container">
+                    <div class="client-selector" onclick="toggleClientDropdown()">
+                        <div class="client-info">
+                            <svg class="client-icon" viewBox="0 0 24 24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            </svg>
+                            <span class="client-name">Claude Desktop</span>
+                        </div>
+                        <svg class="dropdown-arrow" viewBox="0 0 24 24">
+                            <path d="M7 10l5 5 5-5z"/>
+                        </svg>
+                    </div>
+                    
+                    <div class="client-dropdown">
+                    <div class="client-option active" data-client="claude-desktop" onclick="selectClient('claude-desktop')">
+                        <img src="https://1xn.ai/claude-desktop.svg" alt="Claude Desktop" class="client-option-icon">
+                        <span class="client-option-name">Claude Desktop</span>
+                    </div>
+                    <div class="client-option" data-client="augment" onclick="selectClient('augment')">
+                        <img src="https://1xn.ai/augment.svg" alt="Augment" class="client-option-icon">
+                        <span class="client-option-name">Augment</span>
+                    </div>
+                    <div class="client-option" data-client="chatgpt" onclick="selectClient('chatgpt')">
+                        <img src="https://1xn.ai/chatgpt.svg" alt="ChatGPT" class="client-option-icon">
+                        <span class="client-option-name">ChatGPT</span>
+                    </div>
+                    <div class="client-option" data-client="claude-code" onclick="selectClient('claude-code')">
+                        <img src="https://1xn.ai/claude-code.svg" alt="Claude Code" class="client-option-icon">
+                        <span class="client-option-name">Claude Code</span>
+                    </div>
+                    <div class="client-option" data-client="cursor" onclick="selectClient('cursor')">
+                        <img src="https://1xn.ai/cursor.svg" alt="Cursor" class="client-option-icon">
+                        <span class="client-option-name">Cursor</span>
+                    </div>
+                    <div class="client-option" data-client="codex" onclick="selectClient('codex')">
+                        <img src="https://1xn.ai/codex.svg" alt="Codex" class="client-option-icon">
+                        <span class="client-option-name">Codex</span>
+                    </div>
+                    <div class="client-option" data-client="librechat" onclick="selectClient('librechat')">
+                        <img src="https://1xn.ai/librechat.svg" alt="LibreChat" class="client-option-icon">
+                        <span class="client-option-name">LibreChat</span>
+                    </div>
+                    <div class="client-option" data-client="raycast" onclick="selectClient('raycast')">
+                        <img src="https://1xn.ai/raycast.svg" alt="Raycast" class="client-option-icon">
+                        <span class="client-option-name">Raycast</span>
+                    </div>
+                    <div class="client-option" data-client="gemini-cli" onclick="selectClient('gemini-cli')">
+                        <img src="https://1xn.ai/gemini-cli.svg" alt="Gemini CLI" class="client-option-icon">
+                        <span class="client-option-name">Gemini CLI</span>
+                    </div>
+                    <div class="client-option" data-client="tome" onclick="selectClient('tome')">
+                        <img src="https://1xn.ai/tome.svg" alt="Tome" class="client-option-icon">
+                        <span class="client-option-name">Tome</span>
+                    </div>
+                    <div class="client-option" data-client="highlight" onclick="selectClient('highlight')">
+                        <img src="https://1xn.ai/highlight.svg" alt="Highlight" class="client-option-icon">
+                        <span class="client-option-name">Highlight</span>
+                    </div>
+                    <div class="client-option" data-client="vscode" onclick="selectClient('vscode')">
+                        <img src="https://1xn.ai/vscode.svg" alt="VS Code" class="client-option-icon">
+                        <span class="client-option-name">VS Code</span>
+                    </div>
+                    </div>
+                </div>
+                
+                <!-- Client-specific content will be dynamically loaded here -->
+                <div id="client-content" class="client-content active">
+                    <div style="margin: 1rem 0; color: #a3a3a3; font-size: 0.9rem;">
+                        Connect this server to Claude Desktop with one click.
+                    </div>
+                    
+                    <button class="install-button" onclick="installClient()">
+                        One-Click Install
+                        <svg class="install-arrow" viewBox="0 0 24 24">
+                            <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+                        </svg>
+                    </button>
+                    
+                    <div style="margin: 1rem 0; color: #a3a3a3; font-size: 0.9rem;">
+                        Install this server using the terminal command below.
+                    </div>
+                    
+                    <div class="terminal-command">
+                        <div class="terminal-label">terminal</div>
+                        <div class="terminal-content">npx -y @mcp/cli@latest install {{ mcp_package or '@microsoft/playwright-mcp' }}</div>
+                        <button class="copy-button terminal-copy" data-copy-text="npx -y @mcp/cli@latest install {{ mcp_package or '@microsoft/playwright-mcp' }}" title="Copy command">
+                <svg class="copy-icon" viewBox="0 0 24 24">
+                    <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                </svg>
+            </button>
+        </div>
+                </div>
+            </div>
+
+            <!-- JSON Tab Content -->
+            <div id="json-tab" class="tab-content">
+                <div style="margin-bottom: 1rem; color: #b3b3b3; font-size: 0.9rem;">
+                    Add this configuration to your Claude or other MCP client settings.
+                </div>
+                
+                <div class="os-tabs">
+                    <button class="os-tab active" onclick="switchOSTab('mac')">
+                        <svg class="os-tab-icon" viewBox="0 0 24 24">
+                            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                        </svg>
+                        Mac/Linux
+                    </button>
+                    <button class="os-tab" onclick="switchOSTab('windows')">
+                        <svg class="os-tab-icon" viewBox="0 0 24 24">
+                            <path d="M3 12V6.75l6-1.32v6.48L3 12zm17-9v8.75l-10 .15V5.21L20 3zM3 13l6 .09v6.81l-6-1.15V13zm17 .25V22l-10-1.91v-6.84L20 13.25z"/>
+                        </svg>
+                        Windows
+                    </button>
+                    <button class="os-tab" onclick="switchOSTab('wsl')">
+                        <svg class="os-tab-icon" viewBox="0 0 24 24">
+                            <path d="M12.504 0C5.617 0 0 5.617 0 12.504s5.617 12.504 12.504 12.504S25.008 19.391 25.008 12.504 19.391 0 12.504 0zM12.504 22.822c-5.679 0-10.318-4.639-10.318-10.318S6.825 2.186 12.504 2.186s10.318 4.639 10.318 10.318-4.639 10.318-10.318 10.318z"/>
+                        </svg>
+                        WSL
+                    </button>
+                </div>
+                
+                <div id="mac-config" class="os-config active">
+                    <div style="margin-bottom: 0.5rem; color: #a3a3a3; font-size: 0.9rem; font-weight: 500;">JSON for Mac/Linux</div>
+                    <div class="json-config">
+                        <div class="json-copy-container">
+                            <pre><code class="language-json">{{ json_config_mac or '{\n  "mcpServers": {\n    "' + (mcp_package or '@microsoft/playwright-mcp') + '": {\n      "command": "npx",\n      "args": [\n        "-y",\n        "@mcp/cli@latest",\n        "run",\n        "' + (mcp_package or '@microsoft/playwright-mcp') + '",\n        "--url",\n        "' + (base_url or 'https://your-mcp-server.com') + '"\n      ]\n    }\n  }\n}' }}</code></pre>
+                            <button class="copy-button json-copy" data-copy-text="{{ json_config_mac or '{\n  \"mcpServers\": {\n    \"' + (mcp_package or '@microsoft/playwright-mcp') + '\": {\n      \"command\": \"npx\",\n      \"args\": [\n        \"-y\",\n        \"@mcp/cli@latest\",\n        \"run\",\n        \"' + (mcp_package or '@microsoft/playwright-mcp') + '\",\n        \"--url\",\n        \"' + (base_url or 'https://your-mcp-server.com') + '\"\n      ]\n    }\n  }\n}' }}" title="Copy JSON">
+                                <svg class="copy-icon" viewBox="0 0 24 24">
+                                    <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="windows-config" class="os-config">
+                    <div style="margin-bottom: 0.5rem; color: #a3a3a3; font-size: 0.9rem; font-weight: 500;">JSON for Windows</div>
+                    <div class="json-config">
+                        <div class="json-copy-container">
+                            <pre><code class="language-json">{{ json_config_windows or '{\n  "mcpServers": {\n    "' + (mcp_package or '@microsoft/playwright-mcp') + '": {\n      "command": "npx.cmd",\n      "args": [\n        "-y",\n        "@mcp/cli@latest",\n        "run",\n        "' + (mcp_package or '@microsoft/playwright-mcp') + '",\n        "--url",\n        "' + (base_url or 'https://your-mcp-server.com') + '"\n      ]\n    }\n  }\n}' }}</code></pre>
+                            <button class="copy-button json-copy" data-copy-text="{{ json_config_windows or '{\n  \"mcpServers\": {\n    \"' + (mcp_package or '@microsoft/playwright-mcp') + '\": {\n      \"command\": \"npx.cmd\",\n      \"args\": [\n        \"-y\",\n        \"@mcp/cli@latest\",\n        \"run\",\n        \"' + (mcp_package or '@microsoft/playwright-mcp') + '\",\n        \"--url\",\n        \"' + (base_url or 'https://your-mcp-server.com') + '\"\n      ]\n    }\n  }\n}' }}" title="Copy JSON">
+                                <svg class="copy-icon" viewBox="0 0 24 24">
+                                    <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="wsl-config" class="os-config">
+                    <div style="margin-bottom: 0.5rem; color: #a3a3a3; font-size: 0.9rem; font-weight: 500;">JSON for WSL</div>
+                    <div class="json-config">
+                        <div class="json-copy-container">
+                            <pre><code class="language-json">{{ json_config_wsl or '{\n  "mcpServers": {\n    "' + (mcp_package or '@microsoft/playwright-mcp') + '": {\n      "command": "npx",\n      "args": [\n        "-y",\n        "@mcp/cli@latest",\n        "run",\n        "' + (mcp_package or '@microsoft/playwright-mcp') + '",\n        "--url",\n        "' + (base_url or 'https://your-mcp-server.com') + '"\n      ]\n    }\n  }\n}' }}</code></pre>
+                            <button class="copy-button json-copy" data-copy-text="{{ json_config_wsl or '{\n  \"mcpServers\": {\n    \"' + (mcp_package or '@microsoft/playwright-mcp') + '\": {\n      \"command\": \"npx\",\n      \"args\": [\n        \"-y\",\n        \"@mcp/cli@latest\",\n        \"run\",\n        \"' + (mcp_package or '@microsoft/playwright-mcp') + '\",\n        \"--url\",\n        \"' + (base_url or 'https://your-mcp-server.com') + '\"\n      ]\n    }\n  }\n}' }}" title="Copy JSON">
+                                <svg class="copy-icon" viewBox="0 0 24 24">
+                                    <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TypeScript Tab Content -->
+            <div id="typescript-tab" class="tab-content active">
+                <div style="margin-bottom: 1rem; color: #b3b3b3; font-size: 0.9rem;">
+                    TypeScript code examples for connecting to this MCP server.
+                </div>
+                
+                <div class="code-example">
+                    <div style="margin-bottom: 0.5rem; color: #a3a3a3; font-size: 0.9rem; font-weight: 500;">TypeScript Client</div>
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="code-lang">typescript</span>
+                            <button class="copy-button" data-copy-text="import { Client } from '@modelcontextprotocol/sdk/client/index.js';\nimport { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';\n\nasync function connectToMCPServer() {\n  const transport = new StdioClientTransport({\n    command: 'npx',\n    args: ['-y', '@mcp/cli@latest', 'run', '{{ mcp_package or '@microsoft/playwright-mcp' }}', '--url', '{{ base_url or 'https://your-mcp-server.com' }}']\n  });\n  \n  const client = new Client({\n    name: 'my-mcp-client',\n    version: '1.0.0'\n  }, {\n    capabilities: {}\n  });\n  \n  await client.connect(transport);\n  \n  // List available tools\n  const tools = await client.listTools();\n  console.log('Available tools:', tools);\n  \n  // Call a tool\n  const result = await client.callTool({\n    name: 'example_tool',\n    arguments: {}\n  });\n  \n  console.log('Tool result:', result);\n}\n\nconnectToMCPServer().catch(console.error);" title="Copy TypeScript code">
+                            <svg class="copy-icon" viewBox="0 0 24 24">
+                                <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="code-content">
+<pre><code class="language-typescript">import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+
+async function connectToMCPServer() {
+  const transport = new StdioClientTransport({
+    command: 'npx',
+    args: ['-y', '@mcp/cli@latest', 'run', '{{ mcp_package or '@microsoft/playwright-mcp' }}', '--url', '{{ base_url or 'https://your-mcp-server.com' }}']
+  });
+  
+  const client = new Client({
+    name: 'my-mcp-client',
+    version: '1.0.0'
+  }, {
+    capabilities: {}
+  });
+  
+  await client.connect(transport);
+  
+  // List available tools
+  const tools = await client.listTools();
+  console.log('Available tools:', tools);
+  
+  // Call a tool
+  const result = await client.callTool({
+    name: 'example_tool',
+    arguments: {}
+  });
+  
+  console.log('Tool result:', result);
+}
+
+connectToMCPServer().catch(console.error);</code></pre>
+                    </div>
+                </div>
+            </div>
+            </div>
+
+            <!-- Python Tab Content -->
+            <div id="python-tab" class="tab-content">
+                <div style="margin-bottom: 1rem; color: #b3b3b3; font-size: 0.9rem;">
+                    Python code examples for connecting to this MCP server.
+                </div>
+                
+                <div class="code-example">
+                    <div style="margin-bottom: 0.5rem; color: #a3a3a3; font-size: 0.9rem; font-weight: 500;">Python Client</div>
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="code-lang">python</span>
+                            <button class="copy-button" data-copy-text="from mcp import ClientSession
+from mcp.client.streamable_http import streamablehttp_client
+
+# Construct server URL with authentication
+from urllib.parse import urlencode
+base_url = \"{{ base_url or 'https://your-mcp-server.com' }}\"
+params = {\"api_key\": \"{{ api_key or 'your-api-key' }}\"}
+url = f\"{base_url}?{urlencode(params)}\"
+
+async def main():
+    # Connect to the server using HTTP client
+    async with streamablehttp_client(url) as (read, write, _):
+        async with ClientSession(read, write) as session:
+            # Initialize the connection
+            await session.initialize()
+            
+            # List available tools
+            tools_result = await session.list_tools()
+            print(f\"Available tools: {', '.join([t.name for t in tools_result.tools])}\")
+
+if __name__ == '__main__':
+    import asyncio
+    asyncio.run(main())" title="Copy Python code">
+                            <svg class="copy-icon" viewBox="0 0 24 24">
+                                <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="code-content">
+<pre><code class="language-python">from mcp import ClientSession
+from mcp.client.streamable_http import streamablehttp_client
+
+# Construct server URL with authentication
+from urllib.parse import urlencode
+base_url = "{{ base_url or 'https://your-mcp-server.com' }}"
+params = {"api_key": "{{ api_key or 'your-api-key' }}"}
+url = f"{base_url}?{urlencode(params)}"
+
+async def main():
+    # Connect to the server using HTTP client
+    async with streamablehttp_client(url) as (read, write, _):
+        async with ClientSession(read, write) as session:
+            # Initialize the connection
+            await session.initialize()
+            
+            # List available tools
+            tools_result = await session.list_tools()
+            print(f"Available tools: {', '.join([t.name for t in tools_result.tools])}")
+
+if __name__ == '__main__':
+    import asyncio
+    asyncio.run(main())</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Warning -->
+        <!-- <div class="warning">
+            <svg class="warning-icon" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            <div class="warning-text">Your API key is sensitive. Please don't share it with anyone.</div>
+        </div> -->
+
+        <!-- Details Section -->
+        <div class="details-section">
+            <div class="details-title">
+                <svg class="details-icon" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                </svg>
+                vMCP Details
+            </div>
+            <div class="details-item"># Tools: {{ tool_count or '10' }}</div>
+            <div class="details-item"># Resources: {{ resource_count or '2' }}</div>
+            <div class="details-item"># Prompts: {{ prompt_count or '8' }}</div>
+            <div class="details-item">Server URL: {{ request_url }}</div>
+            <div class="details-item">Package: {{ mcp_package or '@vmcp/proxy-server' }}</div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer style="margin-top: 4rem; padding-top: 2rem; border-top: 1px solid #2a2a2a; text-align: center;">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 1rem;">
+            <img src="https://1xn.ai/1xn_logo.svg" alt="1xn.ai" style="width: 24px; height: 24px;">
+            <span style="font-weight: 700; color: #ffffff; font-size: 1.125rem;">1xn.ai</span>
+        </div>
+        <p style="color: #a3a3a3; font-size: 0.9rem; margin-bottom: 0.5rem;">Model Context Protocol Server</p>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 1.5rem; margin-top: 1.5rem;">
+            <a href="{{ base_url }}/docs" target="_blank" rel="noopener noreferrer" style="color: #a3a3a3; text-decoration: none; font-size: 0.9rem; transition: color 0.2s;">Documentation</a>
+            <a href="{{ base_url }}/api" target="_blank" rel="noopener noreferrer" style="color: #a3a3a3; text-decoration: none; font-size: 0.9rem; transition: color 0.2s;">API</a>
+            <a href="{{ base_url }}/status" target="_blank" rel="noopener noreferrer" style="color: #a3a3a3; text-decoration: none; font-size: 0.9rem; transition: color 0.2s;">Status</a>
+        </div>
+        <p style="color: #666; font-size: 0.8rem; margin-top: 1.5rem;">© 2025 1xn.ai. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Client configurations
+        const clientConfigs = {
+            'claude-desktop': {
+                name: 'Claude Desktop',
+                description: 'Connect this server to Claude Desktop with one click.',
+                hasOneClick: true,
+                terminalCommand: 'npx -y @mcp/cli@latest install {{ mcp_package or "@microsoft/playwright-mcp" }}'
+            },
+            'augment': {
+                name: 'Augment',
+                description: 'Add this server by running the command in Augment settings.',
+                hasOneClick: false,
+                terminalCommand: 'npx -y @mcp/cli@latest run {{ mcp_package or "@microsoft/playwright-mcp" }} --url {{ base_url }}'
+            },
+            'chatgpt': {
+                name: 'ChatGPT',
+                description: 'Follow these steps to add this server to ChatGPT:',
+                hasOneClick: false,
+                steps: [
+                    'Enable Developer Mode in settings if not already enabled',
+                    'Go to ChatGPT Settings > Connectors and click Create to add your server URL:',
+                    'Learn more about connectors'
+                ],
+                serverUrl: '{{ base_url }}'
+            },
+            'claude-code': {
+                name: 'Claude Code',
+                description: 'Install this server using the terminal command below.',
+                hasOneClick: false,
+                terminalCommand: 'claude mcp add --transport http {{ mcp_package or "@microsoft/playwright-mcp" }} "{{ base_url }}"'
+            },
+            'cursor': {
+                name: 'Cursor',
+                description: 'Connect this server to Cursor with one click.',
+                hasOneClick: true,
+                terminalCommand: 'npx -y @mcp/cli@latest install {{ mcp_package or "@microsoft/playwright-mcp" }} --client cursor --url {{ base_url }}'
+            },
+            'codex': {
+                name: 'Codex',
+                description: 'Install this server using the terminal command below.',
+                hasOneClick: false,
+                terminalCommand: 'npx -y @mcp/cli@latest install {{ mcp_package or "@microsoft/playwright-mcp" }} --client codex --url {{ base_url }}'
+            },
+            'librechat': {
+                name: 'LibreChat',
+                description: 'Install this server using the terminal command below.',
+                hasOneClick: false,
+                terminalCommand: 'npx -y @mcp/cli@latest install {{ mcp_package or "@microsoft/playwright-mcp" }} --client librechat --url {{ base_url }}'
+            },
+            'raycast': {
+                name: 'Raycast',
+                description: 'Connect this server to Raycast with one click.',
+                hasOneClick: true,
+                terminalCommand: 'npx -y @mcp/cli@latest install {{ mcp_package or "@microsoft/playwright-mcp" }} --client raycast --url {{ base_url }}'
+            },
+            'gemini-cli': {
+                name: 'Gemini CLI',
+                description: 'Install this server using the terminal command below.',
+                hasOneClick: false,
+                terminalCommand: 'npx -y @mcp/cli@latest install {{ mcp_package or "@microsoft/playwright-mcp" }} --client gemini-cli --url {{ base_url }}'
+            },
+            'tome': {
+                name: 'Tome',
+                description: 'Connect this server to Tome with one click.',
+                hasOneClick: true,
+                terminalCommand: 'npx -y @mcp/cli@latest install {{ mcp_package or "@microsoft/playwright-mcp" }} --client tome --url {{ base_url }}'
+            },
+            'highlight': {
+                name: 'Highlight',
+                description: 'Connect this server to Highlight with one click.',
+                hasOneClick: true,
+                terminalCommand: 'npx -y @mcp/cli@latest install {{ mcp_package or "@microsoft/playwright-mcp" }} --client highlight --url {{ base_url }}'
+            },
+            'vscode': {
+                name: 'VS Code',
+                description: 'Connect this server to VS Code with one click.',
+                hasOneClick: true,
+                terminalCommand: 'npx -y @mcp/cli@latest install {{ mcp_package or "@microsoft/playwright-mcp" }} --client vscode --url {{ base_url }}'
+            }
+        };
+
+        function copyToClipboard(text, button) {
+            navigator.clipboard.writeText(text).then(function() {
+                const originalIcon = button.innerHTML;
+                button.innerHTML = '<svg class="copy-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
+                button.classList.add('copy-success');
+                
+                setTimeout(function() {
+                    button.innerHTML = originalIcon;
+                    button.classList.remove('copy-success');
+                }, 2000);
+            }).catch(function(err) {
+                console.error('Could not copy text: ', err);
+                alert('Failed to copy to clipboard');
+            });
+        }
+
+        function toggleClientDropdown() {
+            const dropdown = document.querySelector('.client-dropdown');
+            const selector = document.querySelector('.client-selector');
+            
+            dropdown.classList.toggle('open');
+            selector.classList.toggle('open');
+        }
+
+        function selectClient(clientId) {
+            const config = clientConfigs[clientId];
+            if (!config) return;
+
+            // Update client selector
+            const clientName = document.querySelector('.client-name');
+            clientName.textContent = config.name;
+
+            // Update client content
+            const clientContent = document.querySelector('#client-content');
+            let content = `<div style="margin: 1rem 0; color: #a3a3a3; font-size: 0.9rem;">${config.description}</div>`;
+
+            if (config.steps) {
+                content += '<ol class="step-list">';
+                config.steps.forEach((step, index) => {
+                    content += `<li class="step-item">
+                        <div class="step-number">${index + 1}</div>
+                        <div class="step-content">
+                            <div class="step-text">${step}</div>
+                        </div>
+                    </li>`;
+                });
+                content += '</ol>';
+
+                if (config.serverUrl) {
+                    content += `<div class="url-display">
+                        <div class="url-text">${config.serverUrl}</div>
+                        <button class="url-copy" onclick="copyToClipboard('${config.serverUrl}', this)" title="Copy URL">
+                            <svg class="url-copy-icon" viewBox="0 0 24 24">
+                                <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                            </svg>
+                        </button>
+                    </div>`;
+                }
+            } else {
+                if (config.hasOneClick) {
+                    content += `<button class="install-button" onclick="installClient()">
+                        One-Click Install
+                        <svg class="install-arrow" viewBox="0 0 24 24">
+                            <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+                        </svg>
+                    </button>`;
+                }
+
+                content += `<div style="margin: 1rem 0; color: #a3a3a3; font-size: 0.9rem;">
+                    Install this server using the terminal command below.
+                </div>
+                
+                <div class="terminal-command">
+                    <div class="terminal-label">terminal</div>
+                    <div class="terminal-content">${config.terminalCommand}</div>
+                    <button class="copy-button terminal-copy" data-copy-text="${config.terminalCommand}" title="Copy command">
+                        <svg class="copy-icon" viewBox="0 0 24 24">
+                            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                        </svg>
+                    </button>
+                </div>`;
+            }
+
+            clientContent.innerHTML = content;
+
+            // Update active client option
+            document.querySelectorAll('.client-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            document.querySelector(`[data-client="${clientId}"]`).classList.add('active');
+
+            // Close dropdown
+            toggleClientDropdown();
+        }
+
+        // Add event listeners for copy buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Prism.js syntax highlighting
+            if (typeof Prism !== 'undefined') {
+                Prism.highlightAll();
+            }
+            
+            document.querySelectorAll('.copy-button').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    const textToCopy = this.getAttribute('data-copy-text');
+                    if (textToCopy) {
+                        copyToClipboard(textToCopy, this);
+                    }
+                });
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                const dropdown = document.querySelector('.client-dropdown');
+                const container = document.querySelector('.client-selector-container');
+                
+                if (!container.contains(event.target)) {
+                    dropdown.classList.remove('open');
+                    document.querySelector('.client-selector').classList.remove('open');
+                }
+            });
+        });
+
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            const targetTab = document.getElementById(tabName + '-tab');
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+            
+            // Add active class to clicked tab
+            event.target.closest('.tab').classList.add('active');
+        }
+
+        function switchOSTab(osName) {
+            // Hide all OS configs
+            document.querySelectorAll('.os-config').forEach(config => {
+                config.classList.remove('active');
+            });
+            
+            // Remove active class from all OS tabs
+            document.querySelectorAll('.os-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected OS config
+            document.getElementById(osName + '-config').classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.closest('.os-tab').classList.add('active');
+        }
+
+        function installClient() {
+            // This would integrate with the actual client installation
+            alert('Client installation would be initiated here. This is a demo.');
+        }
+    </script>
+</body>
+</html>

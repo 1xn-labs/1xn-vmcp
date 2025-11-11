@@ -1,0 +1,2901 @@
+{
+  "name": "Svelte_coding_assistant",
+  "description": null,
+  "vmcp_config": {
+    "selected_servers": [
+      {
+        "name": "Svelte",
+        "transport_type": "http",
+        "description": "The official Svelte MCP server providing docs and autofixing tools for Svelte development",
+        "server_id": "93f22d36d4620e93",
+        "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://svelte.dev&size=64",
+        "command": null,
+        "args": null,
+        "env": null,
+        "url": "https://mcp.svelte.dev/mcp",
+        "headers": null,
+        "status": "connected",
+        "last_connected": null,
+        "last_error": null,
+        "capabilities": {
+          "tools": true,
+          "resources": true,
+          "prompts": true
+        },
+        "tools": [
+          "get-documentation",
+          "list-sections",
+          "playground-link",
+          "svelte-autofixer"
+        ],
+        "tool_details": [
+          {
+            "name": "get-documentation",
+            "title": "Retrieves full documentation content for Svelte 5 or SvelteKit sections. Supports flexible search by title (e.g., \"$state\", \"routing\") or file path (e.g., \"cli/overview\"). Can accept a single section name or an array of sections. Before running this, make sure to analyze the users query, as well as the output from list-sections (which should be called first). Then ask for ALL relevant sections the user might require. For example, if the user asks to build anything interactive, you will need to fetch all relevant runes, and so on.",
+            "description": "Retrieves full documentation content for Svelte 5 or SvelteKit sections. Supports flexible search by title (e.g., \"$state\", \"routing\") or file path (e.g., \"cli/overview\"). Can accept a single section name or an array of sections. Before running this, make sure to analyze the users query, as well as the output from list-sections (which should be called first). Then ask for ALL relevant sections the user might require. For example, if the user asks to build anything interactive, you will need to fetch all relevant runes, and so on.",
+            "inputSchema": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "section": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  ],
+                  "description": "The section name(s) to retrieve. Can search by title (e.g., \"$state\", \"load functions\") or file path (e.g., \"cli/overview\"). Supports single string and array of strings"
+                }
+              },
+              "required": [
+                "section"
+              ]
+            },
+            "outputSchema": null,
+            "icons": [
+              {
+                "src": "https://mcp.svelte.dev/logo.svg",
+                "mimeType": "image/svg+xml",
+                "sizes": null
+              },
+              {
+                "src": "https://mcp.svelte.dev/logo.png",
+                "mimeType": "image/png",
+                "sizes": null
+              },
+              {
+                "src": "data:image/png;base64,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",
+                "mimeType": "image/png",
+                "sizes": null
+              }
+            ],
+            "annotations": null,
+            "meta": {
+              "server_name": "Svelte"
+            }
+          },
+          {
+            "name": "list-sections",
+            "title": "Lists all available Svelte 5 and SvelteKit documentation sections in a structured format. Each section includes a \"use_cases\" field that describes WHEN this documentation would be useful. You should carefully analyze the use_cases field to determine which sections are relevant for the user's query. The use_cases contain comma-separated keywords describing project types (e.g., \"e-commerce\", \"blog\"), features (e.g., \"authentication\", \"forms\"), components (e.g., \"slider\", \"modal\"), development stages (e.g., \"deployment\", \"testing\"), or \"always\" for fundamental concepts. Match these use_cases against the user's intent - for example, if building an e-commerce site, fetch sections with use_cases containing \"e-commerce\", \"product listings\", \"shopping cart\", etc. If building a slider, look for \"slider\", \"carousel\", \"animation\", etc. Returns sections as \"* title: [section_title], use_cases: [use_cases], path: [file_path]\". Always run list-sections FIRST for any Svelte query, then analyze ALL use_cases to identify relevant sections, and finally use get_documentation to fetch ALL relevant sections at once.",
+            "description": "Lists all available Svelte 5 and SvelteKit documentation sections in a structured format. Each section includes a \"use_cases\" field that describes WHEN this documentation would be useful. You should carefully analyze the use_cases field to determine which sections are relevant for the user's query. The use_cases contain comma-separated keywords describing project types (e.g., \"e-commerce\", \"blog\"), features (e.g., \"authentication\", \"forms\"), components (e.g., \"slider\", \"modal\"), development stages (e.g., \"deployment\", \"testing\"), or \"always\" for fundamental concepts. Match these use_cases against the user's intent - for example, if building an e-commerce site, fetch sections with use_cases containing \"e-commerce\", \"product listings\", \"shopping cart\", etc. If building a slider, look for \"slider\", \"carousel\", \"animation\", etc. Returns sections as \"* title: [section_title], use_cases: [use_cases], path: [file_path]\". Always run list-sections FIRST for any Svelte query, then analyze ALL use_cases to identify relevant sections, and finally use get_documentation to fetch ALL relevant sections at once.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {}
+            },
+            "outputSchema": null,
+            "icons": [
+              {
+                "src": "https://mcp.svelte.dev/logo.svg",
+                "mimeType": "image/svg+xml",
+                "sizes": null
+              },
+              {
+                "src": "https://mcp.svelte.dev/logo.png",
+                "mimeType": "image/png",
+                "sizes": null
+              },
+              {
+                "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAACvdJREFUeJztXQuQVMUVHT5GCYmSDwaVMhQWmpSRRIEkJqmdFVQCRuRjCiVq8MMGKKTYGESEREAFhI2iSGkCFURCJKASimgpSviVrApEPoKLIGEF0aAIAgLCwsk927NxmZ2duf36zesZnFN1qqCU926fO6/79u3b3bFYAQUUUEABBRRQQAF5DsRjp6Eo1lbYW1gqHCcsE05J/HmYsI+wg/y/Z/i2N+8hQjYQni3sJZwmXC/8SHhciHrI/7ZHuEk4WzhIeL6wse/25BVEsFbCB4UfpxFby0PCZcJOvtuV8xCR2gj/IjwagvCpyK+or3RRp/hua05BRGkqLBFWZkn42jwinCe82He7cwIixLeF5Rn69mxwr/BXvtvvDdL4ZsIJiV9klMIncwYjLN96RAZpcEMOiMJXhMc8i4+EDXPECV/3rU3WIY1kXz9ZWJUDwidzwUk7OEvjGgtvEu4MTbDOXwH6tAFuuhC44QLg6m8C8Qauz53tW6vQIY1qLZwJE48HF+fy04D+PwJmjgVWvQzs2Azsfh/Yswv4+ANg51Zg7TLg7w8CQ7sAXc4I2h39VtjAt27OSPzq+yKMydTgOPDW60BVFdTYtQN4aCDQ8RTb930qbOdbPyeA+Zii2HJn4W9rB6xcqBc9FXZsAe7savvuDcLTfetoDRotHC7c5SQ8+/eHB5suJgx8ug+YcgdQ3MjGjjt862kFMbi9cI3zr/7G7wIVq8IRvjaOH5Px434ZqBtqbdkuzP2oSIw8S/g4XCdU3ZoD86YARw6HL35tJ/BL0Nt1v29964UY10jYDSbBFVz4yxoDv+tsBtkocOgAMOhnWvsqhE19a10HYlQT4QiYiCG4+F1OB2aNBw4fjEb8GqxbrrWRE8af+tb7BIhBLYQrnIRnaFj2GxO/+wJDVJ29E31r/n+IMecKVzqJz0H2pVnS13/mLiKjm+2bhG8DBz6x+7dvrwY6naqxeTPisUa+ta8JMVc59fX81dsKVR8WzQZ6tzZfE3md/PnFJ/X//ugRoO/3dLbHY+f6Fb+4esB9IbD4HPTCGmT/swEo7VT/ux4t1T/rjwO0bejiT3yzOM7JlX3quGszYMYYYO9H7sIzemGep+c56d95RRNg02rdM5+frm3LAJ8OYFXBfmvxB/7EJMzCwNb1QL/2+ndrv4KNr2mfOcKP+MXViycvWwl/zbeAF2YAVUfdhf9kN/DIEPuE2ujrdc9/f5v2mQ/4cUBR7DLYrNXe8n3T1x8/7iY8nff6i8CtFwfL8Zd0AFa+BOzbnf49lRXaZ07w5YD56kbf+J1w4vr9e4CxfW0TZ6nZq6VJPdTniNWLtM+6L3rx47Fz5MWH1Q3lgogL+Kt/9lGgewt34ZNJZ47pA7xbceI7nxitfUZp9A4oit2jMo7xPfv8oGB3RWFG9Q7nV5+OjKCemggc3G/erV8nuC5a8YurQ89ylXFMpLn86v/xmMkJZVP4ZN5eBLyzzuZr+2G0DojHmkO7qBJ0xWrNUjNYRil88perG+D3iR5NonVAUewH0JSO8JP+7JCd8FxEf2KMmaT5Et+O8yMVP+GAa1TGPT7MTvwN5SYZ519UG/b24YABKuOWPK0Xf84koNOXggtxZVNgeDfgr+OApc+YnD7nHOtfkb8/K4PrBDOQc2UtPPHZDTf34YA7VQZufFUn/tY3TY4miAgMcaeOALasybxceazKVEHMnWQmhfr13/r4ZOTiJxzwB5WBzExqwF+tbeMp3sR+wSd3HJuemWy+nGDiH5bBt5UvBwxVGckkmQZ/Gm7XeKavtV9XJux8BxhwaRAHjPMifsIB/VVGsh/WYMFUXaMZGU0baSKlMMGvKN0aQl0yAmzl0wHdVIZqZ8AH9gK/+Eb6Z/VrF176OhWYD2JyT++Enj4dcBE084Cxv9YLwGKra1vWfUaPs8JLX2fCB5XmfToHLPXpgDOFH2Y08qqvfZ5X0aDyLTN3GCLdwZCOJlO5baN7+toGC/6sjY5YaHaBHwfEq3NButKTxXOiEy8s6Auzyrw4oNoJRbFRKiOZz8k3cOKmc8C/4WuTt7z4PGjWA/g587OOCuyu2G2x+2I3xu6M3Rq7Ny3YbbL7zOwA7sxv4cUBCScsVv1SOLBxgMs2OFBzwE41kHLGbFNVzQAic9sYiPjbTywv76r8VIGb2wK7tmdN++r09W2XpLeBoa525rxwprYb+qVPB7SEzY5GTnbCrvfkpIyTM236mpM+DfQFuoN8OmC8WvwaMt3MhFgYeHOFffpamyJnglD3zLt8iX8htIvyyWQCbPooU+EQBFwj5iJ6kGzm7DLdO5hI1D1zlC8HTA0kfg0pHlPCTA3ziziWYYcjU81MOTP13CvFjFlDprz5y9aAyb5c/QJkIsaZ8H+dHJD8RXDH49S7zWIKF1G4mLJW+uElc4HHhppB3H5L6efkYg9rPbXge3XPvj16BxTFrg9N/CgYpPp6cqn2+d19OGCud1E1rKm+tk1fc7EmU5W1ISvCo920zQMr5KUHMxrHkg6WdvgSv/+Pg6evy5/XvodrwmdG6wCzyz2zcT3ONpHEyB7RCh9G+npwsfZ9K1ikFrUDrlUZx7I+gnkVlvvpPungZNkiqx4Yorqkr+k8/Zd7b6TiJxxQqjKOu85rg7tguIiejfrOHi2AZfPMRmsXcDMfj7XRvfeodMctfThAl4Z+Y0nqRnLpj1UQXGJ0FZ5hKUPUoBO62uBchOcK6d8/J3LxEw54QGVgZUX6BtMR3CQRpP6TAzzXb7lJw3Wpkt0VQ1ROCu3s8HPOqNoB3N6jAftt21/99NHh7J6vqb7++VdtxV8obOjLAcNURm5Q1u0wOaZt+F1XA9uUxV6ZwPQ1T9iy7/p4nOX5XsRPOKBEZah22s8to5nKEhlBcQsqt6K6gsFA8OprTrzu4Zq4TwdcrjJ2YolelGm/r/85DGc/fM9deMK9+np+5HF/HQfEqxdhMhvL0wptzvZZPNfkbJiYu+LLZpfK8nnhCM+VuPtucJ2ZLxI28yp+wgE8lmBzRoN50IV2R3oNeE4EY3EesMGDNlzBAz948If7noM34LMUMRlizL0qw8ff4i5iUHDpc2TPMCZ+i4W5deGDGHQptGvBa5UFumGB4SkPeXLf2MfVPk46o93/pQHMcfIbVQ1hvx5G9KIBJ1TclemeheWxlN2RyzdrQLtJg2RE5JqnSQcO9jwxN/hmixqy3nMS8uFMUDGS6wJbVA3j+i8r1bJR4Vz+XFgb+9jXd/CtqxWgzYySHAzphDCiG4KHtvLwVh7i6ib8buHdyIUQ0xZi9KnCdVYNLmlvQk0XrPhn8MqIE/kvYWvfOjoBpj5oj1XDmVDjiScs/dAunrCfZ9WyvnQ8HXkXDe8Uy91BVguYI8sGI8jNRjxCnkfJM8/Do+V5ogrjdy6is4vhmi6PoucAy8QZj6h3E55H5D+V97/6VIA5nthNIKYguCLFzdQspHXZuF2X7wk7w1caOduAuQ/A3Qnhk6HlaOTjIGsLxKtvPpqF3Ll85zXhlSftrz4VYA7tfigHfvWcKH5xrp9KBsxe4h0exOcteOf5bn9OACZEfRrRXMb2rnAgcvE4eZ+AuZitI8yOwmwIz/CXdwZHf2xMvgHmhjzOPt2urDLk4vgjyKWFknyAREoMV9skuou/wVyuzJl0pouYuSWUt3Hw8mbems1jM/P/Pi/f4PXiMAW/TA2w5GVcokspS/y5NCF42y/UpZoFFFBAAQUUUEABJy3+B6BFBuObiHkkAAAAAElFTkSuQmCC",
+                "mimeType": "image/png",
+                "sizes": null
+              }
+            ],
+            "annotations": null,
+            "meta": {
+              "server_name": "Svelte"
+            }
+          },
+          {
+            "name": "playground-link",
+            "title": "Generates a Playground link given a Svelte code snippet. Once you have the final version of the code you want to send to the user, ALWAYS ask the user if it wants a playground link to allow it to quickly check the code in the playground before calling this tool. NEVER use this tool if you have written the component to a file in the user project. The playground accept multiple files so if are importing from other files just include them all at the root level.",
+            "description": "Generates a Playground link given a Svelte code snippet. Once you have the final version of the code you want to send to the user, ALWAYS ask the user if it wants a playground link to allow it to quickly check the code in the playground before calling this tool. NEVER use this tool if you have written the component to a file in the user project. The playground accept multiple files so if are importing from other files just include them all at the root level.",
+            "inputSchema": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "The name of the Playground, it should reflect the user task"
+                },
+                "tailwind": {
+                  "type": "boolean",
+                  "description": "If the code requires Tailwind CSS to work...only send true if it it's using tailwind classes in the code"
+                },
+                "files": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "An object where all the keys are the filenames (with extensions) and the values are the file content. For example: { 'Component.svelte': '<script>...</script>', 'utils.js': 'export function ...' }. The playground accept multiple files so if are importing from other files just include them all at the root level."
+                }
+              },
+              "required": [
+                "name",
+                "tailwind",
+                "files"
+              ]
+            },
+            "outputSchema": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "url"
+              ]
+            },
+            "icons": [
+              {
+                "src": "https://mcp.svelte.dev/logo.svg",
+                "mimeType": "image/svg+xml",
+                "sizes": null
+              },
+              {
+                "src": "https://mcp.svelte.dev/logo.png",
+                "mimeType": "image/png",
+                "sizes": null
+              },
+              {
+                "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAACvdJREFUeJztXQuQVMUVHT5GCYmSDwaVMhQWmpSRRIEkJqmdFVQCRuRjCiVq8MMGKKTYGESEREAFhI2iSGkCFURCJKASimgpSviVrApEPoKLIGEF0aAIAgLCwsk927NxmZ2duf36zesZnFN1qqCU926fO6/79u3b3bFYAQUUUEABBRRQQAF5DsRjp6Eo1lbYW1gqHCcsE05J/HmYsI+wg/y/Z/i2N+8hQjYQni3sJZwmXC/8SHhciHrI/7ZHuEk4WzhIeL6wse/25BVEsFbCB4UfpxFby0PCZcJOvtuV8xCR2gj/IjwagvCpyK+or3RRp/hua05BRGkqLBFWZkn42jwinCe82He7cwIixLeF5Rn69mxwr/BXvtvvDdL4ZsIJiV9klMIncwYjLN96RAZpcEMOiMJXhMc8i4+EDXPECV/3rU3WIY1kXz9ZWJUDwidzwUk7OEvjGgtvEu4MTbDOXwH6tAFuuhC44QLg6m8C8Qauz53tW6vQIY1qLZwJE48HF+fy04D+PwJmjgVWvQzs2Azsfh/Yswv4+ANg51Zg7TLg7w8CQ7sAXc4I2h39VtjAt27OSPzq+yKMydTgOPDW60BVFdTYtQN4aCDQ8RTb930qbOdbPyeA+Zii2HJn4W9rB6xcqBc9FXZsAe7savvuDcLTfetoDRotHC7c5SQ8+/eHB5suJgx8ug+YcgdQ3MjGjjt862kFMbi9cI3zr/7G7wIVq8IRvjaOH5Px434ZqBtqbdkuzP2oSIw8S/g4XCdU3ZoD86YARw6HL35tJ/BL0Nt1v29964UY10jYDSbBFVz4yxoDv+tsBtkocOgAMOhnWvsqhE19a10HYlQT4QiYiCG4+F1OB2aNBw4fjEb8GqxbrrWRE8af+tb7BIhBLYQrnIRnaFj2GxO/+wJDVJ29E31r/n+IMecKVzqJz0H2pVnS13/mLiKjm+2bhG8DBz6x+7dvrwY6naqxeTPisUa+ta8JMVc59fX81dsKVR8WzQZ6tzZfE3md/PnFJ/X//ugRoO/3dLbHY+f6Fb+4esB9IbD4HPTCGmT/swEo7VT/ux4t1T/rjwO0bejiT3yzOM7JlX3quGszYMYYYO9H7sIzemGep+c56d95RRNg02rdM5+frm3LAJ8OYFXBfmvxB/7EJMzCwNb1QL/2+ndrv4KNr2mfOcKP+MXViycvWwl/zbeAF2YAVUfdhf9kN/DIEPuE2ujrdc9/f5v2mQ/4cUBR7DLYrNXe8n3T1x8/7iY8nff6i8CtFwfL8Zd0AFa+BOzbnf49lRXaZ07w5YD56kbf+J1w4vr9e4CxfW0TZ6nZq6VJPdTniNWLtM+6L3rx47Fz5MWH1Q3lgogL+Kt/9lGgewt34ZNJZ47pA7xbceI7nxitfUZp9A4oit2jMo7xPfv8oGB3RWFG9Q7nV5+OjKCemggc3G/erV8nuC5a8YurQ89ylXFMpLn86v/xmMkJZVP4ZN5eBLyzzuZr+2G0DojHmkO7qBJ0xWrNUjNYRil88perG+D3iR5NonVAUewH0JSO8JP+7JCd8FxEf2KMmaT5Et+O8yMVP+GAa1TGPT7MTvwN5SYZ519UG/b24YABKuOWPK0Xf84koNOXggtxZVNgeDfgr+OApc+YnD7nHOtfkb8/K4PrBDOQc2UtPPHZDTf34YA7VQZufFUn/tY3TY4miAgMcaeOALasybxceazKVEHMnWQmhfr13/r4ZOTiJxzwB5WBzExqwF+tbeMp3sR+wSd3HJuemWy+nGDiH5bBt5UvBwxVGckkmQZ/Gm7XeKavtV9XJux8BxhwaRAHjPMifsIB/VVGsh/WYMFUXaMZGU0baSKlMMGvKN0aQl0yAmzl0wHdVIZqZ8AH9gK/+Eb6Z/VrF176OhWYD2JyT++Enj4dcBE084Cxv9YLwGKra1vWfUaPs8JLX2fCB5XmfToHLPXpgDOFH2Y08qqvfZ5X0aDyLTN3GCLdwZCOJlO5baN7+toGC/6sjY5YaHaBHwfEq3NButKTxXOiEy8s6Auzyrw4oNoJRbFRKiOZz8k3cOKmc8C/4WuTt7z4PGjWA/g587OOCuyu2G2x+2I3xu6M3Rq7Ny3YbbL7zOwA7sxv4cUBCScsVv1SOLBxgMs2OFBzwE41kHLGbFNVzQAic9sYiPjbTywv76r8VIGb2wK7tmdN++r09W2XpLeBoa525rxwprYb+qVPB7SEzY5GTnbCrvfkpIyTM236mpM+DfQFuoN8OmC8WvwaMt3MhFgYeHOFffpamyJnglD3zLt8iX8htIvyyWQCbPooU+EQBFwj5iJ6kGzm7DLdO5hI1D1zlC8HTA0kfg0pHlPCTA3ziziWYYcjU81MOTP13CvFjFlDprz5y9aAyb5c/QJkIsaZ8H+dHJD8RXDH49S7zWIKF1G4mLJW+uElc4HHhppB3H5L6efkYg9rPbXge3XPvj16BxTFrg9N/CgYpPp6cqn2+d19OGCud1E1rKm+tk1fc7EmU5W1ISvCo920zQMr5KUHMxrHkg6WdvgSv/+Pg6evy5/XvodrwmdG6wCzyz2zcT3ONpHEyB7RCh9G+npwsfZ9K1ikFrUDrlUZx7I+gnkVlvvpPungZNkiqx4Yorqkr+k8/Zd7b6TiJxxQqjKOu85rg7tguIiejfrOHi2AZfPMRmsXcDMfj7XRvfeodMctfThAl4Z+Y0nqRnLpj1UQXGJ0FZ5hKUPUoBO62uBchOcK6d8/J3LxEw54QGVgZUX6BtMR3CQRpP6TAzzXb7lJw3Wpkt0VQ1ROCu3s8HPOqNoB3N6jAftt21/99NHh7J6vqb7++VdtxV8obOjLAcNURm5Q1u0wOaZt+F1XA9uUxV6ZwPQ1T9iy7/p4nOX5XsRPOKBEZah22s8to5nKEhlBcQsqt6K6gsFA8OprTrzu4Zq4TwdcrjJ2YolelGm/r/85DGc/fM9deMK9+np+5HF/HQfEqxdhMhvL0wptzvZZPNfkbJiYu+LLZpfK8nnhCM+VuPtucJ2ZLxI28yp+wgE8lmBzRoN50IV2R3oNeE4EY3EesMGDNlzBAz948If7noM34LMUMRlizL0qw8ff4i5iUHDpc2TPMCZ+i4W5deGDGHQptGvBa5UFumGB4SkPeXLf2MfVPk46o93/pQHMcfIbVQ1hvx5G9KIBJ1TclemeheWxlN2RyzdrQLtJg2RE5JqnSQcO9jwxN/hmixqy3nMS8uFMUDGS6wJbVA3j+i8r1bJR4Vz+XFgb+9jXd/CtqxWgzYySHAzphDCiG4KHtvLwVh7i6ib8buHdyIUQ0xZi9KnCdVYNLmlvQk0XrPhn8MqIE/kvYWvfOjoBpj5oj1XDmVDjiScs/dAunrCfZ9WyvnQ8HXkXDe8Uy91BVguYI8sGI8jNRjxCnkfJM8/Do+V5ogrjdy6is4vhmi6PoucAy8QZj6h3E55H5D+V97/6VIA5nthNIKYguCLFzdQspHXZuF2X7wk7w1caOduAuQ/A3Qnhk6HlaOTjIGsLxKtvPpqF3Ll85zXhlSftrz4VYA7tfigHfvWcKH5xrp9KBsxe4h0exOcteOf5bn9OACZEfRrRXMb2rnAgcvE4eZ+AuZitI8yOwmwIz/CXdwZHf2xMvgHmhjzOPt2urDLk4vgjyKWFknyAREoMV9skuou/wVyuzJl0pouYuSWUt3Hw8mbems1jM/P/Pi/f4PXiMAW/TA2w5GVcokspS/y5NCF42y/UpZoFFFBAAQUUUEABJy3+B6BFBuObiHkkAAAAAElFTkSuQmCC",
+                "mimeType": "image/png",
+                "sizes": null
+              }
+            ],
+            "annotations": null,
+            "meta": {
+              "server_name": "Svelte"
+            }
+          },
+          {
+            "name": "svelte-autofixer",
+            "title": "Svelte Autofixer",
+            "description": "Given a svelte component or module returns a list of suggestions to fix any issues it has. This tool MUST be used whenever the user is asking to write svelte code before sending the code back to the user",
+            "inputSchema": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "desired_svelte_version": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "description": "The desired svelte version...if possible read this from the package.json of the user project, otherwise use some hint from the wording (if the user asks for runes it wants version 5). Default to 5 in case of doubt."
+                },
+                "async": {
+                  "type": "boolean",
+                  "description": "If true the code is an async component/module and might use await in the markup or top-level awaits in the script tag. If possible check the svelte.config.js/svelte.config.ts to check if the option is enabled otherwise asks the user if they prefer using it or not. You can only use this option if the version is 5."
+                },
+                "filename": {
+                  "type": "string",
+                  "description": "The filename of the component if available, it MUST be only the Component name with .svelte or .svelte.ts extension and not the entire path."
+                }
+              },
+              "required": [
+                "code",
+                "desired_svelte_version"
+              ]
+            },
+            "outputSchema": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "issues": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "suggestions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "require_another_tool_call_after_fixing": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "issues",
+                "suggestions",
+                "require_another_tool_call_after_fixing"
+              ]
+            },
+            "icons": [
+              {
+                "src": "https://mcp.svelte.dev/logo.svg",
+                "mimeType": "image/svg+xml",
+                "sizes": null
+              },
+              {
+                "src": "https://mcp.svelte.dev/logo.png",
+                "mimeType": "image/png",
+                "sizes": null
+              },
+              {
+                "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAACvdJREFUeJztXQuQVMUVHT5GCYmSDwaVMhQWmpSRRIEkJqmdFVQCRuRjCiVq8MMGKKTYGESEREAFhI2iSGkCFURCJKASimgpSviVrApEPoKLIGEF0aAIAgLCwsk927NxmZ2duf36zesZnFN1qqCU926fO6/79u3b3bFYAQUUUEABBRRQQAF5DsRjp6Eo1lbYW1gqHCcsE05J/HmYsI+wg/y/Z/i2N+8hQjYQni3sJZwmXC/8SHhciHrI/7ZHuEk4WzhIeL6wse/25BVEsFbCB4UfpxFby0PCZcJOvtuV8xCR2gj/IjwagvCpyK+or3RRp/hua05BRGkqLBFWZkn42jwinCe82He7cwIixLeF5Rn69mxwr/BXvtvvDdL4ZsIJiV9klMIncwYjLN96RAZpcEMOiMJXhMc8i4+EDXPECV/3rU3WIY1kXz9ZWJUDwidzwUk7OEvjGgtvEu4MTbDOXwH6tAFuuhC44QLg6m8C8Qauz53tW6vQIY1qLZwJE48HF+fy04D+PwJmjgVWvQzs2Azsfh/Yswv4+ANg51Zg7TLg7w8CQ7sAXc4I2h39VtjAt27OSPzq+yKMydTgOPDW60BVFdTYtQN4aCDQ8RTb930qbOdbPyeA+Zii2HJn4W9rB6xcqBc9FXZsAe7savvuDcLTfetoDRotHC7c5SQ8+/eHB5suJgx8ug+YcgdQ3MjGjjt862kFMbi9cI3zr/7G7wIVq8IRvjaOH5Px434ZqBtqbdkuzP2oSIw8S/g4XCdU3ZoD86YARw6HL35tJ/BL0Nt1v29964UY10jYDSbBFVz4yxoDv+tsBtkocOgAMOhnWvsqhE19a10HYlQT4QiYiCG4+F1OB2aNBw4fjEb8GqxbrrWRE8af+tb7BIhBLYQrnIRnaFj2GxO/+wJDVJ29E31r/n+IMecKVzqJz0H2pVnS13/mLiKjm+2bhG8DBz6x+7dvrwY6naqxeTPisUa+ta8JMVc59fX81dsKVR8WzQZ6tzZfE3md/PnFJ/X//ugRoO/3dLbHY+f6Fb+4esB9IbD4HPTCGmT/swEo7VT/ux4t1T/rjwO0bejiT3yzOM7JlX3quGszYMYYYO9H7sIzemGep+c56d95RRNg02rdM5+frm3LAJ8OYFXBfmvxB/7EJMzCwNb1QL/2+ndrv4KNr2mfOcKP+MXViycvWwl/zbeAF2YAVUfdhf9kN/DIEPuE2ujrdc9/f5v2mQ/4cUBR7DLYrNXe8n3T1x8/7iY8nff6i8CtFwfL8Zd0AFa+BOzbnf49lRXaZ07w5YD56kbf+J1w4vr9e4CxfW0TZ6nZq6VJPdTniNWLtM+6L3rx47Fz5MWH1Q3lgogL+Kt/9lGgewt34ZNJZ47pA7xbceI7nxitfUZp9A4oit2jMo7xPfv8oGB3RWFG9Q7nV5+OjKCemggc3G/erV8nuC5a8YurQ89ylXFMpLn86v/xmMkJZVP4ZN5eBLyzzuZr+2G0DojHmkO7qBJ0xWrNUjNYRil88perG+D3iR5NonVAUewH0JSO8JP+7JCd8FxEf2KMmaT5Et+O8yMVP+GAa1TGPT7MTvwN5SYZ519UG/b24YABKuOWPK0Xf84koNOXggtxZVNgeDfgr+OApc+YnD7nHOtfkb8/K4PrBDOQc2UtPPHZDTf34YA7VQZufFUn/tY3TY4miAgMcaeOALasybxceazKVEHMnWQmhfr13/r4ZOTiJxzwB5WBzExqwF+tbeMp3sR+wSd3HJuemWy+nGDiH5bBt5UvBwxVGckkmQZ/Gm7XeKavtV9XJux8BxhwaRAHjPMifsIB/VVGsh/WYMFUXaMZGU0baSKlMMGvKN0aQl0yAmzl0wHdVIZqZ8AH9gK/+Eb6Z/VrF176OhWYD2JyT++Enj4dcBE084Cxv9YLwGKra1vWfUaPs8JLX2fCB5XmfToHLPXpgDOFH2Y08qqvfZ5X0aDyLTN3GCLdwZCOJlO5baN7+toGC/6sjY5YaHaBHwfEq3NButKTxXOiEy8s6Auzyrw4oNoJRbFRKiOZz8k3cOKmc8C/4WuTt7z4PGjWA/g587OOCuyu2G2x+2I3xu6M3Rq7Ny3YbbL7zOwA7sxv4cUBCScsVv1SOLBxgMs2OFBzwE41kHLGbFNVzQAic9sYiPjbTywv76r8VIGb2wK7tmdN++r09W2XpLeBoa525rxwprYb+qVPB7SEzY5GTnbCrvfkpIyTM236mpM+DfQFuoN8OmC8WvwaMt3MhFgYeHOFffpamyJnglD3zLt8iX8htIvyyWQCbPooU+EQBFwj5iJ6kGzm7DLdO5hI1D1zlC8HTA0kfg0pHlPCTA3ziziWYYcjU81MOTP13CvFjFlDprz5y9aAyb5c/QJkIsaZ8H+dHJD8RXDH49S7zWIKF1G4mLJW+uElc4HHhppB3H5L6efkYg9rPbXge3XPvj16BxTFrg9N/CgYpPp6cqn2+d19OGCud1E1rKm+tk1fc7EmU5W1ISvCo920zQMr5KUHMxrHkg6WdvgSv/+Pg6evy5/XvodrwmdG6wCzyz2zcT3ONpHEyB7RCh9G+npwsfZ9K1ikFrUDrlUZx7I+gnkVlvvpPungZNkiqx4Yorqkr+k8/Zd7b6TiJxxQqjKOu85rg7tguIiejfrOHi2AZfPMRmsXcDMfj7XRvfeodMctfThAl4Z+Y0nqRnLpj1UQXGJ0FZ5hKUPUoBO62uBchOcK6d8/J3LxEw54QGVgZUX6BtMR3CQRpP6TAzzXb7lJw3Wpkt0VQ1ROCu3s8HPOqNoB3N6jAftt21/99NHh7J6vqb7++VdtxV8obOjLAcNURm5Q1u0wOaZt+F1XA9uUxV6ZwPQ1T9iy7/p4nOX5XsRPOKBEZah22s8to5nKEhlBcQsqt6K6gsFA8OprTrzu4Zq4TwdcrjJ2YolelGm/r/85DGc/fM9deMK9+np+5HF/HQfEqxdhMhvL0wptzvZZPNfkbJiYu+LLZpfK8nnhCM+VuPtucJ2ZLxI28yp+wgE8lmBzRoN50IV2R3oNeE4EY3EesMGDNlzBAz948If7noM34LMUMRlizL0qw8ff4i5iUHDpc2TPMCZ+i4W5deGDGHQptGvBa5UFumGB4SkPeXLf2MfVPk46o93/pQHMcfIbVQ1hvx5G9KIBJ1TclemeheWxlN2RyzdrQLtJg2RE5JqnSQcO9jwxN/hmixqy3nMS8uFMUDGS6wJbVA3j+i8r1bJR4Vz+XFgb+9jXd/CtqxWgzYySHAzphDCiG4KHtvLwVh7i6ib8buHdyIUQ0xZi9KnCdVYNLmlvQk0XrPhn8MqIE/kvYWvfOjoBpj5oj1XDmVDjiScs/dAunrCfZ9WyvnQ8HXkXDe8Uy91BVguYI8sGI8jNRjxCnkfJM8/Do+V5ogrjdy6is4vhmi6PoucAy8QZj6h3E55H5D+V97/6VIA5nthNIKYguCLFzdQspHXZuF2X7wk7w1caOduAuQ/A3Qnhk6HlaOTjIGsLxKtvPpqF3Ll85zXhlSftrz4VYA7tfigHfvWcKH5xrp9KBsxe4h0exOcteOf5bn9OACZEfRrRXMb2rnAgcvE4eZ+AuZitI8yOwmwIz/CXdwZHf2xMvgHmhjzOPt2urDLk4vgjyKWFknyAREoMV9skuou/wVyuzJl0pouYuSWUt3Hw8mbems1jM/P/Pi/f4PXiMAW/TA2w5GVcokspS/y5NCF42y/UpZoFFFBAAQUUUEABJy3+B6BFBuObiHkkAAAAAElFTkSuQmCC",
+                "mimeType": "image/png",
+                "sizes": null
+              }
+            ],
+            "annotations": {
+              "title": "Svelte Autofixer",
+              "readOnlyHint": true,
+              "destructiveHint": false,
+              "idempotentHint": null,
+              "openWorldHint": false
+            },
+            "meta": {
+              "server_name": "Svelte"
+            }
+          }
+        ],
+        "resources": [
+          "svelte://cli/overview.md",
+          "svelte://cli/faq.md",
+          "svelte://cli/sv-create.md",
+          "svelte://cli/sv-add.md",
+          "svelte://cli/sv-check.md",
+          "svelte://cli/sv-migrate.md",
+          "svelte://cli/devtools-json.md",
+          "svelte://cli/drizzle.md",
+          "svelte://cli/eslint.md",
+          "svelte://cli/lucia.md",
+          "svelte://cli/mcp.md",
+          "svelte://cli/mdsvex.md",
+          "svelte://cli/paraglide.md",
+          "svelte://cli/playwright.md",
+          "svelte://cli/prettier.md",
+          "svelte://cli/storybook.md",
+          "svelte://cli/sveltekit-adapter.md",
+          "svelte://cli/tailwind.md",
+          "svelte://cli/vitest.md",
+          "svelte://kit/introduction.md",
+          "svelte://kit/creating-a-project.md",
+          "svelte://kit/project-types.md",
+          "svelte://kit/project-structure.md",
+          "svelte://kit/web-standards.md",
+          "svelte://kit/routing.md",
+          "svelte://kit/load.md",
+          "svelte://kit/form-actions.md",
+          "svelte://kit/page-options.md",
+          "svelte://kit/state-management.md",
+          "svelte://kit/remote-functions.md",
+          "svelte://kit/building-your-app.md",
+          "svelte://kit/adapters.md",
+          "svelte://kit/adapter-auto.md",
+          "svelte://kit/adapter-node.md",
+          "svelte://kit/adapter-static.md",
+          "svelte://kit/single-page-apps.md",
+          "svelte://kit/adapter-cloudflare.md",
+          "svelte://kit/adapter-cloudflare-workers.md",
+          "svelte://kit/adapter-netlify.md",
+          "svelte://kit/adapter-vercel.md",
+          "svelte://kit/writing-adapters.md",
+          "svelte://kit/advanced-routing.md",
+          "svelte://kit/hooks.md",
+          "svelte://kit/errors.md",
+          "svelte://kit/link-options.md",
+          "svelte://kit/service-workers.md",
+          "svelte://kit/server-only-modules.md",
+          "svelte://kit/snapshots.md",
+          "svelte://kit/shallow-routing.md",
+          "svelte://kit/observability.md",
+          "svelte://kit/packaging.md",
+          "svelte://kit/auth.md",
+          "svelte://kit/performance.md",
+          "svelte://kit/icons.md",
+          "svelte://kit/images.md",
+          "svelte://kit/accessibility.md",
+          "svelte://kit/seo.md",
+          "svelte://kit/faq.md",
+          "svelte://kit/integrations.md",
+          "svelte://kit/debugging.md",
+          "svelte://kit/migrating-to-sveltekit-2.md",
+          "svelte://kit/migrating.md",
+          "svelte://kit/additional-resources.md",
+          "svelte://kit/glossary.md",
+          "svelte://kit/@sveltejs-kit.md",
+          "svelte://kit/@sveltejs-kit-hooks.md",
+          "svelte://kit/@sveltejs-kit-node-polyfills.md",
+          "svelte://kit/@sveltejs-kit-node.md",
+          "svelte://kit/@sveltejs-kit-vite.md",
+          "svelte://kit/$app-environment.md",
+          "svelte://kit/$app-forms.md",
+          "svelte://kit/$app-navigation.md",
+          "svelte://kit/$app-paths.md",
+          "svelte://kit/$app-server.md",
+          "svelte://kit/$app-state.md",
+          "svelte://kit/$app-stores.md",
+          "svelte://kit/$app-types.md",
+          "svelte://kit/$env-dynamic-private.md",
+          "svelte://kit/$env-dynamic-public.md",
+          "svelte://kit/$env-static-private.md",
+          "svelte://kit/$env-static-public.md",
+          "svelte://kit/$lib.md",
+          "svelte://kit/$service-worker.md",
+          "svelte://kit/configuration.md",
+          "svelte://kit/cli.md",
+          "svelte://kit/types.md",
+          "svelte://mcp/overview.md",
+          "svelte://mcp/local-setup.md",
+          "svelte://mcp/remote-setup.md",
+          "svelte://mcp/tools.md",
+          "svelte://mcp/resources.md",
+          "svelte://mcp/prompts.md",
+          "svelte://svelte/overview.md",
+          "svelte://svelte/getting-started.md",
+          "svelte://svelte/svelte-files.md",
+          "svelte://svelte/svelte-js-files.md",
+          "svelte://svelte/what-are-runes.md",
+          "svelte://svelte/$state.md",
+          "svelte://svelte/$derived.md",
+          "svelte://svelte/$effect.md",
+          "svelte://svelte/$props.md",
+          "svelte://svelte/$bindable.md",
+          "svelte://svelte/$inspect.md",
+          "svelte://svelte/$host.md",
+          "svelte://svelte/basic-markup.md",
+          "svelte://svelte/if.md",
+          "svelte://svelte/each.md",
+          "svelte://svelte/key.md",
+          "svelte://svelte/await.md",
+          "svelte://svelte/snippet.md",
+          "svelte://svelte/@render.md",
+          "svelte://svelte/@html.md",
+          "svelte://svelte/@attach.md",
+          "svelte://svelte/@const.md",
+          "svelte://svelte/@debug.md",
+          "svelte://svelte/bind.md",
+          "svelte://svelte/use.md",
+          "svelte://svelte/transition.md",
+          "svelte://svelte/in-and-out.md",
+          "svelte://svelte/animate.md",
+          "svelte://svelte/style.md",
+          "svelte://svelte/class.md",
+          "svelte://svelte/await-expressions.md",
+          "svelte://svelte/scoped-styles.md",
+          "svelte://svelte/global-styles.md",
+          "svelte://svelte/custom-properties.md",
+          "svelte://svelte/nested-style-elements.md",
+          "svelte://svelte/svelte-boundary.md",
+          "svelte://svelte/svelte-window.md",
+          "svelte://svelte/svelte-document.md",
+          "svelte://svelte/svelte-body.md",
+          "svelte://svelte/svelte-head.md",
+          "svelte://svelte/svelte-element.md",
+          "svelte://svelte/svelte-options.md",
+          "svelte://svelte/stores.md",
+          "svelte://svelte/context.md",
+          "svelte://svelte/lifecycle-hooks.md",
+          "svelte://svelte/imperative-component-api.md",
+          "svelte://svelte/testing.md",
+          "svelte://svelte/typescript.md",
+          "svelte://svelte/custom-elements.md",
+          "svelte://svelte/v4-migration-guide.md",
+          "svelte://svelte/v5-migration-guide.md",
+          "svelte://svelte/faq.md",
+          "svelte://svelte/svelte.md",
+          "svelte://svelte/svelte-action.md",
+          "svelte://svelte/svelte-animate.md",
+          "svelte://svelte/svelte-attachments.md",
+          "svelte://svelte/svelte-compiler.md",
+          "svelte://svelte/svelte-easing.md",
+          "svelte://svelte/svelte-events.md",
+          "svelte://svelte/svelte-legacy.md",
+          "svelte://svelte/svelte-motion.md",
+          "svelte://svelte/svelte-reactivity-window.md",
+          "svelte://svelte/svelte-reactivity.md",
+          "svelte://svelte/svelte-server.md",
+          "svelte://svelte/svelte-store.md",
+          "svelte://svelte/svelte-transition.md",
+          "svelte://svelte/compiler-errors.md",
+          "svelte://svelte/compiler-warnings.md",
+          "svelte://svelte/runtime-errors.md",
+          "svelte://svelte/runtime-warnings.md",
+          "svelte://svelte/legacy-overview.md",
+          "svelte://svelte/legacy-let.md",
+          "svelte://svelte/legacy-reactive-assignments.md",
+          "svelte://svelte/legacy-export-let.md",
+          "svelte://svelte/legacy-$$props-and-$$restProps.md",
+          "svelte://svelte/legacy-on.md",
+          "svelte://svelte/legacy-slots.md",
+          "svelte://svelte/legacy-$$slots.md",
+          "svelte://svelte/legacy-svelte-fragment.md",
+          "svelte://svelte/legacy-svelte-component.md",
+          "svelte://svelte/legacy-svelte-self.md",
+          "svelte://svelte/legacy-component-api.md"
+        ],
+        "resource_details": [
+          {
+            "name": "cli/overview",
+            "title": "Overview",
+            "uri": "svelte://cli/overview.md",
+            "description": "project setup, creating new svelte apps, scaffolding, cli tools, initializing projects",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "cli/faq",
+            "title": "Frequently asked questions",
+            "uri": "svelte://cli/faq.md",
+            "description": "project setup, initializing new svelte projects, troubleshooting cli installation, package manager configuration",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "cli/sv-create",
+            "title": "sv create",
+            "uri": "svelte://cli/sv-create.md",
+            "description": "project setup, starting new sveltekit app, initializing project, creating from playground, choosing project template",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "cli/sv-add",
+            "title": "sv add",
+            "uri": "svelte://cli/sv-add.md",
+            "description": "project setup, adding features to existing projects, integrating tools, testing setup, styling setup, authentication, database setup, deployment adapters",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "cli/sv-check",
+            "title": "sv check",
+            "uri": "svelte://cli/sv-check.md",
+            "description": "code quality, ci/cd pipelines, error checking, typescript projects, pre-commit hooks, finding unused css, accessibility auditing, production builds",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "cli/sv-migrate",
+            "title": "sv migrate",
+            "uri": "svelte://cli/sv-migrate.md",
+            "description": "migration, upgrading svelte versions, upgrading sveltekit versions, modernizing codebase, svelte 3 to 4, svelte 4 to 5, sveltekit 1 to 2, adopting runes, refactoring deprecated apis",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "cli/devtools-json",
+            "title": "devtools-json",
+            "uri": "svelte://cli/devtools-json.md",
+            "description": "development setup, chrome devtools integration, browser-based editing, local development workflow, debugging setup",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "cli/drizzle",
+            "title": "drizzle",
+            "uri": "svelte://cli/drizzle.md",
+            "description": "database setup, sql queries, orm integration, data modeling, postgresql, mysql, sqlite, server-side data access, database migrations, type-safe queries",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "cli/eslint",
+            "title": "eslint",
+            "uri": "svelte://cli/eslint.md",
+            "description": "code quality, linting, error detection, project setup, code standards, team collaboration, typescript projects",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "cli/lucia",
+            "title": "lucia",
+            "uri": "svelte://cli/lucia.md",
+            "description": "authentication, login systems, user management, registration pages, session handling, auth setup",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "cli/mcp",
+            "title": "mcp",
+            "uri": "svelte://cli/mcp.md",
+            "description": "use title and path to estimate use case",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "cli/mdsvex",
+            "title": "mdsvex",
+            "uri": "svelte://cli/mdsvex.md",
+            "description": "blog, content sites, markdown rendering, documentation sites, technical writing, cms integration, article pages",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "cli/paraglide",
+            "title": "paraglide",
+            "uri": "svelte://cli/paraglide.md",
+            "description": "internationalization, multi-language sites, i18n, translation, localization, language switching, global apps, multilingual content",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "cli/playwright",
+            "title": "playwright",
+            "uri": "svelte://cli/playwright.md",
+            "description": "browser testing, e2e testing, integration testing, test automation, quality assurance, ci/cd pipelines, testing user flows",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "cli/prettier",
+            "title": "prettier",
+            "uri": "svelte://cli/prettier.md",
+            "description": "code formatting, project setup, code style consistency, team collaboration, linting configuration",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "cli/storybook",
+            "title": "storybook",
+            "uri": "svelte://cli/storybook.md",
+            "description": "component development, design systems, ui library, isolated component testing, documentation, visual testing, component showcase",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "cli/sveltekit-adapter",
+            "title": "sveltekit-adapter",
+            "uri": "svelte://cli/sveltekit-adapter.md",
+            "description": "deployment, production builds, hosting setup, choosing deployment platform, configuring adapters, static site generation, node server, vercel, cloudflare, netlify",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "cli/tailwind",
+            "title": "tailwindcss",
+            "uri": "svelte://cli/tailwind.md",
+            "description": "project setup, styling, css framework, rapid prototyping, utility-first css, design systems, responsive design, adding tailwind to svelte",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "cli/vitest",
+            "title": "vitest",
+            "uri": "svelte://cli/vitest.md",
+            "description": "testing, unit tests, component testing, test setup, quality assurance, ci/cd pipelines, test-driven development",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/introduction",
+            "title": "Introduction",
+            "uri": "svelte://kit/introduction.md",
+            "description": "learning sveltekit, project setup, understanding framework basics, choosing between svelte and sveltekit, getting started with full-stack apps",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/creating-a-project",
+            "title": "Creating a project",
+            "uri": "svelte://kit/creating-a-project.md",
+            "description": "project setup, starting new sveltekit app, initial development environment, first-time sveltekit users, scaffolding projects",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/project-types",
+            "title": "Project types",
+            "uri": "svelte://kit/project-types.md",
+            "description": "deployment, project setup, choosing adapters, ssg, spa, ssr, serverless, mobile apps, desktop apps, pwa, offline apps, browser extensions, separate backend, docker containers",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/project-structure",
+            "title": "Project structure",
+            "uri": "svelte://kit/project-structure.md",
+            "description": "project setup, understanding file structure, organizing code, starting new project, learning sveltekit basics",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/web-standards",
+            "title": "Web standards",
+            "uri": "svelte://kit/web-standards.md",
+            "description": "always, any sveltekit project, data fetching, forms, api routes, server-side rendering, deployment to various platforms",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/routing",
+            "title": "Routing",
+            "uri": "svelte://kit/routing.md",
+            "description": "routing, navigation, multi-page apps, project setup, file structure, api endpoints, data loading, layouts, error pages, always",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/load",
+            "title": "Loading data",
+            "uri": "svelte://kit/load.md",
+            "description": "data fetching, api calls, database queries, dynamic routes, page initialization, loading states, authentication checks, ssr data, form data, content rendering",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/form-actions",
+            "title": "Form actions",
+            "uri": "svelte://kit/form-actions.md",
+            "description": "forms, user input, data submission, authentication, login systems, user registration, progressive enhancement, validation errors",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/page-options",
+            "title": "Page options",
+            "uri": "svelte://kit/page-options.md",
+            "description": "prerendering static sites, ssr configuration, spa setup, client-side rendering control, url trailing slash handling, adapter deployment config, build optimization",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/state-management",
+            "title": "State management",
+            "uri": "svelte://kit/state-management.md",
+            "description": "sveltekit, server-side rendering, ssr, state management, authentication, data persistence, load functions, context api, navigation, component lifecycle",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/remote-functions",
+            "title": "Remote functions",
+            "uri": "svelte://kit/remote-functions.md",
+            "description": "data fetching, server-side logic, database queries, type-safe client-server communication, forms, user input, mutations, authentication, crud operations, optimistic updates",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/building-your-app",
+            "title": "Building your app",
+            "uri": "svelte://kit/building-your-app.md",
+            "description": "production builds, deployment preparation, build process optimization, adapter configuration, preview before deployment",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/adapters",
+            "title": "Adapters",
+            "uri": "svelte://kit/adapters.md",
+            "description": "deployment, production builds, hosting setup, choosing deployment platform, configuring adapters",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/adapter-auto",
+            "title": "Zero-config deployments",
+            "uri": "svelte://kit/adapter-auto.md",
+            "description": "deployment, production builds, hosting setup, choosing deployment platform, ci/cd configuration",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/adapter-node",
+            "title": "Node servers",
+            "uri": "svelte://kit/adapter-node.md",
+            "description": "deployment, production builds, node.js hosting, custom server setup, environment configuration, reverse proxy setup, docker deployment, systemd services",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/adapter-static",
+            "title": "Static site generation",
+            "uri": "svelte://kit/adapter-static.md",
+            "description": "static site generation, ssg, prerendering, deployment, github pages, spa mode, blogs, documentation sites, marketing sites",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/single-page-apps",
+            "title": "Single-page apps",
+            "uri": "svelte://kit/single-page-apps.md",
+            "description": "spa mode, single-page apps, client-only rendering, static hosting, mobile app wrappers, no server-side logic, adapter-static setup, fallback pages",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/adapter-cloudflare",
+            "title": "Cloudflare",
+            "uri": "svelte://kit/adapter-cloudflare.md",
+            "description": "deployment, cloudflare workers, cloudflare pages, hosting setup, production builds, serverless deployment, edge computing",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/adapter-cloudflare-workers",
+            "title": "Cloudflare Workers",
+            "uri": "svelte://kit/adapter-cloudflare-workers.md",
+            "description": "deploying to cloudflare workers, cloudflare workers sites deployment, legacy cloudflare adapter, wrangler configuration, cloudflare platform bindings",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/adapter-netlify",
+            "title": "Netlify",
+            "uri": "svelte://kit/adapter-netlify.md",
+            "description": "deployment, netlify hosting, production builds, serverless functions, edge functions, static site hosting",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/adapter-vercel",
+            "title": "Vercel",
+            "uri": "svelte://kit/adapter-vercel.md",
+            "description": "deployment, vercel hosting, production builds, serverless functions, edge functions, isr, image optimization, environment variables",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/writing-adapters",
+            "title": "Writing adapters",
+            "uri": "svelte://kit/writing-adapters.md",
+            "description": "custom deployment, building adapters, unsupported platforms, adapter development, custom hosting environments",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/advanced-routing",
+            "title": "Advanced routing",
+            "uri": "svelte://kit/advanced-routing.md",
+            "description": "advanced routing, dynamic routes, file viewers, nested paths, custom 404 pages, url validation, route parameters, multi-level navigation",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/hooks",
+            "title": "Hooks",
+            "uri": "svelte://kit/hooks.md",
+            "description": "authentication, logging, error tracking, request interception, api proxying, custom routing, internationalization, database initialization, middleware logic, session management",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/errors",
+            "title": "Errors",
+            "uri": "svelte://kit/errors.md",
+            "description": "error handling, custom error pages, 404 pages, api error responses, production error logging, error tracking, type-safe errors",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/link-options",
+            "title": "Link options",
+            "uri": "svelte://kit/link-options.md",
+            "description": "routing, navigation, multi-page apps, performance optimization, link preloading, forms with get method, search functionality, focus management, scroll behavior",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/service-workers",
+            "title": "Service workers",
+            "uri": "svelte://kit/service-workers.md",
+            "description": "offline support, pwa, caching strategies, performance optimization, precaching assets, network resilience, progressive web apps",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/server-only-modules",
+            "title": "Server-only modules",
+            "uri": "svelte://kit/server-only-modules.md",
+            "description": "api keys, environment variables, sensitive data protection, backend security, preventing data leaks, server-side code isolation",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/snapshots",
+            "title": "Snapshots",
+            "uri": "svelte://kit/snapshots.md",
+            "description": "forms, user input, preserving form data, multi-step forms, navigation state, preventing data loss, textarea content, input fields, comment systems, surveys",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/shallow-routing",
+            "title": "Shallow routing",
+            "uri": "svelte://kit/shallow-routing.md",
+            "description": "modals, dialogs, image galleries, overlays, history-driven ui, mobile-friendly navigation, photo viewers, lightboxes, drawer menus",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/observability",
+            "title": "Observability",
+            "uri": "svelte://kit/observability.md",
+            "description": "performance monitoring, debugging, observability, tracing requests, production diagnostics, analyzing slow requests, finding bottlenecks, monitoring server-side operations",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/packaging",
+            "title": "Packaging",
+            "uri": "svelte://kit/packaging.md",
+            "description": "building component libraries, publishing npm packages, creating reusable svelte components, library development, package distribution",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/auth",
+            "title": "Auth",
+            "uri": "svelte://kit/auth.md",
+            "description": "authentication, login systems, user management, session handling, jwt tokens, protected routes, user credentials, authorization checks",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/performance",
+            "title": "Performance",
+            "uri": "svelte://kit/performance.md",
+            "description": "performance optimization, slow loading pages, production deployment, debugging performance issues, reducing bundle size, improving load times",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/icons",
+            "title": "Icons",
+            "uri": "svelte://kit/icons.md",
+            "description": "icons, ui components, styling, css frameworks, tailwind, unocss, performance optimization, dependency management",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/images",
+            "title": "Images",
+            "uri": "svelte://kit/images.md",
+            "description": "image optimization, responsive images, performance, hero images, product photos, galleries, cms integration, cdn setup, asset management",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/accessibility",
+            "title": "Accessibility",
+            "uri": "svelte://kit/accessibility.md",
+            "description": "always, any sveltekit project, screen reader support, keyboard navigation, multi-page apps, client-side routing, internationalization, multilingual sites",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/seo",
+            "title": "SEO",
+            "uri": "svelte://kit/seo.md",
+            "description": "seo optimization, search engine ranking, content sites, blogs, marketing sites, public-facing apps, sitemaps, amp pages, meta tags, performance optimization",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/faq",
+            "title": "Frequently asked questions",
+            "uri": "svelte://kit/faq.md",
+            "description": "troubleshooting package imports, library compatibility issues, client-side code execution, external api integration, middleware setup, database configuration, view transitions, yarn configuration",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/integrations",
+            "title": "Integrations",
+            "uri": "svelte://kit/integrations.md",
+            "description": "project setup, css preprocessors, postcss, scss, sass, less, stylus, typescript setup, adding integrations, tailwind, testing, auth, linting, formatting",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/debugging",
+            "title": "Breakpoint Debugging",
+            "uri": "svelte://kit/debugging.md",
+            "description": "debugging, breakpoints, development workflow, troubleshooting issues, vscode setup, ide configuration, inspecting code execution",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/migrating-to-sveltekit-2",
+            "title": "Migrating to SvelteKit v2",
+            "uri": "svelte://kit/migrating-to-sveltekit-2.md",
+            "description": "migration, upgrading from sveltekit 1 to 2, breaking changes, version updates",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/migrating",
+            "title": "Migrating from Sapper",
+            "uri": "svelte://kit/migrating.md",
+            "description": "migrating from sapper, upgrading legacy projects, sapper to sveltekit conversion, project modernization",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/additional-resources",
+            "title": "Additional resources",
+            "uri": "svelte://kit/additional-resources.md",
+            "description": "troubleshooting, getting help, finding examples, learning sveltekit, project templates, common issues, community support",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/glossary",
+            "title": "Glossary",
+            "uri": "svelte://kit/glossary.md",
+            "description": "rendering strategies, performance optimization, deployment configuration, seo requirements, static sites, spas, server-side rendering, prerendering, edge deployment, pwa development",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/@sveltejs-kit",
+            "title": "@sveltejs/kit",
+            "uri": "svelte://kit/@sveltejs-kit.md",
+            "description": "forms, form actions, server-side validation, form submission, error handling, redirects, json responses, http errors, server utilities",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/@sveltejs-kit-hooks",
+            "title": "@sveltejs/kit/hooks",
+            "uri": "svelte://kit/@sveltejs-kit-hooks.md",
+            "description": "middleware, request processing, authentication chains, logging, multiple hooks, request/response transformation",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/@sveltejs-kit-node-polyfills",
+            "title": "@sveltejs/kit/node/polyfills",
+            "uri": "svelte://kit/@sveltejs-kit-node-polyfills.md",
+            "description": "node.js environments, custom servers, non-standard runtimes, ssr setup, web api compatibility, polyfill requirements",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/@sveltejs-kit-node",
+            "title": "@sveltejs/kit/node",
+            "uri": "svelte://kit/@sveltejs-kit-node.md",
+            "description": "node.js adapter, custom server setup, http integration, streaming files, node deployment, server-side rendering with node",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/@sveltejs-kit-vite",
+            "title": "@sveltejs/kit/vite",
+            "uri": "svelte://kit/@sveltejs-kit-vite.md",
+            "description": "project setup, vite configuration, initial sveltekit setup, build tooling",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/$app-environment",
+            "title": "$app/environment",
+            "uri": "svelte://kit/$app-environment.md",
+            "description": "always, conditional logic, client-side code, server-side code, build-time logic, prerendering, development vs production, environment detection",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/$app-forms",
+            "title": "$app/forms",
+            "uri": "svelte://kit/$app-forms.md",
+            "description": "forms, user input, data submission, progressive enhancement, custom form handling, form validation",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/$app-navigation",
+            "title": "$app/navigation",
+            "uri": "svelte://kit/$app-navigation.md",
+            "description": "routing, navigation, multi-page apps, programmatic navigation, data reloading, preloading, shallow routing, navigation lifecycle, scroll handling, view transitions",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/$app-paths",
+            "title": "$app/paths",
+            "uri": "svelte://kit/$app-paths.md",
+            "description": "static assets, images, fonts, public files, base path configuration, subdirectory deployment, cdn setup, asset urls, links, navigation",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/$app-server",
+            "title": "$app/server",
+            "uri": "svelte://kit/$app-server.md",
+            "description": "remote functions, server-side logic, data fetching, form handling, api endpoints, client-server communication, prerendering, file reading, batch queries",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/$app-state",
+            "title": "$app/state",
+            "uri": "svelte://kit/$app-state.md",
+            "description": "routing, navigation, multi-page apps, loading states, url parameters, form handling, error states, version updates, page metadata, shallow routing",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/$app-stores",
+            "title": "$app/stores",
+            "uri": "svelte://kit/$app-stores.md",
+            "description": "legacy projects, sveltekit pre-2.12, migration from stores to runes, maintaining older codebases, accessing page data, navigation state, app version updates",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/$app-types",
+            "title": "$app/types",
+            "uri": "svelte://kit/$app-types.md",
+            "description": "routing, navigation, type safety, route parameters, dynamic routes, link generation, pathname validation, multi-page apps",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/$env-dynamic-private",
+            "title": "$env/dynamic/private",
+            "uri": "svelte://kit/$env-dynamic-private.md",
+            "description": "api keys, secrets management, server-side config, environment variables, backend logic, deployment-specific settings, private data handling",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/$env-dynamic-public",
+            "title": "$env/dynamic/public",
+            "uri": "svelte://kit/$env-dynamic-public.md",
+            "description": "environment variables, client-side config, runtime configuration, public api keys, deployment-specific settings, multi-environment apps",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/$env-static-private",
+            "title": "$env/static/private",
+            "uri": "svelte://kit/$env-static-private.md",
+            "description": "server-side api keys, backend secrets, database credentials, private configuration, build-time optimization, server endpoints, authentication tokens",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/$env-static-public",
+            "title": "$env/static/public",
+            "uri": "svelte://kit/$env-static-public.md",
+            "description": "environment variables, public config, client-side data, api endpoints, build-time configuration, public constants",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/$lib",
+            "title": "$lib",
+            "uri": "svelte://kit/$lib.md",
+            "description": "project setup, component organization, importing shared components, reusable ui elements, code structure",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/$service-worker",
+            "title": "$service-worker",
+            "uri": "svelte://kit/$service-worker.md",
+            "description": "offline support, pwa, service workers, caching strategies, progressive web apps, offline-first apps",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/configuration",
+            "title": "Configuration",
+            "uri": "svelte://kit/configuration.md",
+            "description": "project setup, configuration, adapters, deployment, build settings, environment variables, routing customization, prerendering, csp security, csrf protection, path configuration, typescript setup",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/cli",
+            "title": "Command Line Interface",
+            "uri": "svelte://kit/cli.md",
+            "description": "project setup, typescript configuration, generated types, ./$types imports, initial project configuration",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "kit/types",
+            "title": "Types",
+            "uri": "svelte://kit/types.md",
+            "description": "typescript, type safety, route parameters, api endpoints, load functions, form actions, generated types, jsconfig setup",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "mcp/overview",
+            "title": "Overview",
+            "uri": "svelte://mcp/overview.md",
+            "description": "use title and path to estimate use case",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "mcp/local-setup",
+            "title": "Local setup",
+            "uri": "svelte://mcp/local-setup.md",
+            "description": "use title and path to estimate use case",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "mcp/remote-setup",
+            "title": "Remote setup",
+            "uri": "svelte://mcp/remote-setup.md",
+            "description": "use title and path to estimate use case",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "mcp/tools",
+            "title": "Tools",
+            "uri": "svelte://mcp/tools.md",
+            "description": "use title and path to estimate use case",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "mcp/resources",
+            "title": "Resources",
+            "uri": "svelte://mcp/resources.md",
+            "description": "use title and path to estimate use case",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "mcp/prompts",
+            "title": "Prompts",
+            "uri": "svelte://mcp/prompts.md",
+            "description": "use title and path to estimate use case",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/overview",
+            "title": "Overview",
+            "uri": "svelte://svelte/overview.md",
+            "description": "always, any svelte project, getting started, learning svelte, introduction, project setup, understanding framework basics",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/getting-started",
+            "title": "Getting started",
+            "uri": "svelte://svelte/getting-started.md",
+            "description": "project setup, starting new svelte project, initial installation, choosing between sveltekit and vite, editor configuration",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte-files",
+            "title": ".svelte files",
+            "uri": "svelte://svelte/svelte-files.md",
+            "description": "always, any svelte project, component creation, project setup, learning svelte basics",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte-js-files",
+            "title": ".svelte.js and .svelte.ts files",
+            "uri": "svelte://svelte/svelte-js-files.md",
+            "description": "shared reactive state, reusable reactive logic, state management across components, global stores, custom reactive utilities",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/what-are-runes",
+            "title": "What are runes?",
+            "uri": "svelte://svelte/what-are-runes.md",
+            "description": "always, any svelte 5 project, understanding core syntax, learning svelte 5, migration from svelte 4",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/$state",
+            "title": "$state",
+            "uri": "svelte://svelte/$state.md",
+            "description": "always, any svelte project, core reactivity, state management, counters, forms, todo apps, interactive ui, data updates, class-based components",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/$derived",
+            "title": "$derived",
+            "uri": "svelte://svelte/$derived.md",
+            "description": "always, any svelte project, computed values, reactive calculations, derived data, transforming state, dependent values",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/$effect",
+            "title": "$effect",
+            "uri": "svelte://svelte/$effect.md",
+            "description": "canvas drawing, third-party library integration, dom manipulation, side effects, intervals, timers, network requests, analytics tracking",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/$props",
+            "title": "$props",
+            "uri": "svelte://svelte/$props.md",
+            "description": "always, any svelte project, passing data to components, component communication, reusable components, component props",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/$bindable",
+            "title": "$bindable",
+            "uri": "svelte://svelte/$bindable.md",
+            "description": "forms, user input, two-way data binding, custom input components, parent-child communication, reusable form fields",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/$inspect",
+            "title": "$inspect",
+            "uri": "svelte://svelte/$inspect.md",
+            "description": "debugging, development, tracking state changes, reactive state monitoring, troubleshooting reactivity issues",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/$host",
+            "title": "$host",
+            "uri": "svelte://svelte/$host.md",
+            "description": "custom elements, web components, dispatching custom events, component library, framework-agnostic components",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/basic-markup",
+            "title": "Basic markup",
+            "uri": "svelte://svelte/basic-markup.md",
+            "description": "always, any svelte project, basic markup, html templating, component structure, attributes, events, props, text rendering",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/if",
+            "title": "{#if ...}",
+            "uri": "svelte://svelte/if.md",
+            "description": "always, conditional rendering, showing/hiding content, dynamic ui, user permissions, loading states, error handling, form validation",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/each",
+            "title": "{#each ...}",
+            "uri": "svelte://svelte/each.md",
+            "description": "always, lists, arrays, iteration, product listings, todos, tables, grids, dynamic content, shopping carts, user lists, comments, feeds",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/key",
+            "title": "{#key ...}",
+            "uri": "svelte://svelte/key.md",
+            "description": "animations, transitions, component reinitialization, forcing component remount, value-based ui updates, resetting component state",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/await",
+            "title": "{#await ...}",
+            "uri": "svelte://svelte/await.md",
+            "description": "async data fetching, api calls, loading states, promises, error handling, lazy loading components, dynamic imports",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/snippet",
+            "title": "{#snippet ...}",
+            "uri": "svelte://svelte/snippet.md",
+            "description": "reusable markup, component composition, passing content to components, table rows, list items, conditional rendering, reducing duplication",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/@render",
+            "title": "{@render ...}",
+            "uri": "svelte://svelte/@render.md",
+            "description": "reusable ui patterns, component composition, conditional rendering, fallback content, layout components, slot alternatives, template reuse",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/@html",
+            "title": "{@html ...}",
+            "uri": "svelte://svelte/@html.md",
+            "description": "rendering html strings, cms content, rich text editors, markdown to html, blog posts, wysiwyg output, sanitized html injection, dynamic html content",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/@attach",
+            "title": "{@attach ...}",
+            "uri": "svelte://svelte/@attach.md",
+            "description": "tooltips, popovers, dom manipulation, third-party libraries, canvas drawing, element lifecycle, interactive ui, custom directives, wrapper components",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/@const",
+            "title": "{@const ...}",
+            "uri": "svelte://svelte/@const.md",
+            "description": "computed values in loops, derived calculations in blocks, local variables in each iterations, complex list rendering",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/@debug",
+            "title": "{@debug ...}",
+            "uri": "svelte://svelte/@debug.md",
+            "description": "debugging, development, troubleshooting, tracking state changes, monitoring variables, reactive data inspection",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/bind",
+            "title": "bind:",
+            "uri": "svelte://svelte/bind.md",
+            "description": "forms, user input, two-way data binding, interactive ui, media players, file uploads, checkboxes, radio buttons, select dropdowns, contenteditable, dimension tracking",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/use",
+            "title": "use:",
+            "uri": "svelte://svelte/use.md",
+            "description": "custom directives, dom manipulation, third-party library integration, tooltips, click outside, gestures, focus management, element lifecycle hooks",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/transition",
+            "title": "transition:",
+            "uri": "svelte://svelte/transition.md",
+            "description": "animations, interactive ui, modals, dropdowns, notifications, conditional content, show/hide elements, smooth state changes",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/in-and-out",
+            "title": "in: and out:",
+            "uri": "svelte://svelte/in-and-out.md",
+            "description": "animation, transitions, interactive ui, conditional rendering, independent enter/exit effects, modals, tooltips, notifications",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/animate",
+            "title": "animate:",
+            "uri": "svelte://svelte/animate.md",
+            "description": "sortable lists, drag and drop, reorderable items, todo lists, kanban boards, playlist editors, priority queues, animated list reordering",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/style",
+            "title": "style:",
+            "uri": "svelte://svelte/style.md",
+            "description": "dynamic styling, conditional styles, theming, dark mode, responsive design, interactive ui, component styling",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/class",
+            "title": "class",
+            "uri": "svelte://svelte/class.md",
+            "description": "always, conditional styling, dynamic classes, tailwind css, component styling, reusable components, responsive design",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/await-expressions",
+            "title": "await",
+            "uri": "svelte://svelte/await-expressions.md",
+            "description": "async data fetching, loading states, server-side rendering, awaiting promises in components, async validation, concurrent data loading",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/scoped-styles",
+            "title": "Scoped styles",
+            "uri": "svelte://svelte/scoped-styles.md",
+            "description": "always, styling components, scoped css, component-specific styles, preventing style conflicts, animations, keyframes",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/global-styles",
+            "title": "Global styles",
+            "uri": "svelte://svelte/global-styles.md",
+            "description": "global styles, third-party libraries, css resets, animations, styling body/html, overriding component styles, shared keyframes, base styles",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/custom-properties",
+            "title": "Custom properties",
+            "uri": "svelte://svelte/custom-properties.md",
+            "description": "theming, custom styling, reusable components, design systems, dynamic colors, component libraries, ui customization",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/nested-style-elements",
+            "title": "Nested <style> elements",
+            "uri": "svelte://svelte/nested-style-elements.md",
+            "description": "component styling, scoped styles, dynamic styles, conditional styling, nested style tags, custom styling logic",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte-boundary",
+            "title": "<svelte:boundary>",
+            "uri": "svelte://svelte/svelte-boundary.md",
+            "description": "error handling, async data loading, loading states, error recovery, flaky components, error reporting, resilient ui",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte-window",
+            "title": "<svelte:window>",
+            "uri": "svelte://svelte/svelte-window.md",
+            "description": "keyboard shortcuts, scroll tracking, window resize handling, responsive layouts, online/offline detection, viewport dimensions, global event listeners",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte-document",
+            "title": "<svelte:document>",
+            "uri": "svelte://svelte/svelte-document.md",
+            "description": "document events, visibility tracking, fullscreen detection, pointer lock, focus management, document-level interactions",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte-body",
+            "title": "<svelte:body>",
+            "uri": "svelte://svelte/svelte-body.md",
+            "description": "mouse tracking, hover effects, cursor interactions, global body events, drag and drop, custom cursors, interactive backgrounds, body-level actions",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte-head",
+            "title": "<svelte:head>",
+            "uri": "svelte://svelte/svelte-head.md",
+            "description": "seo optimization, page titles, meta tags, social media sharing, dynamic head content, multi-page apps, blog posts, product pages",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte-element",
+            "title": "<svelte:element>",
+            "uri": "svelte://svelte/svelte-element.md",
+            "description": "dynamic content, cms integration, user-generated content, configurable ui, runtime element selection, flexible components",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte-options",
+            "title": "<svelte:options>",
+            "uri": "svelte://svelte/svelte-options.md",
+            "description": "migration, custom elements, web components, legacy mode compatibility, runes mode setup, svg components, mathml components, css injection control",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/stores",
+            "title": "Stores",
+            "uri": "svelte://svelte/stores.md",
+            "description": "shared state, cross-component data, reactive values, async data streams, manual control over updates, rxjs integration, extracting logic",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/context",
+            "title": "Context",
+            "uri": "svelte://svelte/context.md",
+            "description": "shared state, avoiding prop drilling, component communication, theme providers, user context, authentication state, configuration sharing, deeply nested components",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/lifecycle-hooks",
+            "title": "Lifecycle hooks",
+            "uri": "svelte://svelte/lifecycle-hooks.md",
+            "description": "component initialization, cleanup tasks, timers, subscriptions, dom measurements, chat windows, autoscroll features, migration from svelte 4",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/imperative-component-api",
+            "title": "Imperative component API",
+            "uri": "svelte://svelte/imperative-component-api.md",
+            "description": "project setup, client-side rendering, server-side rendering, ssr, hydration, testing, programmatic component creation, tooltips, dynamic mounting",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/testing",
+            "title": "Testing",
+            "uri": "svelte://svelte/testing.md",
+            "description": "testing, quality assurance, unit tests, integration tests, component tests, e2e tests, vitest setup, playwright setup, test automation",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/typescript",
+            "title": "TypeScript",
+            "uri": "svelte://svelte/typescript.md",
+            "description": "typescript setup, type safety, component props typing, generic components, wrapper components, dom type augmentation, project configuration",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/custom-elements",
+            "title": "Custom elements",
+            "uri": "svelte://svelte/custom-elements.md",
+            "description": "web components, custom elements, component library, design system, framework-agnostic components, embedding svelte in non-svelte apps, shadow dom",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/v4-migration-guide",
+            "title": "Svelte 4 migration guide",
+            "uri": "svelte://svelte/v4-migration-guide.md",
+            "description": "upgrading svelte 3 to 4, version migration, updating dependencies, breaking changes, legacy project maintenance",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/v5-migration-guide",
+            "title": "Svelte 5 migration guide",
+            "uri": "svelte://svelte/v5-migration-guide.md",
+            "description": "migrating from svelte 4 to 5, upgrading projects, learning svelte 5 syntax changes, runes migration, event handler updates",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/faq",
+            "title": "Frequently asked questions",
+            "uri": "svelte://svelte/faq.md",
+            "description": "getting started, learning svelte, beginner setup, project initialization, vs code setup, formatting, testing, routing, mobile apps, troubleshooting, community support",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte",
+            "title": "svelte",
+            "uri": "svelte://svelte/svelte.md",
+            "description": "migration from svelte 4 to 5, upgrading legacy code, component lifecycle hooks, context api, mounting components, event dispatchers, typescript component types",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte-action",
+            "title": "svelte/action",
+            "uri": "svelte://svelte/svelte-action.md",
+            "description": "typescript types, actions, use directive, dom manipulation, element lifecycle, custom behaviors, third-party library integration",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte-animate",
+            "title": "svelte/animate",
+            "uri": "svelte://svelte/svelte-animate.md",
+            "description": "animated lists, sortable items, drag and drop, reordering elements, todo lists, kanban boards, playlist management, smooth position transitions",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte-attachments",
+            "title": "svelte/attachments",
+            "uri": "svelte://svelte/svelte-attachments.md",
+            "description": "library development, component libraries, programmatic element manipulation, migrating from actions to attachments, spreading props onto elements",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte-compiler",
+            "title": "svelte/compiler",
+            "uri": "svelte://svelte/svelte-compiler.md",
+            "description": "build tools, custom compilers, ast manipulation, preprocessors, code transformation, migration scripts, syntax analysis, bundler plugins, dev tools",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte-easing",
+            "title": "svelte/easing",
+            "uri": "svelte://svelte/svelte-easing.md",
+            "description": "animations, transitions, custom easing, smooth motion, interactive ui, modals, dropdowns, carousels, page transitions, scroll effects",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte-events",
+            "title": "svelte/events",
+            "uri": "svelte://svelte/svelte-events.md",
+            "description": "window events, document events, global event listeners, event delegation, programmatic event handling, cleanup functions, media queries",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte-legacy",
+            "title": "svelte/legacy",
+            "uri": "svelte://svelte/svelte-legacy.md",
+            "description": "migration from svelte 4 to svelte 5, upgrading legacy code, event modifiers, class components, imperative component instantiation",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte-motion",
+            "title": "svelte/motion",
+            "uri": "svelte://svelte/svelte-motion.md",
+            "description": "animation, smooth transitions, interactive ui, sliders, counters, physics-based motion, drag gestures, accessibility, reduced motion",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte-reactivity-window",
+            "title": "svelte/reactivity/window",
+            "uri": "svelte://svelte/svelte-reactivity-window.md",
+            "description": "responsive design, viewport tracking, scroll effects, window resize handling, online/offline detection, zoom level tracking",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte-reactivity",
+            "title": "svelte/reactivity",
+            "uri": "svelte://svelte/svelte-reactivity.md",
+            "description": "reactive data structures, state management with maps/sets, game boards, selection tracking, url manipulation, query params, real-time clocks, media queries, responsive design",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte-server",
+            "title": "svelte/server",
+            "uri": "svelte://svelte/svelte-server.md",
+            "description": "server-side rendering, ssr, static site generation, seo optimization, initial page load, pre-rendering, node.js server, custom server setup",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte-store",
+            "title": "svelte/store",
+            "uri": "svelte://svelte/svelte-store.md",
+            "description": "state management, shared data, reactive stores, cross-component communication, global state, computed values, data synchronization, legacy svelte projects",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/svelte-transition",
+            "title": "svelte/transition",
+            "uri": "svelte://svelte/svelte-transition.md",
+            "description": "animations, transitions, interactive ui, modals, dropdowns, tooltips, notifications, svg animations, list animations, page transitions",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/compiler-errors",
+            "title": "Compiler errors",
+            "uri": "svelte://svelte/compiler-errors.md",
+            "description": "animation, transitions, keyed each blocks, list animations",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/compiler-warnings",
+            "title": "Compiler warnings",
+            "uri": "svelte://svelte/compiler-warnings.md",
+            "description": "accessibility, a11y compliance, wcag standards, screen readers, keyboard navigation, aria attributes, semantic html, interactive elements",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/runtime-errors",
+            "title": "Runtime errors",
+            "uri": "svelte://svelte/runtime-errors.md",
+            "description": "debugging errors, error handling, troubleshooting runtime issues, migration to svelte 5, component binding, effects and reactivity",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/runtime-warnings",
+            "title": "Runtime warnings",
+            "uri": "svelte://svelte/runtime-warnings.md",
+            "description": "debugging state proxies, console logging reactive values, inspecting state changes, development troubleshooting",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/legacy-overview",
+            "title": "Overview",
+            "uri": "svelte://svelte/legacy-overview.md",
+            "description": "migrating from svelte 3/4 to svelte 5, maintaining legacy components, understanding deprecated features, gradual upgrade process",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/legacy-let",
+            "title": "Reactive let/var declarations",
+            "uri": "svelte://svelte/legacy-let.md",
+            "description": "migration, legacy svelte projects, upgrading from svelte 4, understanding old reactivity, maintaining existing code, learning runes differences",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/legacy-reactive-assignments",
+            "title": "Reactive $: statements",
+            "uri": "svelte://svelte/legacy-reactive-assignments.md",
+            "description": "legacy mode, migration from svelte 4, reactive statements, computed values, derived state, side effects",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/legacy-export-let",
+            "title": "export let",
+            "uri": "svelte://svelte/legacy-export-let.md",
+            "description": "legacy mode, migration from svelte 4, maintaining older projects, component props without runes, exporting component methods, renaming reserved word props",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/legacy-$$props-and-$$restProps",
+            "title": "$$props and $$restProps",
+            "uri": "svelte://svelte/legacy-$$props-and-$$restProps.md",
+            "description": "legacy mode migration, component wrappers, prop forwarding, button components, reusable ui components, spreading props to child elements",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/legacy-on",
+            "title": "on:",
+            "uri": "svelte://svelte/legacy-on.md",
+            "description": "legacy mode, event handling, button clicks, forms, user interactions, component communication, event forwarding, event modifiers",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/legacy-slots",
+            "title": "<slot>",
+            "uri": "svelte://svelte/legacy-slots.md",
+            "description": "legacy mode, migrating from svelte 4, component composition, reusable components, passing content to components, modals, layouts, wrappers",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/legacy-$$slots",
+            "title": "$$slots",
+            "uri": "svelte://svelte/legacy-$$slots.md",
+            "description": "legacy mode, conditional slot rendering, optional content sections, checking if slots provided, migrating from legacy to runes",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/legacy-svelte-fragment",
+            "title": "<svelte:fragment>",
+            "uri": "svelte://svelte/legacy-svelte-fragment.md",
+            "description": "named slots, component composition, layout systems, avoiding wrapper divs, legacy svelte projects, slot content organization",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/legacy-svelte-component",
+            "title": "<svelte:component>",
+            "uri": "svelte://svelte/legacy-svelte-component.md",
+            "description": "dynamic components, component switching, conditional rendering, legacy mode migration, tabbed interfaces, multi-step forms",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/legacy-svelte-self",
+            "title": "<svelte:self>",
+            "uri": "svelte://svelte/legacy-svelte-self.md",
+            "description": "recursive components, tree structures, nested menus, file explorers, comment threads, hierarchical data",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          },
+          {
+            "name": "svelte/legacy-component-api",
+            "title": "Imperative component API",
+            "uri": "svelte://svelte/legacy-component-api.md",
+            "description": "migration from svelte 3/4 to 5, legacy component api, maintaining old projects, understanding deprecated patterns",
+            "mimeType": null,
+            "size": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null
+          }
+        ],
+        "resource_templates": [
+          "Svelte-Doc-Section"
+        ],
+        "resource_template_details": [
+          {
+            "name": "Svelte-Doc-Section",
+            "title": "A single documentation section",
+            "uriTemplate": "svelte://{/slug*}.md",
+            "description": "A single documentation section",
+            "mimeType": null,
+            "icons": [
+              {
+                "src": "https://mcp.svelte.dev/logo.svg",
+                "mimeType": "image/svg+xml",
+                "sizes": null
+              },
+              {
+                "src": "https://mcp.svelte.dev/logo.png",
+                "mimeType": "image/png",
+                "sizes": null
+              },
+              {
+                "src": "data:image/png;base64,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",
+                "mimeType": "image/png",
+                "sizes": null
+              }
+            ],
+            "annotations": null,
+            "meta": null
+          }
+        ],
+        "prompts": [
+          "svelte-task"
+        ],
+        "prompt_details": [
+          {
+            "name": "svelte-task",
+            "title": "Svelte-Task-Prompt",
+            "description": "Use this Prompt to ask for any svelte related task. It will automatically instruct the LLM on how to best use the autofixer and how to query for documentation pages.",
+            "arguments": [
+              {
+                "name": "task",
+                "description": "The task to be performed",
+                "required": true
+              }
+            ],
+            "icons": [
+              {
+                "src": "https://mcp.svelte.dev/logo.svg",
+                "mimeType": "image/svg+xml",
+                "sizes": null
+              },
+              {
+                "src": "https://mcp.svelte.dev/logo.png",
+                "mimeType": "image/png",
+                "sizes": null
+              },
+              {
+                "src": "data:image/png;base64,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",
+                "mimeType": "image/png",
+                "sizes": null
+              }
+            ],
+            "meta": null
+          }
+        ],
+        "auto_connect": true,
+        "enabled": true,
+        "vmcps_using_server": [
+          "ac7813c3-13c9-408e-b2e7-ad9a804d5dd3"
+        ]
+      },
+      {
+        "name": "DeepWiki",
+        "transport_type": "sse",
+        "description": "Devin MCP server",
+        "server_id": "13aa717d76a0f4a7",
+        "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://deepwiki.com&size=64",
+        "command": null,
+        "args": [],
+        "env": {},
+        "url": "https://mcp.deepwiki.com/sse",
+        "headers": {},
+        "status": "connected",
+        "last_connected": null,
+        "last_error": null,
+        "capabilities": {
+          "tools": true,
+          "resources": false,
+          "prompts": false
+        },
+        "tools": [
+          "read_wiki_structure",
+          "read_wiki_contents",
+          "ask_question"
+        ],
+        "tool_details": [
+          {
+            "name": "read_wiki_structure",
+            "title": null,
+            "description": "Get a list of documentation topics for a GitHub repository",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "repoName": {
+                  "type": "string",
+                  "description": "GitHub repository: owner/repo (e.g. \"facebook/react\")"
+                }
+              },
+              "required": [
+                "repoName"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "DeepWiki"
+            }
+          },
+          {
+            "name": "read_wiki_contents",
+            "title": null,
+            "description": "View documentation about a GitHub repository",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "repoName": {
+                  "type": "string",
+                  "description": "GitHub repository: owner/repo (e.g. \"facebook/react\")"
+                }
+              },
+              "required": [
+                "repoName"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "DeepWiki"
+            }
+          },
+          {
+            "name": "ask_question",
+            "title": null,
+            "description": "Ask any question about a GitHub repository",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "repoName": {
+                  "type": "string",
+                  "description": "GitHub repository: owner/repo (e.g. \"facebook/react\")"
+                },
+                "question": {
+                  "type": "string",
+                  "description": "The question to ask about the repository"
+                }
+              },
+              "required": [
+                "repoName",
+                "question"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "DeepWiki"
+            }
+          }
+        ],
+        "resources": [],
+        "resource_details": [],
+        "resource_templates": [],
+        "resource_template_details": [],
+        "prompts": [],
+        "prompt_details": [],
+        "auto_connect": true,
+        "enabled": true,
+        "vmcps_using_server": [
+          "ac7813c3-13c9-408e-b2e7-ad9a804d5dd3"
+        ]
+      }
+    ],
+    "selected_tools": {
+      "93f22d36d4620e93": [
+        "get-documentation",
+        "list-sections",
+        "playground-link",
+        "svelte-autofixer"
+      ],
+      "13aa717d76a0f4a7": [
+        "read_wiki_structure",
+        "read_wiki_contents",
+        "ask_question"
+      ]
+    },
+    "selected_prompts": {
+      "93f22d36d4620e93": [
+        "svelte-task"
+      ],
+      "13aa717d76a0f4a7": []
+    },
+    "selected_resources": {
+      "93f22d36d4620e93": [
+        "svelte://cli/overview.md",
+        "svelte://cli/faq.md",
+        "svelte://cli/sv-create.md",
+        "svelte://cli/sv-add.md",
+        "svelte://cli/sv-check.md",
+        "svelte://cli/sv-migrate.md",
+        "svelte://cli/devtools-json.md",
+        "svelte://cli/drizzle.md",
+        "svelte://cli/eslint.md",
+        "svelte://cli/lucia.md",
+        "svelte://cli/mcp.md",
+        "svelte://cli/mdsvex.md",
+        "svelte://cli/paraglide.md",
+        "svelte://cli/playwright.md",
+        "svelte://cli/prettier.md",
+        "svelte://cli/storybook.md",
+        "svelte://cli/sveltekit-adapter.md",
+        "svelte://cli/tailwind.md",
+        "svelte://cli/vitest.md",
+        "svelte://kit/introduction.md",
+        "svelte://kit/creating-a-project.md",
+        "svelte://kit/project-types.md",
+        "svelte://kit/project-structure.md",
+        "svelte://kit/web-standards.md",
+        "svelte://kit/routing.md",
+        "svelte://kit/load.md",
+        "svelte://kit/form-actions.md",
+        "svelte://kit/page-options.md",
+        "svelte://kit/state-management.md",
+        "svelte://kit/remote-functions.md",
+        "svelte://kit/building-your-app.md",
+        "svelte://kit/adapters.md",
+        "svelte://kit/adapter-auto.md",
+        "svelte://kit/adapter-node.md",
+        "svelte://kit/adapter-static.md",
+        "svelte://kit/single-page-apps.md",
+        "svelte://kit/adapter-cloudflare.md",
+        "svelte://kit/adapter-cloudflare-workers.md",
+        "svelte://kit/adapter-netlify.md",
+        "svelte://kit/adapter-vercel.md",
+        "svelte://kit/writing-adapters.md",
+        "svelte://kit/advanced-routing.md",
+        "svelte://kit/hooks.md",
+        "svelte://kit/errors.md",
+        "svelte://kit/link-options.md",
+        "svelte://kit/service-workers.md",
+        "svelte://kit/server-only-modules.md",
+        "svelte://kit/snapshots.md",
+        "svelte://kit/shallow-routing.md",
+        "svelte://kit/observability.md",
+        "svelte://kit/packaging.md",
+        "svelte://kit/auth.md",
+        "svelte://kit/performance.md",
+        "svelte://kit/icons.md",
+        "svelte://kit/images.md",
+        "svelte://kit/accessibility.md",
+        "svelte://kit/seo.md",
+        "svelte://kit/faq.md",
+        "svelte://kit/integrations.md",
+        "svelte://kit/debugging.md",
+        "svelte://kit/migrating-to-sveltekit-2.md",
+        "svelte://kit/migrating.md",
+        "svelte://kit/additional-resources.md",
+        "svelte://kit/glossary.md",
+        "svelte://kit/@sveltejs-kit.md",
+        "svelte://kit/@sveltejs-kit-hooks.md",
+        "svelte://kit/@sveltejs-kit-node-polyfills.md",
+        "svelte://kit/@sveltejs-kit-node.md",
+        "svelte://kit/@sveltejs-kit-vite.md",
+        "svelte://kit/$app-environment.md",
+        "svelte://kit/$app-forms.md",
+        "svelte://kit/$app-navigation.md",
+        "svelte://kit/$app-paths.md",
+        "svelte://kit/$app-server.md",
+        "svelte://kit/$app-state.md",
+        "svelte://kit/$app-stores.md",
+        "svelte://kit/$app-types.md",
+        "svelte://kit/$env-dynamic-private.md",
+        "svelte://kit/$env-dynamic-public.md",
+        "svelte://kit/$env-static-private.md",
+        "svelte://kit/$env-static-public.md",
+        "svelte://kit/$lib.md",
+        "svelte://kit/$service-worker.md",
+        "svelte://kit/configuration.md",
+        "svelte://kit/cli.md",
+        "svelte://kit/types.md",
+        "svelte://mcp/overview.md",
+        "svelte://mcp/local-setup.md",
+        "svelte://mcp/remote-setup.md",
+        "svelte://mcp/tools.md",
+        "svelte://mcp/resources.md",
+        "svelte://mcp/prompts.md",
+        "svelte://svelte/overview.md",
+        "svelte://svelte/getting-started.md",
+        "svelte://svelte/svelte-files.md",
+        "svelte://svelte/svelte-js-files.md",
+        "svelte://svelte/what-are-runes.md",
+        "svelte://svelte/$state.md",
+        "svelte://svelte/$derived.md",
+        "svelte://svelte/$effect.md",
+        "svelte://svelte/$props.md",
+        "svelte://svelte/$bindable.md",
+        "svelte://svelte/$inspect.md",
+        "svelte://svelte/$host.md",
+        "svelte://svelte/basic-markup.md",
+        "svelte://svelte/if.md",
+        "svelte://svelte/each.md",
+        "svelte://svelte/key.md",
+        "svelte://svelte/await.md",
+        "svelte://svelte/snippet.md",
+        "svelte://svelte/@render.md",
+        "svelte://svelte/@html.md",
+        "svelte://svelte/@attach.md",
+        "svelte://svelte/@const.md",
+        "svelte://svelte/@debug.md",
+        "svelte://svelte/bind.md",
+        "svelte://svelte/use.md",
+        "svelte://svelte/transition.md",
+        "svelte://svelte/in-and-out.md",
+        "svelte://svelte/animate.md",
+        "svelte://svelte/style.md",
+        "svelte://svelte/class.md",
+        "svelte://svelte/await-expressions.md",
+        "svelte://svelte/scoped-styles.md",
+        "svelte://svelte/global-styles.md",
+        "svelte://svelte/custom-properties.md",
+        "svelte://svelte/nested-style-elements.md",
+        "svelte://svelte/svelte-boundary.md",
+        "svelte://svelte/svelte-window.md",
+        "svelte://svelte/svelte-document.md",
+        "svelte://svelte/svelte-body.md",
+        "svelte://svelte/svelte-head.md",
+        "svelte://svelte/svelte-element.md",
+        "svelte://svelte/svelte-options.md",
+        "svelte://svelte/stores.md",
+        "svelte://svelte/context.md",
+        "svelte://svelte/lifecycle-hooks.md",
+        "svelte://svelte/imperative-component-api.md",
+        "svelte://svelte/testing.md",
+        "svelte://svelte/typescript.md",
+        "svelte://svelte/custom-elements.md",
+        "svelte://svelte/v4-migration-guide.md",
+        "svelte://svelte/v5-migration-guide.md",
+        "svelte://svelte/faq.md",
+        "svelte://svelte/svelte.md",
+        "svelte://svelte/svelte-action.md",
+        "svelte://svelte/svelte-animate.md",
+        "svelte://svelte/svelte-attachments.md",
+        "svelte://svelte/svelte-compiler.md",
+        "svelte://svelte/svelte-easing.md",
+        "svelte://svelte/svelte-events.md",
+        "svelte://svelte/svelte-legacy.md",
+        "svelte://svelte/svelte-motion.md",
+        "svelte://svelte/svelte-reactivity-window.md",
+        "svelte://svelte/svelte-reactivity.md",
+        "svelte://svelte/svelte-server.md",
+        "svelte://svelte/svelte-store.md",
+        "svelte://svelte/svelte-transition.md",
+        "svelte://svelte/compiler-errors.md",
+        "svelte://svelte/compiler-warnings.md",
+        "svelte://svelte/runtime-errors.md",
+        "svelte://svelte/runtime-warnings.md",
+        "svelte://svelte/legacy-overview.md",
+        "svelte://svelte/legacy-let.md",
+        "svelte://svelte/legacy-reactive-assignments.md",
+        "svelte://svelte/legacy-export-let.md",
+        "svelte://svelte/legacy-$$props-and-$$restProps.md",
+        "svelte://svelte/legacy-on.md",
+        "svelte://svelte/legacy-slots.md",
+        "svelte://svelte/legacy-$$slots.md",
+        "svelte://svelte/legacy-svelte-fragment.md",
+        "svelte://svelte/legacy-svelte-component.md",
+        "svelte://svelte/legacy-svelte-self.md",
+        "svelte://svelte/legacy-component-api.md"
+      ],
+      "13aa717d76a0f4a7": []
+    }
+  },
+  "custom_prompts": [
+    {
+      "name": "Using_syntaxfm_as_example",
+      "text": "This is example repo using Svelt . \n@tool.DeepWiki.read_wiki_contents(repoName: str = \"syntaxfm/website\")\ngo through this content and use the content as inspiration for structuing the svelte project. ",
+      "variables": [],
+      "description": "",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": [
+        {
+          "id": "block_1762858572171_6s1zx5iid",
+          "startLine": 2,
+          "startColumn": 7,
+          "endLine": 2,
+          "endColumn": 70,
+          "type": "tool",
+          "server": "DeepWiki",
+          "serverId": "13aa717d76a0f4a7",
+          "name": "DeepWiki.read_wiki_contents",
+          "text": "DeepWiki.read_wiki_contents(repoName: str = \"syntaxfm/website\")",
+          "data": {
+            "label": "DeepWiki.read_wiki_contents",
+            "name": "read_wiki_contents",
+            "server": "DeepWiki",
+            "serverId": "13aa717d76a0f4a7",
+            "description": "View documentation about a GitHub repository",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "repoName": {
+                  "type": "string",
+                  "description": "GitHub repository: owner/repo (e.g. \"facebook/react\")"
+                }
+              },
+              "required": [
+                "repoName"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            }
+          },
+          "parameters": {
+            "repoName": "syntaxfm/website"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Svelte_Component_Architect",
+      "text": "You are a Svelte 5 component architecture expert. For the given component requirements:\n\n1. First, use tool.Svelte.list-sections() to understand available Svelte 5 features\n2. Design a component structure using Svelte 5 runes ($state, $derived, $props, $effect)\n3. Determine if the component needs:\n   - State management (local vs stores)\n   - Props and two-way binding\n   - Lifecycle hooks or effects\n   - Transitions or animations\n4. Use tool.Svelte.get-documentation() to fetch relevant sections on:\n   - Component composition patterns\n   - Reactive state management\n   - Event handling\n   - Styling approaches\n5. Create the component with:\n   - Proper TypeScript types\n   - Accessibility features\n   - Performance optimizations\n6. Run tool.Svelte.svelte-autofixer() to validate the implementation\n7. Provide usage examples and explain the architecture decisions\n\nComponent Requirements: @param.component_requirements",
+      "variables": [
+        {
+          "name": "component_requirements",
+          "description": "Detailed description of the component to build, including functionality, props, events, and styling needs",
+          "required": true
+        }
+      ],
+      "description": "Design and implement Svelte 5 components with proper architecture, best practices, and runes-based state management",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    },
+    {
+      "name": "SvelteKit_Route_Generator",
+      "text": "You are a SvelteKit routing and data loading expert. For the given route requirements:\n\n1. Use tool.Svelte.get-documentation() to review:\n   - SvelteKit routing patterns\n   - Load functions (server vs universal)\n   - Form actions and progressive enhancement\n   - Page and layout options\n2. Design the route structure considering:\n   - File-based routing conventions\n   - Dynamic route parameters\n   - Layout hierarchies\n   - API endpoints if needed\n3. Implement:\n   - +page.svelte for the UI\n   - +page.server.ts or +page.ts for data loading\n   - +layout.svelte if shared layout is needed\n   - +server.ts for API routes\n   - Form actions in +page.server.ts if forms are needed\n4. Add:\n   - TypeScript types for PageData and FormData\n   - Error handling\n   - Loading states\n   - SEO meta tags\n5. Use tool.Svelte.svelte-autofixer() to validate each file\n6. Explain the routing architecture and data flow\n\nRoute Requirements: @param.route_requirements",
+      "variables": [
+        {
+          "name": "route_requirements",
+          "description": "Details about the route to create, including URL pattern, data needs, forms, and any special requirements",
+          "required": true
+        }
+      ],
+      "description": "Generate complete SvelteKit routes with proper file structure, data loading, form actions, and TypeScript types",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    },
+    {
+      "name": "Svelte_Store_Designer",
+      "text": "You are a Svelte state management expert. For the given state management needs:\n\n1. Use tool.Svelte.get-documentation() to review:\n   - Svelte stores (writable, readable, derived)\n   - Custom stores\n   - Context API\n   - Runes for reactive state\n2. Analyze requirements and recommend:\n   - When to use stores vs runes\n   - Store granularity and composition\n   - Subscription management\n   - Persistence strategy if needed\n3. Implement the state management solution:\n   - Create store files with proper TypeScript types\n   - Add computed/derived values\n   - Implement actions/methods\n   - Add persistence (localStorage, etc.) if needed\n4. Provide:\n   - Usage examples in components\n   - Testing strategies\n   - Performance considerations\n   - Migration path from stores to runes if applicable\n5. Document the state architecture and data flow\n\nState Management Requirements: @param.state_requirements",
+      "variables": [
+        {
+          "name": "state_requirements",
+          "description": "Description of the state to manage, including data structure, who needs access, persistence needs, and complexity",
+          "required": true
+        }
+      ],
+      "description": "Design and implement Svelte state management solutions using stores, runes, or context API based on requirements",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    },
+    {
+      "name": "Svelte_5_Migration_Assistant",
+      "text": "You are a Svelte 4 to Svelte 5 migration expert. For the given Svelte 4 code:\n\n1. Use tool.Svelte.get-documentation() to review the Svelte 5 migration guide\n2. Analyze the Svelte 4 code and identify:\n   - Reactive declarations ($:) to convert to $derived\n   - export let props to convert to $props()\n   - Reactive statements to convert to $effect()\n   - Store subscriptions to simplify\n   - Event handlers (on:) to update\n   - Slots to convert to snippets\n3. Use tool.Svelte.sv-migrate() if available, or manually:\n   - Convert reactive declarations to runes\n   - Update component props syntax\n   - Replace lifecycle hooks with $effect where appropriate\n   - Modernize event handling\n   - Update two-way bindings with $bindable\n4. Run tool.Svelte.svelte-autofixer() to catch any issues\n5. Provide:\n   - Before/after comparison\n   - Explanation of changes\n   - Benefits of the migration\n   - Any breaking changes to watch out for\n\nSvelte 4 Code: @param.svelte4_code",
+      "variables": [
+        {
+          "name": "svelte4_code",
+          "description": "The Svelte 4 component or code to migrate to Svelte 5",
+          "required": true
+        }
+      ],
+      "description": "Migrate Svelte 4 components to Svelte 5, converting to runes and modern syntax with explanations",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    },
+    {
+      "name": "SvelteKit_Full_Stack_Feature",
+      "text": "You are a full-stack SvelteKit developer. For the given feature requirements:\n\n1. Use tool.Svelte.get-documentation() to review:\n   - SvelteKit routing and data loading\n   - Form actions and progressive enhancement\n   - Server-side API routes\n   - Database integration patterns\n   - Authentication and authorization\n2. Design the full-stack architecture:\n   - Database schema/models\n   - API endpoints (+server.ts routes)\n   - Server load functions for SSR\n   - Form actions for mutations\n   - Client-side components\n3. Implement the feature:\n   - Database operations (queries, mutations)\n   - Server-side validation and error handling\n   - Form actions with progressive enhancement\n   - Client components with proper TypeScript types\n   - Loading and error states\n4. Add:\n   - Authentication checks if needed\n   - Input validation (server + client)\n   - Error handling and user feedback\n   - Optimistic UI updates where appropriate\n5. Use tool.Svelte.svelte-autofixer() to validate all Svelte files\n6. Provide:\n   - Complete file structure\n   - API documentation\n   - Usage examples\n   - Testing recommendations\n\nFeature Requirements: @param.feature_requirements",
+      "variables": [
+        {
+          "name": "feature_requirements",
+          "description": "Complete description of the full-stack feature, including data models, user interactions, and business logic",
+          "required": true
+        }
+      ],
+      "description": "Build complete full-stack features in SvelteKit with database, API routes, forms, and UI components",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    },
+    {
+      "name": "Svelte_GitHub_Project_Analyzer",
+      "text": "You are a Svelte project analysis expert. For the given GitHub repository:\n\n1. Use tool.DeepWiki.read_wiki_structure() to get an overview of the repository structure\n2. Use tool.DeepWiki.read_wiki_contents() to read the full documentation\n3. Analyze the project for:\n   - Svelte/SvelteKit version and setup\n   - Project structure and organization\n   - Component architecture patterns\n   - State management approach\n   - Routing structure (if SvelteKit)\n   - Styling solution (CSS, Tailwind, etc.)\n   - Testing setup\n   - Build configuration\n4. Use tool.DeepWiki.ask_question() to clarify specific implementation details:\n   - How are forms handled?\n   - What's the authentication approach?\n   - How is data fetching structured?\n   - What UI patterns are used?\n5. Provide a comprehensive analysis:\n   - Architecture overview\n   - Key patterns and conventions\n   - Best practices observed\n   - Potential improvements\n   - Code examples of interesting patterns\n6. Generate actionable insights for:\n   - Learning from this codebase\n   - Adapting patterns to new projects\n   - Understanding Svelte ecosystem tools\n\nGitHub Repository: @param.repo_name",
+      "variables": [
+        {
+          "name": "repo_name",
+          "description": "GitHub repository in format 'owner/repo' (e.g., 'sveltejs/svelte')",
+          "required": true
+        }
+      ],
+      "description": "Analyze Svelte/SvelteKit projects on GitHub to learn architecture patterns, best practices, and implementation approaches",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    }
+  ],
+  "custom_tools": [],
+  "custom_resources": [],
+  "environment_variables": [],
+  "system_prompt": {
+    "text": "You are a helpful AI assistant with access to various tools and resources. You can help users with a wide range of tasks using the available MCP (Model Context Protocol) tools.\n\nAvailable capabilities:\n- Execute tools to perform specific actions\n- Access resources for information\n- Use prompts for structured interactions\n\nAlways be helpful, accurate, and explain what you're doing when using tools.",
+    "variables": [],
+    "environment_variables": [],
+    "tool_calls": []
+  },
+  "metadata": {
+    "url": "http://localhost:8000/private/Svelte_coding_assistant/vmcp",
+    "type": "vmcp"
+  }
+}

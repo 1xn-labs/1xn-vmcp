@@ -1,0 +1,24 @@
+[run]
+source = src/vmcp
+omit =
+    */tests/*
+    */test_*
+    */__pycache__/*
+    */site-packages/*
+    */migrations/*
+    */cli/*
+    */scripts/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstract
+precision = 2
+
+[html]
+directory = htmlcov

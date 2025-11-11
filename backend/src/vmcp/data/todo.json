@@ -1,0 +1,1034 @@
+{
+  "created_at": "2025-09-23T13:53:51.438907",
+  "creator_id": "36",
+  "creator_username": "1xn",
+  "custom_context": [],
+  "custom_prompts": [
+    {
+      "atomic_blocks": [
+        {
+          "data": {
+            "description": "Insert a new row at the specified position in a Google Sheet.\nShifts existing rows down to make room for the new row.\nSupports inserting at any position (1-based indexing where 1 is the first row).\nValues will be inserted into the new row starting from column A.",
+            "inputSchema": {
+              "properties": {
+                "row_index": {
+                  "title": "Row Index",
+                  "type": "integer"
+                },
+                "sheet_name": {
+                  "title": "Sheet Name",
+                  "type": "string"
+                },
+                "spreadsheet_id": {
+                  "title": "Spreadsheet Id",
+                  "type": "string"
+                },
+                "values": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Values",
+                  "type": "array"
+                }
+              },
+              "required": [
+                "spreadsheet_id",
+                "sheet_name",
+                "row_index",
+                "values"
+              ],
+              "type": "object"
+            },
+            "label": "GoogleSheets.insert_row",
+            "name": "insert_row",
+            "server": "GoogleSheets",
+            "serverId": "2bc67820872c719c"
+          },
+          "endColumn": 213,
+          "endLine": 1,
+          "id": "block_1758635711729_82tcpei6z",
+          "name": "GoogleSheets.insert_row",
+          "parameters": {
+            "row_index": "2",
+            "sheet_name": "Sheet1",
+            "spreadsheet_id": "@config.sheet_id",
+            "values": "[\"@param.task_name\",\"@param.task_description\",\"@param.task_date\",\"pending\"]"
+          },
+          "server": "GoogleSheets",
+          "serverId": "2bc67820872c719c",
+          "startColumn": 7,
+          "startLine": 1,
+          "text": "GoogleSheets.insert_row(spreadsheet_id: str = \"@config.sheet_id\", sheet_name: str = \"Sheet1\", row_index: int = 2, values: [str] = [\"@param.task_name\",\"@param.task_description\",\"@param.task_date\",\"pending\"])",
+          "type": "tool"
+        }
+      ],
+      "description": "Add new task to the list. a new task will appear in google sheet",
+      "environment_variables": [],
+      "name": "add_new_task",
+      "text": "@tool.GoogleSheets.insert_row(spreadsheet_id: str = \"@config.sheet_id\", sheet_name: str = \"Sheet1\", row_index: int = 2, values: [str] = [\"@param.task_name\",\"@param.task_description\",\"@param.task_date\",\"pending\"])\n(Note : If you get Requested entity was not found ask user to create a google sheet and share the sheet_id)",
+      "tool_calls": [],
+      "variables": [
+        {
+          "description": "name of the task",
+          "name": "task_name",
+          "required": true
+        },
+        {
+          "description": "description of the task",
+          "name": "task_description",
+          "required": false
+        },
+        {
+          "description": "Date when the task was created",
+          "name": "task_date",
+          "required": false
+        }
+      ]
+    }
+  ],
+  "custom_resource_templates": [],
+  "custom_resource_uris": [],
+  "custom_resources": [],
+  "custom_tools": [
+    {
+      "atomic_blocks": [],
+      "description": "show pending tasks to the user. ",
+      "environment_variables": [],
+      "name": "show_pending_task",
+      "text": "These are all the tasks of the user\n@tool.GoogleSheets.read_sheet_values(spreadsheet_id: str = \"@config.sheet_id\", range_name: str = \"Sheet1!A1:D100\")\nFilter the pending tasks and show to the user. \nIf you get the error Requested entity was not found ask user to create a google sheet and share the sheet_id.",
+      "tool_calls": [],
+      "variables": []
+    },
+    {
+      "atomic_blocks": [
+        {
+          "data": {
+            "description": "Write values to a Google Sheet for the authenticated user.",
+            "inputSchema": {
+              "properties": {
+                "clear_values": {
+                  "default": false,
+                  "title": "Clear Values",
+                  "type": "boolean"
+                },
+                "range_name": {
+                  "title": "Range Name",
+                  "type": "string"
+                },
+                "spreadsheet_id": {
+                  "title": "Spreadsheet Id",
+                  "type": "string"
+                },
+                "values": {
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "title": "Values",
+                  "type": "array"
+                }
+              },
+              "required": [
+                "spreadsheet_id",
+                "range_name",
+                "values"
+              ],
+              "type": "object"
+            },
+            "label": "GoogleSheets.modify_sheet_values",
+            "name": "modify_sheet_values",
+            "server": "GoogleSheets",
+            "serverId": "2bc67820872c719c"
+          },
+          "endColumn": 231,
+          "endLine": 4,
+          "id": "block_1758643447914_upbfcvs30",
+          "name": "GoogleSheets.modify_sheet_values",
+          "parameters": {
+            "clear_values": false
+          },
+          "server": "GoogleSheets",
+          "serverId": "2bc67820872c719c",
+          "startColumn": 76,
+          "startLine": 4,
+          "text": "GoogleSheets.modify_sheet_values(spreadsheet_id: str = \"spreadsheet_id\", range_name: str = \"range_name\", values: [[str]] = null, clear_values: bool = null)",
+          "type": "tool"
+        }
+      ],
+      "description": "Mark a particular task as complete. Use task name as input",
+      "environment_variables": [],
+      "name": "mark_task_as_complete",
+      "text": "User wants to update task @param.task_name\nhere is the list of tasks against row number. \n@tool.GoogleSheets.read_sheet_values(spreadsheet_id: str = \"@config.sheet_id\", range_name: str = \"Sheet1!A1:A100\")\nBased on the row number of of the task which needs to be updated use \n\nmodify_sheet_values(spreadsheet_id= \"@config.sheet_id\", range_name: D[Rownumber found above], values: [\"pending\"] = null)",
+      "tool_calls": [],
+      "variables": [
+        {
+          "description": "name of the task which needs to be marked as complete",
+          "name": "task_name",
+          "required": false
+        }
+      ]
+    },
+    {
+      "atomic_blocks": [],
+      "description": "Add new task to the to do list. ",
+      "environment_variables": [],
+      "name": "add_new_task",
+      "text": "@tool.GoogleSheets.insert_row(spreadsheet_id: str = \"@config.sheet_id\", sheet_name: str = \"Sheet1\", row_index: int = 2, values: [str] = [\"@param.task_name\",\"@param.task_description\",\"@param.task_date\",\"pending\"]) If you get resource not found error, please ask use to create a spreadhsheet and share the sheet id",
+      "tool_calls": [],
+      "variables": [
+        {
+          "description": "name of the task",
+          "name": "task_name",
+          "required": false
+        },
+        {
+          "description": "description of the task",
+          "name": "task_description",
+          "required": false
+        },
+        {
+          "description": "date of the task",
+          "name": "task_date",
+          "required": false
+        }
+      ]
+    }
+  ],
+  "description": "A todo agent using google sheet to help you track you tasks",
+  "environment_variables": [
+    {
+      "description": "google sheet id with todo information",
+      "name": "sheet_id",
+      "required": false,
+      "value": "<<NEED_INPUT_FROM_USER>>"
+    }
+  ],
+  "id": "TODO_GoogleSheet",
+  "is_public": true,
+  "metadata": {
+    "icon": "https://cdn.iconscout.com/icon/premium/png-512-thumb/todo-icon-svg-download-png-9632805.png?f=webp&w=256",
+    "type": "demo",
+    "url": "https://1xn.ai/@1xn/TODO_GoogleSheet/vmcp"
+  },
+  "name": "TODO_GoogleSheet",
+  "public_at": "2025-09-23T16:56:04.665638",
+  "public_tags": [
+    "public"
+  ],
+  "system_prompt": {
+    "environment_variables": [],
+    "text": "You are a helpful AI assistant with access to various tools and resources. You can help users with a wide range of tasks using the available MCP (Model Context Protocol) tools.\n\nAvailable capabilities:\n- Execute tools to perform specific actions\n- Access resources for information\n- Use prompts for structured interactions\n\nAlways be helpful, accurate, and explain what you're doing when using tools.",
+    "tool_calls": [],
+    "variables": []
+  },
+  "total_prompts": 1,
+  "total_resource_templates": 0,
+  "total_resources": 0,
+  "total_tools": 10,
+  "updated_at": "2025-09-23T16:56:04.678487",
+  "uploaded_files": [],
+  "user_id": "36",
+  "vmcp_config": {
+    "selected_prompts": {
+      "2bc67820872c719c": []
+    },
+    "selected_resources": {
+      "2bc67820872c719c": []
+    },
+    "selected_servers": [
+      {
+        "args": [],
+        "auth": null,
+        "auto_connect": true,
+        "capabilities": {
+          "prompts": false,
+          "resources": false,
+          "tools": true
+        },
+        "command": null,
+        "description": "Google Sheets MCP server",
+        "enabled": true,
+        "env": {},
+        "favicon_url": "https://www.gstatic.com/images/branding/product/2x/sheets_2020q4_48dp.png",
+        "headers": {},
+        "last_connected": "2025-09-23T13:54:25.850775",
+        "last_error": null,
+        "name": "GoogleSheets",
+        "prompt_details": [],
+        "prompts": [],
+        "resource_details": [],
+        "resource_template_details": [],
+        "resource_templates": [],
+        "resources": [],
+        "server_id": "2bc67820872c719c",
+        "session_id": null,
+        "status": "unknown",
+        "tool_details": [
+          {
+            "annotations": null,
+            "description": "Analyze spreadsheet data structure and return range metadata.\nDetects data boundaries, identifies headers, and provides row/column counts.\nEssential first step before creating pivot tables to understand data layout.\nReturns JSON with range bounds, header detection status, and dimension info.",
+            "inputSchema": {
+              "properties": {
+                "sheet_name": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Sheet Name"
+                },
+                "spreadsheet_id": {
+                  "title": "Spreadsheet Id",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "spreadsheet_id"
+              ],
+              "type": "object"
+            },
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            },
+            "name": "get_data_range",
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "_WrappedResult",
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "title": null
+          },
+          {
+            "annotations": null,
+            "description": "Examine each column's data type, uniqueness, and pivot table suitability.\nAutomatically detects numeric, categorical, date, and text columns.\nRecommends optimal pivot table roles (rows, columns, values, filters) for each field.\nGenerates intelligent pivot table configuration suggestions based on data patterns.",
+            "inputSchema": {
+              "properties": {
+                "include_suggestions": {
+                  "default": true,
+                  "title": "Include Suggestions",
+                  "type": "boolean"
+                },
+                "sheet_name": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Sheet Name"
+                },
+                "spreadsheet_id": {
+                  "title": "Spreadsheet Id",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "spreadsheet_id"
+              ],
+              "type": "object"
+            },
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            },
+            "name": "analyze_columns",
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "_WrappedResult",
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "title": null
+          },
+          {
+            "annotations": null,
+            "description": "Create a fully customized pivot table using Google Sheets API.\nAccepts simple comma-separated configuration for rows, columns, values, and functions.\nSupports all pivot functions (SUM, COUNT, AVERAGE, etc.) and creates destination sheet if needed.\nUses flattened configuration with simple string parameters for easy Claude generation.",
+            "inputSchema": {
+              "properties": {
+                "column_columns": {
+                  "default": "",
+                  "title": "Column Columns",
+                  "type": "string"
+                },
+                "destination_cell": {
+                  "default": "A1",
+                  "title": "Destination Cell",
+                  "type": "string"
+                },
+                "destination_sheet": {
+                  "default": "Pivot Analysis",
+                  "title": "Destination Sheet",
+                  "type": "string"
+                },
+                "row_columns": {
+                  "default": "",
+                  "title": "Row Columns",
+                  "type": "string"
+                },
+                "sort_order": {
+                  "default": "ASCENDING",
+                  "title": "Sort Order",
+                  "type": "string"
+                },
+                "source_range": {
+                  "title": "Source Range",
+                  "type": "string"
+                },
+                "source_sheet": {
+                  "title": "Source Sheet",
+                  "type": "string"
+                },
+                "spreadsheet_id": {
+                  "title": "Spreadsheet Id",
+                  "type": "string"
+                },
+                "value_columns": {
+                  "title": "Value Columns",
+                  "type": "string"
+                },
+                "value_functions": {
+                  "default": "SUM",
+                  "title": "Value Functions",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "spreadsheet_id",
+                "source_sheet",
+                "source_range",
+                "value_columns"
+              ],
+              "type": "object"
+            },
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            },
+            "name": "build_pivot",
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "_WrappedResult",
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "title": null
+          },
+          {
+            "annotations": null,
+            "description": "Fully automated pivot table creation with intelligent data analysis.\nCombines data range detection, column analysis, and pivot generation in one step.\nAuto-selects best pivot configuration or returns suggestions for user choice.\nPerfect for users who want instant pivot insights without manual configuration.",
+            "inputSchema": {
+              "properties": {
+                "auto_create": {
+                  "default": true,
+                  "title": "Auto Create",
+                  "type": "boolean"
+                },
+                "sheet_name": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Sheet Name"
+                },
+                "spreadsheet_id": {
+                  "title": "Spreadsheet Id",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "spreadsheet_id"
+              ],
+              "type": "object"
+            },
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            },
+            "name": "create_smart_pivot",
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "_WrappedResult",
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "title": null
+          },
+          {
+            "annotations": null,
+            "description": "Get information about a specific spreadsheet for the authenticated user.",
+            "inputSchema": {
+              "properties": {
+                "spreadsheet_id": {
+                  "title": "Spreadsheet Id",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "spreadsheet_id"
+              ],
+              "type": "object"
+            },
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            },
+            "name": "get_spreadsheet_info",
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "_WrappedResult",
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "title": null
+          },
+          {
+            "annotations": null,
+            "description": "Read values from a Google Sheet for the authenticated user.",
+            "inputSchema": {
+              "properties": {
+                "range_name": {
+                  "default": "A1:Z1000",
+                  "title": "Range Name",
+                  "type": "string"
+                },
+                "spreadsheet_id": {
+                  "title": "Spreadsheet Id",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "spreadsheet_id"
+              ],
+              "type": "object"
+            },
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            },
+            "name": "read_sheet_values",
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "_WrappedResult",
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "title": null
+          },
+          {
+            "annotations": null,
+            "description": "Write values to a Google Sheet for the authenticated user.",
+            "inputSchema": {
+              "properties": {
+                "clear_values": {
+                  "default": false,
+                  "title": "Clear Values",
+                  "type": "boolean"
+                },
+                "range_name": {
+                  "title": "Range Name",
+                  "type": "string"
+                },
+                "spreadsheet_id": {
+                  "title": "Spreadsheet Id",
+                  "type": "string"
+                },
+                "values": {
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "title": "Values",
+                  "type": "array"
+                }
+              },
+              "required": [
+                "spreadsheet_id",
+                "range_name",
+                "values"
+              ],
+              "type": "object"
+            },
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            },
+            "name": "modify_sheet_values",
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "_WrappedResult",
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "title": null
+          },
+          {
+            "annotations": null,
+            "description": "Create a new Google Spreadsheet for the authenticated user.",
+            "inputSchema": {
+              "properties": {
+                "sheet_names": {
+                  "anyOf": [
+                    {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Sheet Names"
+                },
+                "title": {
+                  "title": "Title",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "title"
+              ],
+              "type": "object"
+            },
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            },
+            "name": "create_spreadsheet",
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "_WrappedResult",
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "title": null
+          },
+          {
+            "annotations": null,
+            "description": "Add a new sheet to an existing spreadsheet for the authenticated user.",
+            "inputSchema": {
+              "properties": {
+                "sheet_name": {
+                  "title": "Sheet Name",
+                  "type": "string"
+                },
+                "spreadsheet_id": {
+                  "title": "Spreadsheet Id",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "spreadsheet_id",
+                "sheet_name"
+              ],
+              "type": "object"
+            },
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            },
+            "name": "create_sheet",
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "_WrappedResult",
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "title": null
+          },
+          {
+            "annotations": null,
+            "description": "Execute a formula in a specific cell of a Google Sheet.\nTakes a cell address (like 'A1', 'B5', 'C10') and a formula to execute in that cell.\nThe formula should start with '=' (e.g., '=SUM(A1:A10)', '=B2*C2', '=TODAY()').\nReturns the result of the formula execution and cell update confirmation.",
+            "inputSchema": {
+              "properties": {
+                "cell_address": {
+                  "title": "Cell Address",
+                  "type": "string"
+                },
+                "formula": {
+                  "title": "Formula",
+                  "type": "string"
+                },
+                "sheet_name": {
+                  "title": "Sheet Name",
+                  "type": "string"
+                },
+                "spreadsheet_id": {
+                  "title": "Spreadsheet Id",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "spreadsheet_id",
+                "sheet_name",
+                "cell_address",
+                "formula"
+              ],
+              "type": "object"
+            },
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            },
+            "name": "execute_cell_formula",
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "_WrappedResult",
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "title": null
+          },
+          {
+            "annotations": null,
+            "description": "Apply a formula to an entire column based on another column's data.\nSupports Google Sheets formulas with automatic row-by-row application.\nPerfect for data transformations like extracting substrings, converting dates, or mathematical operations.\nUses {source} placeholder in formula pattern for flexible transformations across all data rows.",
+            "inputSchema": {
+              "properties": {
+                "destination_column": {
+                  "title": "Destination Column",
+                  "type": "string"
+                },
+                "end_row": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "End Row"
+                },
+                "formula_pattern": {
+                  "title": "Formula Pattern",
+                  "type": "string"
+                },
+                "has_headers": {
+                  "default": true,
+                  "title": "Has Headers",
+                  "type": "boolean"
+                },
+                "sheet_name": {
+                  "title": "Sheet Name",
+                  "type": "string"
+                },
+                "source_column": {
+                  "title": "Source Column",
+                  "type": "string"
+                },
+                "spreadsheet_id": {
+                  "title": "Spreadsheet Id",
+                  "type": "string"
+                },
+                "start_row": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Start Row"
+                }
+              },
+              "required": [
+                "spreadsheet_id",
+                "sheet_name",
+                "source_column",
+                "destination_column",
+                "formula_pattern"
+              ],
+              "type": "object"
+            },
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            },
+            "name": "apply_column_formula",
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "_WrappedResult",
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "title": null
+          },
+          {
+            "annotations": null,
+            "description": "Insert a new row at the specified position in a Google Sheet.\nShifts existing rows down to make room for the new row.\nSupports inserting at any position (1-based indexing where 1 is the first row).\nValues will be inserted into the new row starting from column A.",
+            "inputSchema": {
+              "properties": {
+                "row_index": {
+                  "title": "Row Index",
+                  "type": "integer"
+                },
+                "sheet_name": {
+                  "title": "Sheet Name",
+                  "type": "string"
+                },
+                "spreadsheet_id": {
+                  "title": "Spreadsheet Id",
+                  "type": "string"
+                },
+                "values": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Values",
+                  "type": "array"
+                }
+              },
+              "required": [
+                "spreadsheet_id",
+                "sheet_name",
+                "row_index",
+                "values"
+              ],
+              "type": "object"
+            },
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            },
+            "name": "insert_row",
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "_WrappedResult",
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "title": null
+          },
+          {
+            "annotations": null,
+            "description": "Upload a local CSV file from the db_query storage directory to a new Google Spreadsheet.\nReads CSV files from /root/1xn_mcp/mcp_server/mcp-mega-server/app/storage/db_query directory.\nCreates a new Google Sheets spreadsheet and populates it with the CSV data.\nAutomatically detects headers and preserves data formatting during upload.",
+            "inputSchema": {
+              "properties": {
+                "csv_filename": {
+                  "title": "Csv Filename",
+                  "type": "string"
+                },
+                "sheet_name": {
+                  "default": "Sheet1",
+                  "title": "Sheet Name",
+                  "type": "string"
+                },
+                "spreadsheet_name": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Spreadsheet Name"
+                }
+              },
+              "required": [
+                "csv_filename"
+              ],
+              "type": "object"
+            },
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            },
+            "name": "upload_local_csv_to_sheets",
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "_WrappedResult",
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "title": null
+          }
+        ],
+        "tools": [
+          "get_data_range",
+          "analyze_columns",
+          "build_pivot",
+          "create_smart_pivot",
+          "get_spreadsheet_info",
+          "read_sheet_values",
+          "modify_sheet_values",
+          "create_spreadsheet",
+          "create_sheet",
+          "execute_cell_formula",
+          "apply_column_formula",
+          "insert_row",
+          "upload_local_csv_to_sheets"
+        ],
+        "transport_type": "http",
+        "url": "https://1xn.ai/mega_server/mcp/gsheets/mcp",
+        "vmcps_using_server": [
+          "18e457ac-b704-4106-b8c0-d10306b39714"
+        ]
+      }
+    ],
+    "selected_tools": {
+      "2bc67820872c719c": [
+        "get_data_range",
+        "read_sheet_values",
+        "modify_sheet_values",
+        "create_spreadsheet",
+        "create_sheet",
+        "apply_column_formula",
+        "insert_row"
+      ]
+    }
+  }
+}
