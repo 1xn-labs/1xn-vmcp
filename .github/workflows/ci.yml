@@ -1,0 +1,150 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Create frontend directory
+        working-directory: ./backend
+        run: |
+          # Create the public/frontend directory required by pyproject.toml
+          # This directory is git-ignored but needed for the build
+          mkdir -p public/frontend
+          # Create a minimal index.html to satisfy the build requirement
+          echo "<!DOCTYPE html><html><head><title>vMCP</title></head><body><h1>vMCP</h1></body></html>" > public/frontend/index.html
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: |
+          uv sync --dev
+
+      - name: Set up environment variables
+        working-directory: ./backend
+        run: |
+          # Set SQLite database path for CI
+          mkdir -p /tmp/vmcp_ci
+          echo "DATABASE_URL=sqlite:///tmp/vmcp_ci/vmcp_test.db" >> $GITHUB_ENV
+          echo "VMCP_DATABASE_URL=sqlite:///tmp/vmcp_ci/vmcp_test.db" >> $GITHUB_ENV
+          # Set dummy authentication token for tests
+          echo "VMCP_DUMMY_USER_TOKEN=vmcp-test-dummy-token" >> $GITHUB_ENV
+
+      - name: Run database migrations
+        working-directory: ./backend
+        env:
+          DATABASE_URL: sqlite:///tmp/vmcp_ci/vmcp_test.db
+        run: |
+          uv run python run_migrations.py || true
+
+      - name: Start backend server in background
+        working-directory: ./backend
+        env:
+          DATABASE_URL: sqlite:///tmp/vmcp_ci/vmcp_test.db
+          VMCP_DATABASE_URL: sqlite:///tmp/vmcp_ci/vmcp_test.db
+          VMCP_DUMMY_USER_TOKEN: vmcp-test-dummy-token
+        run: |
+          # Start main backend server
+          uv run vmcp run --host 0.0.0.0 --port 8000 > /tmp/backend_server.log 2>&1 &
+          echo "Backend server starting..."
+
+      - name: Start test servers in background
+        working-directory: ./backend
+        env:
+          VMCP_DUMMY_USER_TOKEN: vmcp-test-dummy-token
+        run: |
+          # Start test servers in background
+          uv run python tests/test_server/test_http_server.py > /tmp/test_server.log 2>&1 &
+          uv run python tests/mcp_server/start_mcp_servers.py > /tmp/mcp_servers.log 2>&1 &
+
+          echo "Test servers starting..."
+
+      - name: Wait for servers to be ready
+        working-directory: ./backend
+        run: |
+          # Wait for servers to be ready
+          echo "Waiting for servers to start..."
+          sleep 5
+          
+          # Check if servers are running
+          for i in {1..30}; do
+            BACKEND_READY=false
+            MCP_READY=false
+            TEST_READY=false
+            
+            if curl -s -f http://localhost:8000/health > /dev/null 2>&1; then
+              BACKEND_READY=true
+            fi
+            
+            if curl -s -f http://localhost:8001/health > /dev/null 2>&1; then
+              MCP_READY=true
+            fi
+            
+            if curl -s -f http://localhost:8002/health > /dev/null 2>&1; then
+              TEST_READY=true
+            fi
+            
+            if [ "$BACKEND_READY" = true ] && [ "$MCP_READY" = true ] && [ "$TEST_READY" = true ]; then
+              echo "✓ All servers are ready!"
+              break
+            fi
+            
+            if [ $i -eq 30 ]; then
+              echo "✗ Servers failed to start after 60 seconds"
+              echo ""
+              echo "Backend server log:"
+              cat /tmp/backend_server.log || echo "No backend log"
+              echo ""
+              echo "MCP servers log:"
+              cat /tmp/mcp_servers.log || echo "No MCP log"
+              echo ""
+              echo "Test server log:"
+              cat /tmp/test_server.log || echo "No test server log"
+              echo ""
+              echo "Server status:"
+              echo "  Backend (8000): $BACKEND_READY"
+              echo "  MCP (8001): $MCP_READY"
+              echo "  Test (8002): $TEST_READY"
+              exit 1
+            fi
+            echo "Waiting for servers... ($i/30) - Backend: $BACKEND_READY, MCP: $MCP_READY, Test: $TEST_READY"
+            sleep 2
+          done
+
+      - name: Run pytest
+        working-directory: ./backend
+        env:
+          DATABASE_URL: sqlite:///tmp/vmcp_ci/vmcp_test.db
+          VMCP_DUMMY_USER_TOKEN: vmcp-test-dummy-token
+        run: |
+          uv run pytest -v --tb=short
+
+      - name: Upload test logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: |
+            /tmp/backend_server.log
+            /tmp/test_server.log
+            /tmp/mcp_servers.log
+          if-no-files-found: ignore
+

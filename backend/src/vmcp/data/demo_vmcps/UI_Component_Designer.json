@@ -1,0 +1,688 @@
+{
+  "name": "UI_Component_Designer",
+  "description": "Advanced UI component development assistant with shadcn/ui integration and comprehensive library documentation access",
+  "vmcp_config": {
+    "selected_servers": [
+      {
+        "name": "Shadcn_MCP",
+        "transport_type": "http",
+        "description": "Shadcn MCP server",
+        "server_id": "c1ee85aea1f35112",
+        "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://shadcn.io&size=64",
+        "command": null,
+        "args": null,
+        "env": null,
+        "url": "https://www.shadcn.io/api/mcp",
+        "headers": null,
+        "status": "connected",
+        "last_connected": null,
+        "last_error": null,
+        "capabilities": {
+          "tools": true,
+          "resources": false,
+          "prompts": false
+        },
+        "tools": [
+          "getComponents",
+          "getComponent"
+        ],
+        "tool_details": [
+          {
+            "name": "getComponents",
+            "title": null,
+            "description": "Provides a list of all shadcn/ui components",
+            "inputSchema": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "Shadcn_MCP"
+            }
+          },
+          {
+            "name": "getComponent",
+            "title": null,
+            "description": "Provides information about shadcn/ui components",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "component": {
+                  "type": "string",
+                  "enum": [
+                    "2d-noise-contours-shaders",
+                    "3d-card",
+                    "3d-marquee",
+                    "3d-pin",
+                    "abstract-mod-shaders",
+                    "accretion-shaders",
+                    "advanced-tunnel-shaders",
+                    "ai",
+                    "android",
+                    "animated-beam",
+                    "animated-cursor",
+                    "animated-modal",
+                    "animated-testimonials",
+                    "animated-tooltip",
+                    "announcement",
+                    "apple-cards-carousel",
+                    "apple-hello-effect",
+                    "area-chart-01",
+                    "area-chart-02",
+                    "area-chart-03",
+                    "area-chart-04",
+                    "area-chart-05",
+                    "area-chart-06",
+                    "area-chart-07",
+                    "area-chart-08",
+                    "area-chart-09",
+                    "area-chart-10",
+                    "aurora-background",
+                    "aurora-shaders",
+                    "avatar-group",
+                    "background-beams",
+                    "background-beams-with-collision",
+                    "background-boxes",
+                    "background-circles",
+                    "background-gradient",
+                    "background-gradient-animation",
+                    "background-paths",
+                    "banner",
+                    "bar-chart-01",
+                    "bar-chart-02",
+                    "bar-chart-03",
+                    "bar-chart-04",
+                    "bar-chart-05",
+                    "bar-chart-06",
+                    "bar-chart-07",
+                    "bar-chart-08",
+                    "bar-chart-09",
+                    "bar-chart-10",
+                    "binary-shaders",
+                    "biomine-shaders",
+                    "blur-text",
+                    "bubble-background",
+                    "calendar",
+                    "cellular-tiled-tunnel-shaders",
+                    "choicebox",
+                    "circular-text",
+                    "code-block",
+                    "code-editor",
+                    "code-tabs",
+                    "color-picker",
+                    "colourful-text",
+                    "combobox",
+                    "comparison",
+                    "container-text-flip",
+                    "copy-button",
+                    "corner-accent-button",
+                    "cosmic-discs-shaders",
+                    "cosmic-waves-shaders",
+                    "counter",
+                    "counting-number",
+                    "credit-card",
+                    "cursor",
+                    "curved-loop",
+                    "decrypted-text",
+                    "desert-sand-shaders",
+                    "dialog-stack",
+                    "digital-tunnel-shaders",
+                    "dock",
+                    "dot-pattern",
+                    "dropzone",
+                    "editor",
+                    "etheral-shadow",
+                    "extruded-mobius-spiral-shaders",
+                    "falling-text",
+                    "fire-3d-shaders",
+                    "fireworks-background",
+                    "flickering-grid",
+                    "flip-button",
+                    "flip-words",
+                    "fractals-shaders",
+                    "fuzzy-text",
+                    "gantt",
+                    "github-stars-button",
+                    "glimpse",
+                    "glitch-shaders",
+                    "glitch-text",
+                    "gradient-mesh-shaders",
+                    "gradient-text",
+                    "grid-pattern",
+                    "hexagon-background",
+                    "hexagon-grid-pattern-shaders",
+                    "highlight-text",
+                    "hologram-shaders",
+                    "icon-button",
+                    "image-crop",
+                    "image-zoom",
+                    "input-button",
+                    "interactive-grid-pattern",
+                    "iphone-15-pro",
+                    "kaleidoscope",
+                    "kanban",
+                    "kbd",
+                    "light-waves-background",
+                    "limelight-nav",
+                    "line-chart-01",
+                    "line-chart-02",
+                    "line-chart-03",
+                    "line-chart-04",
+                    "line-chart-05",
+                    "line-chart-06",
+                    "line-chart-07",
+                    "line-chart-08",
+                    "line-chart-09",
+                    "line-chart-10",
+                    "line-shadow-text",
+                    "liquid-button",
+                    "list",
+                    "mac-os-dock",
+                    "magnetic",
+                    "magnetic-button",
+                    "mandelbrot-pattern-decoration-shaders",
+                    "marquee",
+                    "matrix-shaders",
+                    "menu-dock",
+                    "message-dock",
+                    "meteors",
+                    "mini-calendar",
+                    "minimal-jigsaw-shaders",
+                    "minimal-tiptap",
+                    "mobius-sierpinski-shaders",
+                    "monster-tunnel-shaders",
+                    "motion-effect",
+                    "motion-highlight",
+                    "navbar-01",
+                    "navbar-02",
+                    "navbar-03",
+                    "navbar-04",
+                    "navbar-05",
+                    "navbar-06",
+                    "navbar-07",
+                    "navbar-08",
+                    "navbar-09",
+                    "navbar-10",
+                    "navbar-11",
+                    "navbar-12",
+                    "navbar-13",
+                    "navbar-14",
+                    "navbar-15",
+                    "navbar-16",
+                    "navbar-17",
+                    "navbar-18",
+                    "nebula-shaders",
+                    "noise-shaders",
+                    "oldschool-tube-shaders",
+                    "particles",
+                    "patterns",
+                    "perspex-web-lattice-shaders",
+                    "pie-chart-01",
+                    "pie-chart-02",
+                    "pie-chart-03",
+                    "pie-chart-04",
+                    "pie-chart-05",
+                    "pie-chart-06",
+                    "pie-chart-07",
+                    "pie-chart-08",
+                    "pie-chart-09",
+                    "pie-chart-10",
+                    "pie-chart-11",
+                    "pill",
+                    "pin-list",
+                    "pixel-image",
+                    "plasma-shaders",
+                    "poincare-disc-animation-shaders",
+                    "psychedelic-spiral",
+                    "pyramid-pattern-shaders",
+                    "qr-code",
+                    "radar-chart-01",
+                    "radar-chart-02",
+                    "radar-chart-03",
+                    "radar-chart-04",
+                    "radar-chart-05",
+                    "radar-chart-06",
+                    "radar-chart-07",
+                    "radar-chart-08",
+                    "radar-chart-09",
+                    "radar-chart-10",
+                    "radar-chart-11",
+                    "radar-chart-12",
+                    "random-grid-subdivision-shaders",
+                    "rating",
+                    "raymarching-shaders",
+                    "relative-time",
+                    "retro-grid",
+                    "ripple",
+                    "ripple-button",
+                    "ripple-shaders",
+                    "ripples-in-black-shaders",
+                    "rolling-text",
+                    "rotating-text",
+                    "safari",
+                    "sandbox",
+                    "scrambled-text",
+                    "scroll-velocity",
+                    "sea-shaders",
+                    "shape-landing-hero",
+                    "shimmering-text",
+                    "shooting-stars",
+                    "shuffle",
+                    "sigmoids-sines-shaders",
+                    "simplex-truchet-weave-shaders",
+                    "singularity-shaders",
+                    "sliding-number",
+                    "smoke",
+                    "smoke-shaders",
+                    "smooth-noise-contours-shaders",
+                    "smooth-voronoi-contours-shaders",
+                    "snippet",
+                    "soap-bubbles-2d-shaders",
+                    "sparkles",
+                    "sparks-drifting-shaders",
+                    "sphere-field-shaders",
+                    "spinner",
+                    "spiral-animation",
+                    "splitting-text",
+                    "starry-planes-shaders",
+                    "stars-scrolling-wheel",
+                    "status",
+                    "synthwave-canyon-shaders",
+                    "table",
+                    "tabs",
+                    "tags",
+                    "terminal",
+                    "text-cursor",
+                    "text-generate-effect",
+                    "text-hover-effect",
+                    "text-pressure",
+                    "text-reveal",
+                    "text-reveal-button",
+                    "text-trail",
+                    "theme-switcher",
+                    "theme-toggle-button",
+                    "three-tap-voronoi-shaders",
+                    "ticker",
+                    "triangle-mesh-incircles-shaders",
+                    "truchet-kaleidoscope-shaders",
+                    "truchet-shaders",
+                    "true-focus",
+                    "tunnel-shaders",
+                    "typing-text",
+                    "use-boolean",
+                    "use-click-anywhere",
+                    "use-copy-to-clipboard",
+                    "use-countdown",
+                    "use-counter",
+                    "use-dark-mode",
+                    "use-debounce-callback",
+                    "use-debounce-value",
+                    "use-document-title",
+                    "use-event-callback",
+                    "use-event-listener",
+                    "use-hover",
+                    "use-intersection-observer",
+                    "use-interval",
+                    "use-is-client",
+                    "use-is-mounted",
+                    "use-isomorphic-layout-effect",
+                    "use-local-storage",
+                    "use-map",
+                    "use-media-query",
+                    "use-mouse-position",
+                    "use-on-click-outside",
+                    "use-read-local-storage",
+                    "use-resize-observer",
+                    "use-screen",
+                    "use-script",
+                    "use-scroll-lock",
+                    "use-session-storage",
+                    "use-step",
+                    "use-ternary-dark-mode",
+                    "use-timeout",
+                    "use-toggle",
+                    "use-unmount",
+                    "use-window-size",
+                    "variable-proximity",
+                    "video-player",
+                    "vortex",
+                    "warp-background",
+                    "warped-noise-shaders",
+                    "water-shaders",
+                    "waves-shaders",
+                    "wavy-background",
+                    "worley-noise-shaders",
+                    "writing-text"
+                  ]
+                }
+              },
+              "required": [
+                "component"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "Shadcn_MCP"
+            }
+          }
+        ],
+        "resources": [],
+        "resource_details": [],
+        "resource_templates": [],
+        "resource_template_details": [],
+        "prompts": [],
+        "prompt_details": [],
+        "auto_connect": true,
+        "enabled": true,
+        "vmcps_using_server": [
+          "ebc14250-aa3c-4d40-9ebf-5d72ab46a2a0"
+        ]
+      },
+      {
+        "name": "context7",
+        "transport_type": "http",
+        "description": "",
+        "server_id": "554a173557ac8c49",
+        "favicon_url": null,
+        "command": null,
+        "args": [],
+        "env": {},
+        "url": "https://mcp.context7.com/mcp",
+        "headers": {},
+        "status": "connected",
+        "last_connected": null,
+        "last_error": null,
+        "capabilities": {
+          "tools": true,
+          "resources": false,
+          "prompts": false
+        },
+        "tools": [
+          "resolve-library-id",
+          "get-library-docs"
+        ],
+        "tool_details": [
+          {
+            "name": "resolve-library-id",
+            "title": "Resolve Context7 Library ID",
+            "description": "Resolves a package/product name to a Context7-compatible library ID and returns a list of matching libraries.\n\nYou MUST call this function before 'get-library-docs' to obtain a valid Context7-compatible library ID UNLESS the user explicitly provides a library ID in the format '/org/project' or '/org/project/version' in their query.\n\nSelection Process:\n1. Analyze the query to understand what library/package the user is looking for\n2. Return the most relevant match based on:\n- Name similarity to the query (exact matches prioritized)\n- Description relevance to the query's intent\n- Documentation coverage (prioritize libraries with higher Code Snippet counts)\n- Trust score (consider libraries with scores of 7-10 more authoritative)\n\nResponse Format:\n- Return the selected library ID in a clearly marked section\n- Provide a brief explanation for why this library was chosen\n- If multiple good matches exist, acknowledge this but proceed with the most relevant one\n- If no good matches exist, clearly state this and suggest query refinements\n\nFor ambiguous queries, request clarification before proceeding with a best-guess match.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "libraryName": {
+                  "type": "string",
+                  "description": "Library name to search for and retrieve a Context7-compatible library ID."
+                }
+              },
+              "required": [
+                "libraryName"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "context7"
+            }
+          },
+          {
+            "name": "get-library-docs",
+            "title": "Get Library Docs",
+            "description": "Fetches up-to-date documentation for a library. You must call 'resolve-library-id' first to obtain the exact Context7-compatible library ID required to use this tool, UNLESS the user explicitly provides a library ID in the format '/org/project' or '/org/project/version' in their query.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "context7CompatibleLibraryID": {
+                  "type": "string",
+                  "description": "Exact Context7-compatible library ID (e.g., '/mongodb/docs', '/vercel/next.js', '/supabase/supabase', '/vercel/next.js/v14.3.0-canary.87') retrieved from 'resolve-library-id' or directly from user query in the format '/org/project' or '/org/project/version'."
+                },
+                "topic": {
+                  "type": "string",
+                  "description": "Topic to focus documentation on (e.g., 'hooks', 'routing')."
+                },
+                "tokens": {
+                  "type": "number",
+                  "description": "Maximum number of tokens of documentation to retrieve (default: 5000). Higher values provide more context but consume more tokens."
+                }
+              },
+              "required": [
+                "context7CompatibleLibraryID"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "server_name": "context7"
+            }
+          }
+        ],
+        "resources": [],
+        "resource_details": [],
+        "resource_templates": [],
+        "resource_template_details": [],
+        "prompts": [],
+        "prompt_details": [],
+        "auto_connect": true,
+        "enabled": true,
+        "vmcps_using_server": [
+          "ebc14250-aa3c-4d40-9ebf-5d72ab46a2a0"
+        ]
+      }
+    ],
+    "selected_tools": {
+      "c1ee85aea1f35112": [
+        "getComponents",
+        "getComponent"
+      ],
+      "554a173557ac8c49": [
+        "resolve-library-id",
+        "get-library-docs"
+      ]
+    },
+    "selected_prompts": {
+      "c1ee85aea1f35112": [],
+      "554a173557ac8c49": []
+    },
+    "selected_resources": {
+      "c1ee85aea1f35112": [],
+      "554a173557ac8c49": []
+    },
+    "selected_resource_templates": {}
+  },
+  "custom_prompts": [
+    {
+      "name": "shadcn_rules",
+      "text": "  resource.vmcp.shadcn_rules.txt",
+      "variables": [],
+      "description": "Rules for using shadcn",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    },
+    {
+      "name": "Shadcn_Component_Builder",
+      "text": "You are a shadcn/ui expert specializing in creating beautiful, accessible React components. For the given component requirements:\n\n1. Use tool.Shadcn_MCP.getComponents() to see all available shadcn/ui components\n2. Identify which shadcn components are most relevant for the requirements\n3. Use tool.Shadcn_MCP.getComponent() to fetch detailed implementation for each relevant component\n4. Design the component architecture considering:\n   - Composition of shadcn/ui primitives\n   - Accessibility (ARIA attributes, keyboard navigation)\n   - Responsive design\n   - Dark mode compatibility\n   - Animation and transitions\n5. Implement the component:\n   - Use Tailwind CSS for styling\n   - Follow shadcn/ui naming conventions\n   - Add TypeScript types\n   - Include prop validation\n6. Provide:\n   - Complete component code\n   - Usage examples\n   - Prop documentation\n   - Accessibility notes\n\nComponent Requirements: @param.component_requirements",
+      "variables": [
+        {
+          "name": "component_requirements",
+          "description": "Detailed description of the component to build, including functionality, styling, and behavior",
+          "required": true
+        }
+      ],
+      "description": "Build custom React components using shadcn/ui primitives with proper accessibility and styling",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    },
+    {
+      "name": "Library_Documentation_Expert",
+      "text": "You are a library documentation expert. For the given library and topic:\n\n1. Use tool.context7.resolve-library-id() to find the correct library ID for @param.library_name\n2. Review the search results and select the most relevant library match\n3. Use tool.context7.get-library-docs() with the resolved library ID to fetch documentation on @param.topic\n4. Analyze the documentation and provide:\n   - Clear explanation of the topic\n   - Code examples from the official docs\n   - Best practices and common patterns\n   - Potential pitfalls and how to avoid them\n   - Links to relevant sections for deeper learning\n5. If the topic is complex, break it down into:\n   - Basic concepts\n   - Implementation steps\n   - Advanced usage\n   - Real-world examples\n\nLibrary: @param.library_name\nTopic: @param.topic",
+      "variables": [
+        {
+          "name": "library_name",
+          "description": "Name of the library or framework to look up (e.g., 'react', 'next.js', 'mongodb')",
+          "required": true
+        },
+        {
+          "name": "topic",
+          "description": "Specific topic or feature to research (e.g., 'hooks', 'routing', 'authentication')",
+          "required": true
+        }
+      ],
+      "description": "Look up and explain library documentation with examples and best practices",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    },
+    {
+      "name": "Component_Animation_Designer",
+      "text": "You are a UI animation expert specializing in shadcn/ui components. For the given animation requirements:\n\n1. Use tool.Shadcn_MCP.getComponents() and identify animation-related components like:\n   - animated-beam\n   - animated-modal\n   - animated-testimonials\n   - animated-tooltip\n   - motion-effect\n   - motion-highlight\n   - transitions and effects\n2. Use tool.Shadcn_MCP.getComponent() to fetch detailed implementations\n3. Design animation strategy considering:\n   - Performance (use CSS transforms, avoid layout thrashing)\n   - Accessibility (respect prefers-reduced-motion)\n   - Timing and easing functions\n   - Mobile performance\n4. Implement the animated component:\n   - Use Framer Motion or CSS animations\n   - Add enter/exit animations\n   - Include hover and focus states\n   - Provide animation variants\n5. Deliver:\n   - Complete animated component code\n   - Animation configuration options\n   - Performance optimization notes\n   - Accessibility implementation\n\nAnimation Requirements: @param.animation_requirements",
+      "variables": [
+        {
+          "name": "animation_requirements",
+          "description": "Description of the animation needed, including type, timing, and behavior",
+          "required": true
+        }
+      ],
+      "description": "Create smooth, performant animations using shadcn/ui animation components",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    },
+    {
+      "name": "Shader_Effect_Implementer",
+      "text": "You are a WebGL shader expert working with shadcn/ui shader components. For the given visual effect requirements:\n\n1. Use tool.Shadcn_MCP.getComponents() to find shader-based components:\n   - Look for components ending in '-shaders'\n   - Examples: aurora-shaders, cosmic-waves-shaders, gradient-mesh-shaders, etc.\n2. Use tool.Shadcn_MCP.getComponent() to fetch shader implementations\n3. Analyze shader requirements:\n   - Visual effect type (particle, noise, geometric)\n   - Performance constraints\n   - Interactivity needs\n   - Color scheme and theming\n4. Implement the shader effect:\n   - Set up WebGL context\n   - Configure shader uniforms\n   - Add time-based animations\n   - Optimize for mobile\n5. Provide:\n   - Complete shader component\n   - Configuration options\n   - Performance notes\n   - Fallback for devices without WebGL\n\nShader Effect Requirements: @param.shader_requirements",
+      "variables": [
+        {
+          "name": "shader_requirements",
+          "description": "Description of the visual effect, including style, colors, and interactivity",
+          "required": true
+        }
+      ],
+      "description": "Implement advanced WebGL shader effects using shadcn/ui shader components",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    },
+    {
+      "name": "React_Hook_Pattern_Guide",
+      "text": "You are a React hooks expert. For the given use case:\n\n1. Use tool.Shadcn_MCP.getComponents() to check for relevant custom hooks (components starting with 'use-')\n2. Use tool.Shadcn_MCP.getComponent() to fetch hook implementations like:\n   - use-boolean, use-counter, use-toggle\n   - use-debounce-callback, use-debounce-value\n   - use-local-storage, use-session-storage\n   - use-media-query, use-intersection-observer\n   - use-event-listener, use-hover\n3. If needed, use tool.context7.resolve-library-id() for 'react' or relevant library\n4. Use tool.context7.get-library-docs() to get official React hooks documentation\n5. Design the solution:\n   - Identify which hooks to use\n   - Compose hooks if needed\n   - Handle edge cases\n   - Add TypeScript types\n6. Provide:\n   - Custom hook implementation\n   - Usage examples\n   - Testing recommendations\n   - Performance considerations\n\nUse Case: @param.hook_use_case",
+      "variables": [
+        {
+          "name": "hook_use_case",
+          "description": "Description of what the hook needs to accomplish",
+          "required": true
+        }
+      ],
+      "description": "Design and implement custom React hooks using shadcn patterns and best practices",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    },
+    {
+      "name": "UI_Pattern_Library_Creator",
+      "text": "You are a design system architect. For the given pattern library requirements:\n\n1. Use tool.Shadcn_MCP.getComponents() to audit all available components\n2. Categorize components by type:\n   - Form elements (input, select, combobox, etc.)\n   - Layout (navbar, tabs, dock, etc.)\n   - Data display (table, charts, cards, etc.)\n   - Feedback (toast, dialog, modal, etc.)\n   - Navigation (breadcrumb, pagination, etc.)\n3. For each category, use tool.Shadcn_MCP.getComponent() to fetch examples\n4. Use tool.context7.resolve-library-id() and get-library-docs() for design system best practices\n5. Create a cohesive pattern library:\n   - Define consistent spacing, sizing, colors\n   - Establish naming conventions\n   - Document component APIs\n   - Create composition examples\n   - Add accessibility guidelines\n6. Deliver:\n   - Component catalog\n   - Usage documentation\n   - Code examples\n   - Design tokens\n   - Best practices guide\n\nPattern Library Scope: @param.library_scope",
+      "variables": [
+        {
+          "name": "library_scope",
+          "description": "Description of the pattern library scope, target use cases, and requirements",
+          "required": true
+        }
+      ],
+      "description": "Create comprehensive UI pattern libraries using shadcn/ui components with design system principles",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    }
+  ],
+  "custom_tools": [
+    {
+      "tool_type": "python",
+      "name": "get_library_docs",
+      "description": "",
+      "variables": [],
+      "text": "",
+      "environment_variables": [],
+      "tool_calls": [],
+      "code": "tool.AWSDocs.aws___read_documentation(\"GOOGLE.COM\")",
+      "imports": [],
+      "dependencies": []
+    },
+    {
+      "tool_type": "http",
+      "name": "",
+      "description": "",
+      "variables": [],
+      "text": "",
+      "environment_variables": [],
+      "tool_calls": [],
+      "api_config": {
+        "method": "GET",
+        "url": "",
+        "headers": {},
+        "body": null,
+        "query_params": {},
+        "auth": {
+          "type": "apikey",
+          "token": "",
+          "apiKey": "config.API_Key"
+        }
+      },
+      "imported_from": null
+    }
+  ],
+  "custom_resources": [
+    {
+      "name": null,
+      "uri": null,
+      "description": null,
+      "id": "93ccf55a-fe1f-43c4-9dd1-381c676821ad",
+      "url": "/api/blob/93ccf55a-fe1f-43c4-9dd1-381c676821ad",
+      "original_filename": "shadcn_rules.txt",
+      "filename": "shadcn_rules.txt_93ccf55a-fe1f-43c4-9dd1-381c676821ad.txt",
+      "resource_name": "shadcn_rules.txt",
+      "content_type": "text/plain",
+      "size": 3837,
+      "vmcp_id": "ebc14250-aa3c-4d40-9ebf-5d72ab46a2a0",
+      "user_id": 1,
+      "created_at": "2025-11-09T12:11:05.304Z"
+    }
+  ],
+  "environment_variables": [
+    {
+      "name": "API_Library",
+      "value": "FASTAPI",
+      "description": null
+    },
+    {
+      "name": "API_Key",
+      "value": "<Sample key>",
+      "description": null
+    }
+  ],
+  "system_prompt": {
+    "text": "You are a helpful AI assistant with access to various tools and resources. You can help users with a wide range of tasks using the available MCP (Model Context Protocol) tools.\n\nAvailable capabilities:\n- Execute tools to perform specific actions\n- Access resources for information\n- Use prompts for structured interactions\n\nAlways be helpful, accurate, and explain what you're doing when using tools.",
+    "variables": [],
+    "environment_variables": [],
+    "tool_calls": []
+  },
+  "metadata": {
+    "url": "http://localhost:8000/private/UI_Component_Designer/vmcp",
+    "type": "vmcp",
+    "icon": "",
+    "author": ""
+  }
+}

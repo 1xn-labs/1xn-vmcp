@@ -1,0 +1,37 @@
+FROM node:20-slim
+
+# Accept build arguments for environment variables
+ARG VITE_BACKEND_URL
+ARG VITE_UNIFIED_BACKEND_URL
+ARG VITE_MCP_SERVER_URL
+ARG VITE_ENTITY_STRING
+ARG NODE_ENV
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+# Ensure native dependencies are properly installed for the container architecture
+RUN npm rebuild
+
+# Copy source code
+COPY . .
+
+# Set environment variables for the build process
+ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
+ENV VITE_UNIFIED_BACKEND_URL=$VITE_UNIFIED_BACKEND_URL
+ENV VITE_MCP_SERVER_URL=$VITE_MCP_SERVER_URL
+ENV VITE_ENTITY_STRING=$VITE_ENTITY_STRING
+ENV NODE_ENV=$NODE_ENV
+
+# Expose port 3000 (Vite default)
+EXPOSE 3000
+
+# Set environment variables for development
+ENV NODE_ENV=development
+
+# Default command for development
+CMD ["npm", "run", "dev"] 

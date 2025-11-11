@@ -1,0 +1,2004 @@
+{
+  "name": "trading_analyst_with_kite",
+  "description": null,
+  "vmcp_config": {
+    "selected_servers": [
+      {
+        "name": "kite",
+        "transport_type": "http",
+        "description": "Test MCP Server",
+        "server_id": "18a7c4d9ce586ff0",
+        "favicon_url": null,
+        "command": null,
+        "args": [],
+        "env": {},
+        "url": "https://mcp.kite.trade/mcp",
+        "headers": {},
+        "status": "connected",
+        "last_connected": null,
+        "last_error": null,
+        "capabilities": {
+          "tools": true,
+          "resources": false,
+          "prompts": false
+        },
+        "tools": [
+          "cancel_order",
+          "delete_gtt_order",
+          "get_gtts",
+          "get_historical_data",
+          "get_holdings",
+          "get_ltp",
+          "get_margins",
+          "get_mf_holdings",
+          "get_ohlc",
+          "get_order_history",
+          "get_order_trades",
+          "get_orders",
+          "get_positions",
+          "get_profile",
+          "get_quotes",
+          "get_trades",
+          "login",
+          "modify_gtt_order",
+          "modify_order",
+          "place_gtt_order",
+          "place_order",
+          "search_instruments"
+        ],
+        "tool_details": [
+          {
+            "name": "cancel_order",
+            "title": null,
+            "description": "Cancel an existing order",
+            "inputSchema": {
+              "properties": {
+                "order_id": {
+                  "description": "Order ID",
+                  "type": "string"
+                },
+                "variety": {
+                  "default": "regular",
+                  "description": "Order variety",
+                  "enum": [
+                    "regular",
+                    "co",
+                    "amo",
+                    "iceberg",
+                    "auction"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "variety",
+                "order_id"
+              ],
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "kite"
+            }
+          },
+          {
+            "name": "delete_gtt_order",
+            "title": null,
+            "description": "Delete an existing GTT (Good Till Triggered) order",
+            "inputSchema": {
+              "properties": {
+                "trigger_id": {
+                  "description": "The ID of the GTT order to delete",
+                  "type": "number"
+                }
+              },
+              "required": [
+                "trigger_id"
+              ],
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "kite"
+            }
+          },
+          {
+            "name": "get_gtts",
+            "title": null,
+            "description": "Get all active GTT orders. Supports pagination for large datasets.",
+            "inputSchema": {
+              "properties": {
+                "from": {
+                  "description": "Starting index for pagination (0-based). Default: 0",
+                  "type": "number"
+                },
+                "limit": {
+                  "description": "Maximum number of GTT orders to return. If not specified, returns all GTT orders. When specified, response includes pagination metadata.",
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "kite"
+            }
+          },
+          {
+            "name": "get_historical_data",
+            "title": null,
+            "description": "Get historical price data for an instrument",
+            "inputSchema": {
+              "properties": {
+                "continuous": {
+                  "default": false,
+                  "description": "Get continuous data (for futures and options)",
+                  "type": "boolean"
+                },
+                "from_date": {
+                  "description": "From date in YYYY-MM-DD HH:MM:SS format",
+                  "type": "string"
+                },
+                "instrument_token": {
+                  "description": "Instrument token (can be obtained from search_instruments tool)",
+                  "type": "number"
+                },
+                "interval": {
+                  "description": "Candle interval",
+                  "enum": [
+                    "minute",
+                    "day",
+                    "3minute",
+                    "5minute",
+                    "10minute",
+                    "15minute",
+                    "30minute",
+                    "60minute"
+                  ],
+                  "type": "string"
+                },
+                "oi": {
+                  "default": false,
+                  "description": "Include open interest data",
+                  "type": "boolean"
+                },
+                "to_date": {
+                  "description": "To date in YYYY-MM-DD HH:MM:SS format",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "instrument_token",
+                "from_date",
+                "to_date",
+                "interval"
+              ],
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "kite"
+            }
+          },
+          {
+            "name": "get_holdings",
+            "title": null,
+            "description": "Get holdings for the current user. Supports pagination for large datasets.",
+            "inputSchema": {
+              "properties": {
+                "from": {
+                  "description": "Starting index for pagination (0-based). Default: 0",
+                  "type": "number"
+                },
+                "limit": {
+                  "description": "Maximum number of holdings to return. If not specified, returns all holdings. When specified, response includes pagination metadata.",
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "kite"
+            }
+          },
+          {
+            "name": "get_ltp",
+            "title": null,
+            "description": "Get latest trading prices for a list of instruments",
+            "inputSchema": {
+              "properties": {
+                "instruments": {
+                  "description": "Eg. ['NSE:INFY', 'NSE:SBIN']. This API returns the lastest price for the given list of instruments in the format of exchange:tradingsymbol.",
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": [
+                "instruments"
+              ],
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "kite"
+            }
+          },
+          {
+            "name": "get_margins",
+            "title": null,
+            "description": "Get margins",
+            "inputSchema": {
+              "properties": {},
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "kite"
+            }
+          },
+          {
+            "name": "get_mf_holdings",
+            "title": null,
+            "description": "Get all mutual fund holdings. Supports pagination for large datasets.",
+            "inputSchema": {
+              "properties": {
+                "from": {
+                  "description": "Starting index for pagination (0-based). Default: 0",
+                  "type": "number"
+                },
+                "limit": {
+                  "description": "Maximum number of MF holdings to return. If not specified, returns all holdings. When specified, response includes pagination metadata.",
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "kite"
+            }
+          },
+          {
+            "name": "get_ohlc",
+            "title": null,
+            "description": "Get OHLC (Open, High, Low, Close) data for a list of instruments",
+            "inputSchema": {
+              "properties": {
+                "instruments": {
+                  "description": "Eg. ['NSE:INFY', 'NSE:SBIN']. This API returns OHLC data for the given list of instruments in the format of exchange:tradingsymbol.",
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": [
+                "instruments"
+              ],
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "kite"
+            }
+          },
+          {
+            "name": "get_order_history",
+            "title": null,
+            "description": "Get order history for a specific order",
+            "inputSchema": {
+              "properties": {
+                "order_id": {
+                  "description": "ID of the order to fetch history for",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id"
+              ],
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "kite"
+            }
+          },
+          {
+            "name": "get_order_trades",
+            "title": null,
+            "description": "Get trades for a specific order",
+            "inputSchema": {
+              "properties": {
+                "order_id": {
+                  "description": "ID of the order to fetch trades for",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id"
+              ],
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "kite"
+            }
+          },
+          {
+            "name": "get_orders",
+            "title": null,
+            "description": "Get all orders. Supports pagination for large datasets.",
+            "inputSchema": {
+              "properties": {
+                "from": {
+                  "description": "Starting index for pagination (0-based). Default: 0",
+                  "type": "number"
+                },
+                "limit": {
+                  "description": "Maximum number of orders to return. If not specified, returns all orders. When specified, response includes pagination metadata.",
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "kite"
+            }
+          },
+          {
+            "name": "get_positions",
+            "title": null,
+            "description": "Get current positions. Supports pagination for large datasets.",
+            "inputSchema": {
+              "properties": {
+                "from": {
+                  "description": "Starting index for pagination (0-based). Default: 0",
+                  "type": "number"
+                },
+                "limit": {
+                  "description": "Maximum number of positions to return. If not specified, returns all positions. When specified, response includes pagination metadata.",
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "kite"
+            }
+          },
+          {
+            "name": "get_profile",
+            "title": null,
+            "description": "Retrieve the user's profile information, including user ID, name, email, and account details like products orders, and exchanges available to the user. Use this to get basic user details.",
+            "inputSchema": {
+              "properties": {},
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "kite"
+            }
+          },
+          {
+            "name": "get_quotes",
+            "title": null,
+            "description": "Get market data quotes for a list of instruments",
+            "inputSchema": {
+              "properties": {
+                "instruments": {
+                  "description": "Eg. ['NSE:INFY', 'NSE:SBIN']. This API returns the complete market data snapshot of up to 500 instruments in one go. It includes the quantity, OHLC, and Open Interest fields, and the complete bid/ask market depth amongst others. Instruments are identified by the exchange:tradingsymbol combination and are passed as values to the query parameter i which is repeated for every instrument. If there is no data available for a given key, the key will be absent from the response.",
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": [
+                "instruments"
+              ],
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "kite"
+            }
+          },
+          {
+            "name": "get_trades",
+            "title": null,
+            "description": "Get trading history. Supports pagination for large datasets.",
+            "inputSchema": {
+              "properties": {
+                "from": {
+                  "description": "Starting index for pagination (0-based). Default: 0",
+                  "type": "number"
+                },
+                "limit": {
+                  "description": "Maximum number of trades to return. If not specified, returns all trades. When specified, response includes pagination metadata.",
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "kite"
+            }
+          },
+          {
+            "name": "login",
+            "title": null,
+            "description": "Login to Kite API. This tool helps you log in to the Kite API. If you are starting off a new conversation call this tool before hand. Call this if you get a session error. Returns a link that the user should click to authorize access, present as markdown if your client supports so that they can click it easily when rendered.",
+            "inputSchema": {
+              "properties": {},
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "kite"
+            }
+          },
+          {
+            "name": "modify_gtt_order",
+            "title": null,
+            "description": "Modify an existing GTT (Good Till Triggered) order",
+            "inputSchema": {
+              "properties": {
+                "exchange": {
+                  "default": "NSE",
+                  "description": "The exchange to which the order should be placed",
+                  "enum": [
+                    "NSE",
+                    "BSE",
+                    "MCX",
+                    "NFO",
+                    "BFO"
+                  ],
+                  "type": "string"
+                },
+                "last_price": {
+                  "description": "Last price of the instrument",
+                  "type": "number"
+                },
+                "limit_price": {
+                  "description": "Limit price for the order (for single-leg)",
+                  "type": "number"
+                },
+                "lower_limit_price": {
+                  "description": "Limit price for the lower trigger order (for two-leg)",
+                  "type": "number"
+                },
+                "lower_quantity": {
+                  "description": "Quantity for the lower trigger order (for two-leg)",
+                  "type": "number"
+                },
+                "lower_trigger_value": {
+                  "description": "Lower price point at which the GTT will be triggered (for two-leg)",
+                  "type": "number"
+                },
+                "quantity": {
+                  "description": "Quantity for the order (for single-leg)",
+                  "type": "number"
+                },
+                "tradingsymbol": {
+                  "description": "Trading symbol",
+                  "type": "string"
+                },
+                "transaction_type": {
+                  "description": "Transaction type",
+                  "enum": [
+                    "BUY",
+                    "SELL"
+                  ],
+                  "type": "string"
+                },
+                "trigger_id": {
+                  "description": "The ID of the GTT order to modify",
+                  "type": "number"
+                },
+                "trigger_type": {
+                  "description": "GTT trigger type",
+                  "enum": [
+                    "single",
+                    "two-leg"
+                  ],
+                  "type": "string"
+                },
+                "trigger_value": {
+                  "description": "Price point at which the GTT will be triggered (for single-leg)",
+                  "type": "number"
+                },
+                "upper_limit_price": {
+                  "description": "Limit price for the upper trigger order (for two-leg)",
+                  "type": "number"
+                },
+                "upper_quantity": {
+                  "description": "Quantity for the upper trigger order (for two-leg)",
+                  "type": "number"
+                },
+                "upper_trigger_value": {
+                  "description": "Upper price point at which the GTT will be triggered (for two-leg)",
+                  "type": "number"
+                }
+              },
+              "required": [
+                "trigger_id",
+                "exchange",
+                "tradingsymbol",
+                "last_price",
+                "transaction_type",
+                "trigger_type"
+              ],
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "kite"
+            }
+          },
+          {
+            "name": "modify_order",
+            "title": null,
+            "description": "Modify an existing order",
+            "inputSchema": {
+              "properties": {
+                "disclosed_quantity": {
+                  "description": "Quantity to disclose publicly (for equity trades)",
+                  "type": "number"
+                },
+                "order_id": {
+                  "description": "Order ID",
+                  "type": "string"
+                },
+                "order_type": {
+                  "description": "Order type",
+                  "enum": [
+                    "MARKET",
+                    "LIMIT",
+                    "SL",
+                    "SL-M"
+                  ],
+                  "type": "string"
+                },
+                "price": {
+                  "description": "Price (required for LIMIT order_type",
+                  "type": "number"
+                },
+                "quantity": {
+                  "default": "1",
+                  "description": "Quantity",
+                  "minimum": 1,
+                  "type": "number"
+                },
+                "trigger_price": {
+                  "description": "The price at which an order should be triggered (SL, SL-M orders)",
+                  "type": "number"
+                },
+                "validity": {
+                  "description": "Order Validity. (DAY for regular orders, IOC for immediate or cancel, and TTL for orders valid for specific minutes",
+                  "enum": [
+                    "DAY",
+                    "IOC",
+                    "TTL"
+                  ],
+                  "type": "string"
+                },
+                "variety": {
+                  "default": "regular",
+                  "description": "Order variety",
+                  "enum": [
+                    "regular",
+                    "co",
+                    "amo",
+                    "iceberg",
+                    "auction"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "variety",
+                "order_id",
+                "order_type"
+              ],
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "kite"
+            }
+          },
+          {
+            "name": "place_gtt_order",
+            "title": null,
+            "description": "Place a GTT (Good Till Triggered) order",
+            "inputSchema": {
+              "properties": {
+                "exchange": {
+                  "default": "NSE",
+                  "description": "The exchange to which the order should be placed",
+                  "enum": [
+                    "NSE",
+                    "BSE",
+                    "MCX",
+                    "NFO",
+                    "BFO"
+                  ],
+                  "type": "string"
+                },
+                "last_price": {
+                  "description": "Last price of the instrument",
+                  "type": "number"
+                },
+                "limit_price": {
+                  "description": "Limit price for the order (for single-leg)",
+                  "type": "number"
+                },
+                "lower_limit_price": {
+                  "description": "Limit price for the lower trigger order (for two-leg)",
+                  "type": "number"
+                },
+                "lower_quantity": {
+                  "description": "Quantity for the lower trigger order (for two-leg)",
+                  "type": "number"
+                },
+                "lower_trigger_value": {
+                  "description": "Lower price point at which the GTT will be triggered (for two-leg)",
+                  "type": "number"
+                },
+                "product": {
+                  "description": "Product type",
+                  "enum": [
+                    "CNC",
+                    "NRML",
+                    "MIS",
+                    "MTF"
+                  ],
+                  "type": "string"
+                },
+                "quantity": {
+                  "description": "Quantity for the order (for single-leg)",
+                  "type": "number"
+                },
+                "tradingsymbol": {
+                  "description": "Trading symbol",
+                  "type": "string"
+                },
+                "transaction_type": {
+                  "description": "Transaction type",
+                  "enum": [
+                    "BUY",
+                    "SELL"
+                  ],
+                  "type": "string"
+                },
+                "trigger_type": {
+                  "description": "GTT trigger type",
+                  "enum": [
+                    "single",
+                    "two-leg"
+                  ],
+                  "type": "string"
+                },
+                "trigger_value": {
+                  "description": "Price point at which the GTT will be triggered (for single-leg)",
+                  "type": "number"
+                },
+                "upper_limit_price": {
+                  "description": "Limit price for the upper trigger order (for two-leg)",
+                  "type": "number"
+                },
+                "upper_quantity": {
+                  "description": "Quantity for the upper trigger order (for two-leg)",
+                  "type": "number"
+                },
+                "upper_trigger_value": {
+                  "description": "Upper price point at which the GTT will be triggered (for two-leg)",
+                  "type": "number"
+                }
+              },
+              "required": [
+                "exchange",
+                "tradingsymbol",
+                "last_price",
+                "transaction_type",
+                "product",
+                "trigger_type"
+              ],
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "kite"
+            }
+          },
+          {
+            "name": "place_order",
+            "title": null,
+            "description": "Place an order",
+            "inputSchema": {
+              "properties": {
+                "disclosed_quantity": {
+                  "description": "Quantity to disclose publicly (for equity trades)",
+                  "type": "number"
+                },
+                "exchange": {
+                  "default": "NSE",
+                  "description": "The exchange to which the order should be placed",
+                  "enum": [
+                    "NSE",
+                    "BSE",
+                    "MCX",
+                    "NFO",
+                    "BFO"
+                  ],
+                  "type": "string"
+                },
+                "iceberg_legs": {
+                  "description": "Number of legs for iceberg orders",
+                  "type": "number"
+                },
+                "iceberg_quantity": {
+                  "description": "Quantity per leg for iceberg orders",
+                  "type": "number"
+                },
+                "order_type": {
+                  "description": "Order type",
+                  "enum": [
+                    "MARKET",
+                    "LIMIT",
+                    "SL",
+                    "SL-M"
+                  ],
+                  "type": "string"
+                },
+                "price": {
+                  "description": "Price (required for LIMIT order_type",
+                  "type": "number"
+                },
+                "product": {
+                  "description": "Product type",
+                  "enum": [
+                    "CNC",
+                    "NRML",
+                    "MIS",
+                    "MTF"
+                  ],
+                  "type": "string"
+                },
+                "quantity": {
+                  "default": "1",
+                  "description": "Quantity",
+                  "minimum": 1,
+                  "type": "number"
+                },
+                "tag": {
+                  "description": "An optional tag to apply to an order to identify it (alphanumeric, max 20 chars)",
+                  "maxLength": 20,
+                  "type": "string"
+                },
+                "tradingsymbol": {
+                  "description": "Trading symbol",
+                  "type": "string"
+                },
+                "transaction_type": {
+                  "description": "Transaction type",
+                  "enum": [
+                    "BUY",
+                    "SELL"
+                  ],
+                  "type": "string"
+                },
+                "trigger_price": {
+                  "description": "The price at which an order should be triggered (SL, SL-M orders)",
+                  "type": "number"
+                },
+                "validity": {
+                  "description": "Order Validity. (DAY for regular orders, IOC for immediate or cancel, and TTL for orders valid for specific minutes",
+                  "enum": [
+                    "DAY",
+                    "IOC",
+                    "TTL"
+                  ],
+                  "type": "string"
+                },
+                "validity_ttl": {
+                  "description": "Order life span in minutes for TTL validity orders, required for TTL orders",
+                  "type": "number"
+                },
+                "variety": {
+                  "default": "regular",
+                  "description": "Order variety",
+                  "enum": [
+                    "regular",
+                    "co",
+                    "amo",
+                    "iceberg",
+                    "auction"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "variety",
+                "exchange",
+                "tradingsymbol",
+                "transaction_type",
+                "quantity",
+                "product",
+                "order_type"
+              ],
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "kite"
+            }
+          },
+          {
+            "name": "search_instruments",
+            "title": null,
+            "description": "Search instruments. Supports pagination for large result sets.",
+            "inputSchema": {
+              "properties": {
+                "filter_on": {
+                  "description": "Filter on a specific field. (Optional). [id(default)=exch:tradingsymbol, name=nice name of the instrument, tradingsymbol=used to trade in a specific exchange, isin=universal identifier for an instrument across exchanges], underlying=[query=underlying instrument, result=futures and options. note=query format -> exch:tradingsymbol where NSE/BSE:PNB converted to -> NFO/BFO:PNB for query since futures and options available under them]",
+                  "enum": [
+                    "id",
+                    "name",
+                    "isin",
+                    "tradingsymbol",
+                    "underlying"
+                  ],
+                  "type": "string"
+                },
+                "from": {
+                  "description": "Starting index for pagination (0-based). Default: 0",
+                  "type": "number"
+                },
+                "limit": {
+                  "description": "Maximum number of instruments to return. If not specified, returns all matching instruments. When specified, response includes pagination metadata.",
+                  "type": "number"
+                },
+                "query": {
+                  "description": "Search query",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "query"
+              ],
+              "type": "object"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": {
+              "title": null,
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "meta": {
+              "server_name": "kite"
+            }
+          }
+        ],
+        "resources": [],
+        "resource_details": [],
+        "resource_templates": [],
+        "resource_template_details": [],
+        "prompts": [],
+        "prompt_details": [],
+        "auto_connect": true,
+        "enabled": true,
+        "vmcps_using_server": [
+          "c8ee1d40-3f19-4069-bc20-c9a8ae1902bd",
+          "cbb7890d-cc83-4451-a5a2-2f5dddb198b8"
+        ]
+      },
+      {
+        "name": "GoogleSheets",
+        "transport_type": "http",
+        "description": "Google Sheets MCP server",
+        "server_id": "2bc67820872c719c",
+        "favicon_url": "https://www.gstatic.com/images/branding/product/2x/sheets_2020q4_48dp.png",
+        "command": null,
+        "args": [],
+        "env": {},
+        "url": "https://1xn.ai/mega_server/mcp/gsheets/mcp",
+        "headers": {},
+        "auth": {
+          "type": "oauth",
+          "client_id": "1xn-cli",
+          "client_secret": null,
+          "auth_url": null,
+          "token_url": null,
+          "scope": null,
+          "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZjhiOGQyODUtOTc3Mi00NDFiLTllODYtNzU4YThhMmVlMmZiIiwic2VydmljZSI6ImdzaGVldHMiLCJpYXQiOjE3NjI3OTA0NDQsImV4cCI6MTc2MzM5NTI0NH0.rGCEXya5JiwFXpUCRaNwi7l3lzpfYiahP5QWsJOWzio",
+          "refresh_token": null,
+          "expires_at": "2025-11-17T21:30:44.198851"
+        },
+        "session_id": "a6546426d4fc4c72aa1b6ba1010017d7",
+        "status": "connected",
+        "last_connected": "2025-11-10T21:30:50.004705",
+        "last_error": null,
+        "capabilities": {
+          "tools": true,
+          "resources": false,
+          "prompts": false
+        },
+        "tools": [
+          "get_data_range",
+          "analyze_columns",
+          "build_pivot",
+          "create_smart_pivot",
+          "get_spreadsheet_info",
+          "read_sheet_values",
+          "modify_sheet_values",
+          "create_spreadsheet",
+          "create_sheet",
+          "execute_cell_formula",
+          "apply_column_formula",
+          "insert_row",
+          "upload_local_csv_to_sheets",
+          "select_spreadsheet",
+          "list_spreadsheets",
+          "search_spreadsheets"
+        ],
+        "tool_details": [
+          {
+            "name": "get_data_range",
+            "title": null,
+            "description": "Analyze spreadsheet data structure and return range metadata.\nDetects data boundaries, identifies headers, and provides row/column counts.\nEssential first step before creating pivot tables to understand data layout.\nReturns JSON with range bounds, header detection status, and dimension info.",
+            "inputSchema": {
+              "properties": {
+                "spreadsheet_id": {
+                  "type": "string"
+                },
+                "sheet_name": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                }
+              },
+              "required": [
+                "spreadsheet_id"
+              ],
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            }
+          },
+          {
+            "name": "analyze_columns",
+            "title": null,
+            "description": "Examine each column's data type, uniqueness, and pivot table suitability.\nAutomatically detects numeric, categorical, date, and text columns.\nRecommends optimal pivot table roles (rows, columns, values, filters) for each field.\nGenerates intelligent pivot table configuration suggestions based on data patterns.",
+            "inputSchema": {
+              "properties": {
+                "spreadsheet_id": {
+                  "type": "string"
+                },
+                "sheet_name": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "include_suggestions": {
+                  "default": true,
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "spreadsheet_id"
+              ],
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            }
+          },
+          {
+            "name": "build_pivot",
+            "title": null,
+            "description": "Create a fully customized pivot table using Google Sheets API.\nAccepts simple comma-separated configuration for rows, columns, values, and functions.\nSupports all pivot functions (SUM, COUNT, AVERAGE, etc.) and creates destination sheet if needed.\nUses flattened configuration with simple string parameters for easy Claude generation.",
+            "inputSchema": {
+              "properties": {
+                "spreadsheet_id": {
+                  "type": "string"
+                },
+                "source_sheet": {
+                  "type": "string"
+                },
+                "source_range": {
+                  "type": "string"
+                },
+                "value_columns": {
+                  "type": "string"
+                },
+                "destination_sheet": {
+                  "default": "Pivot Analysis",
+                  "type": "string"
+                },
+                "destination_cell": {
+                  "default": "A1",
+                  "type": "string"
+                },
+                "row_columns": {
+                  "default": "",
+                  "type": "string"
+                },
+                "column_columns": {
+                  "default": "",
+                  "type": "string"
+                },
+                "value_functions": {
+                  "default": "SUM",
+                  "type": "string"
+                },
+                "sort_order": {
+                  "default": "ASCENDING",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "spreadsheet_id",
+                "source_sheet",
+                "source_range",
+                "value_columns"
+              ],
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            }
+          },
+          {
+            "name": "create_smart_pivot",
+            "title": null,
+            "description": "Fully automated pivot table creation with intelligent data analysis.\nCombines data range detection, column analysis, and pivot generation in one step.\nAuto-selects best pivot configuration or returns suggestions for user choice.\nPerfect for users who want instant pivot insights without manual configuration.",
+            "inputSchema": {
+              "properties": {
+                "spreadsheet_id": {
+                  "type": "string"
+                },
+                "sheet_name": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "auto_create": {
+                  "default": true,
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "spreadsheet_id"
+              ],
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            }
+          },
+          {
+            "name": "get_spreadsheet_info",
+            "title": null,
+            "description": "Get information about a specific spreadsheet for the authenticated user.",
+            "inputSchema": {
+              "properties": {
+                "spreadsheet_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "spreadsheet_id"
+              ],
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            }
+          },
+          {
+            "name": "read_sheet_values",
+            "title": null,
+            "description": "Read values from a Google Sheet for the authenticated user.",
+            "inputSchema": {
+              "properties": {
+                "spreadsheet_id": {
+                  "type": "string"
+                },
+                "range_name": {
+                  "default": "A1:Z1000",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "spreadsheet_id"
+              ],
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            }
+          },
+          {
+            "name": "modify_sheet_values",
+            "title": null,
+            "description": "Write values to a Google Sheet for the authenticated user.",
+            "inputSchema": {
+              "properties": {
+                "spreadsheet_id": {
+                  "type": "string"
+                },
+                "range_name": {
+                  "type": "string"
+                },
+                "values": {
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "type": "array"
+                },
+                "clear_values": {
+                  "default": false,
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "spreadsheet_id",
+                "range_name",
+                "values"
+              ],
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            }
+          },
+          {
+            "name": "create_spreadsheet",
+            "title": null,
+            "description": "Create a new Google Spreadsheet for the authenticated user.",
+            "inputSchema": {
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "sheet_names": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": [
+                "title",
+                "sheet_names"
+              ],
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            }
+          },
+          {
+            "name": "create_sheet",
+            "title": null,
+            "description": "Add a new sheet to an existing spreadsheet for the authenticated user.",
+            "inputSchema": {
+              "properties": {
+                "spreadsheet_id": {
+                  "type": "string"
+                },
+                "sheet_name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "spreadsheet_id",
+                "sheet_name"
+              ],
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            }
+          },
+          {
+            "name": "execute_cell_formula",
+            "title": null,
+            "description": "Execute a formula in a specific cell of a Google Sheet.\nTakes a cell address (like 'A1', 'B5', 'C10') and a formula to execute in that cell.\nThe formula should start with '=' (e.g., '=SUM(A1:A10)', '=B2*C2', '=TODAY()').\nReturns the result of the formula execution and cell update confirmation.",
+            "inputSchema": {
+              "properties": {
+                "spreadsheet_id": {
+                  "type": "string"
+                },
+                "sheet_name": {
+                  "type": "string"
+                },
+                "cell_address": {
+                  "type": "string"
+                },
+                "formula": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "spreadsheet_id",
+                "sheet_name",
+                "cell_address",
+                "formula"
+              ],
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            }
+          },
+          {
+            "name": "apply_column_formula",
+            "title": null,
+            "description": "Apply a formula to an entire column based on another column's data.\nSupports Google Sheets formulas with automatic row-by-row application.\nPerfect for data transformations like extracting substrings, converting dates, or mathematical operations.\nUses {source} placeholder in formula pattern for flexible transformations across all data rows.",
+            "inputSchema": {
+              "properties": {
+                "spreadsheet_id": {
+                  "type": "string"
+                },
+                "sheet_name": {
+                  "type": "string"
+                },
+                "source_column": {
+                  "type": "string"
+                },
+                "destination_column": {
+                  "type": "string"
+                },
+                "formula_pattern": {
+                  "type": "string"
+                },
+                "has_headers": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "start_row": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "end_row": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                }
+              },
+              "required": [
+                "spreadsheet_id",
+                "sheet_name",
+                "source_column",
+                "destination_column",
+                "formula_pattern"
+              ],
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            }
+          },
+          {
+            "name": "insert_row",
+            "title": null,
+            "description": "Insert a new row at the specified position in a Google Sheet.\nShifts existing rows down to make room for the new row.\nSupports inserting at any position (1-based indexing where 1 is the first row).\nValues will be inserted into the new row starting from column A.",
+            "inputSchema": {
+              "properties": {
+                "spreadsheet_id": {
+                  "type": "string"
+                },
+                "sheet_name": {
+                  "type": "string"
+                },
+                "row_index": {
+                  "type": "integer"
+                },
+                "values": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": [
+                "spreadsheet_id",
+                "sheet_name",
+                "row_index",
+                "values"
+              ],
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            }
+          },
+          {
+            "name": "upload_local_csv_to_sheets",
+            "title": null,
+            "description": "Upload a local CSV file from the db_query storage directory to a new Google Spreadsheet.\nReads CSV files from /root/1xn_mcp/mcp_server/mcp-mega-server/app/storage/db_query directory.\nCreates a new Google Sheets spreadsheet and populates it with the CSV data.\nAutomatically detects headers and preserves data formatting during upload.",
+            "inputSchema": {
+              "properties": {
+                "csv_filename": {
+                  "type": "string"
+                },
+                "spreadsheet_name": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "sheet_name": {
+                  "default": "Sheet1",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "csv_filename"
+              ],
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            }
+          },
+          {
+            "name": "select_spreadsheet",
+            "title": null,
+            "description": "Use this tool when the user wants to work with a Google Spreadsheet but hasn't provided a spreadsheet ID or URL. This tool generates a secure file picker interface that allows users to browse and select their Google Sheets from Google Drive. The tool returns a URL that the user can click to select their desired spreadsheet, after which they'll provide the file ID back to continue the operation. Always use this tool when:\n- User says \"use my spreadsheet\" or \"open my sheet\" without providing an ID\n- User references \"a spreadsheet\" or \"the spreadsheet\" without specifying which one\n- User says phrases like \"select from my files\", \"pick a sheet\", or \"choose a spreadsheet\"\n- User wants to work with an existing spreadsheet but hasn't shared its ID or URL yet",
+            "inputSchema": {
+              "properties": {},
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            }
+          },
+          {
+            "name": "list_spreadsheets",
+            "title": null,
+            "description": "List up to 15 accessible Google Spreadsheets (files you've selected via picker + files created by this app).\nIf no files are found, use 'select_spreadsheet' tool to open the file picker and select files to work with.",
+            "inputSchema": {
+              "properties": {},
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            }
+          },
+          {
+            "name": "search_spreadsheets",
+            "title": null,
+            "description": "Search within accessible Google Spreadsheets by filename or content (max 15 results).\nIf no files are found, use 'select_spreadsheet' tool to open the file picker and select files to work with.",
+            "inputSchema": {
+              "properties": {
+                "query": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "query"
+              ],
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "type": "object",
+              "x-fastmcp-wrap-result": true
+            },
+            "icons": null,
+            "annotations": null,
+            "meta": {
+              "_fastmcp": {
+                "tags": []
+              },
+              "server_name": "GoogleSheets"
+            }
+          }
+        ],
+        "resources": [],
+        "resource_details": [],
+        "resource_templates": [],
+        "resource_template_details": [],
+        "prompts": [],
+        "prompt_details": [],
+        "auto_connect": true,
+        "enabled": true,
+        "vmcps_using_server": [
+          "TODO_GoogleSheet",
+          "c8ee1d40-3f19-4069-bc20-c9a8ae1902bd"
+        ]
+      }
+    ],
+    "selected_tools": {
+      "18a7c4d9ce586ff0": [
+        "get_holdings",
+        "get_ltp",
+        "get_ohlc",
+        "get_order_history",
+        "get_positions",
+        "get_profile",
+        "get_quotes",
+        "login",
+        "search_instruments",
+        "get_orders",
+        "get_order_trades"
+      ],
+      "2bc67820872c719c": [
+        "get_data_range",
+        "create_smart_pivot",
+        "get_spreadsheet_info",
+        "read_sheet_values",
+        "modify_sheet_values",
+        "create_spreadsheet",
+        "create_sheet",
+        "execute_cell_formula",
+        "apply_column_formula",
+        "insert_row",
+        "select_spreadsheet"
+      ]
+    },
+    "selected_prompts": {
+      "18a7c4d9ce586ff0": [],
+      "2bc67820872c719c": []
+    },
+    "selected_resources": {
+      "18a7c4d9ce586ff0": [],
+      "2bc67820872c719c": []
+    }
+  },
+  "custom_prompts": [
+    {
+      "name": "portfolio_analysis_with_gsheet",
+      "text": "\n## Objective\nCreate a comprehensive Google Sheet that displays Zerodha Kite holdings with real-time market data, charts, and news summaries. The sheet should automatically update with current prices, financial metrics, and visual charts.\n\n## Step-by-Step Instructions\n\n### Step 1: Login to Kite API\n1. Users login status is @tool.kite.login()\n2. If the user is logged in , the contiunue to next steps else ask user to login based on the link generated. \n### Step 2: Fetch Holdings Data\n1. Use `kite_get_holdings` tool to retrieve all current holdings\n2. Parse the response to extract:\n   - Stock symbols\n   - Exchange (BSE/NSE)\n   - Current quantities\n   - Average prices\n   - Last prices\n   - P&L information\n\n### Step 3: Create Google Sheet\n1. Use `GoogleSheets_create_spreadsheet` tool with:\n   - Title: \"zerodha kite holdings [TODAY'S DATE]\" (format: YYYY-MM-DD)\n   - Sheet name: \"Holdings\"\n2. Save the spreadsheet ID for subsequent operations\n\n### Step 4: Set Up Column Headers\n1. Use `GoogleSheets_modify_sheet_values` to create headers in row 1:\n   - Column A: \"Stock Symbol\"\n   - Column B: \"NSE Symbol\"\n   - Column C: \"1 Year Chart\"\n   - Column D: \"Current Price\"\n   - Column E: \"Day Change\"\n   - Column F: \"Day Change %\"\n   - Column G: \"Volume\"\n   - Column H: \"52W High\"\n   - Column I: \"52W Low\"\n   - Column J: \"Market Cap\"\n   - Column K: \"P/E Ratio\"\n   - Column L: \"EPS\"\n   - Column M: \"News Summary\"\n\n### Step 5: Populate Stock Symbols\n1. Extract stock symbols from holdings data\n2. For each holding:\n   - Add the original symbol to Column A (Stock Symbol)\n   - If the symbol is from BSE, convert it to NSE equivalent:\n     - Use `kite_search_instruments` with `filter_on: \"tradingsymbol\"` to find NSE equivalent\n     - If NSE version exists, use \"NSE:SYMBOL\" format\n     - If no NSE equivalent, keep original but note it\n   - Add NSE symbol to Column B (NSE Symbol)\n3. Use `GoogleSheets_modify_sheet_values` to populate columns A and B\n\n### Step 6: Create Sparkline Charts (1 Year Chart)\n1. For each row (starting from row 2), use `GoogleSheets_execute_cell_formula` to add sparkline formula in Column C:\n   ```\n   =SPARKLINE(GOOGLEFINANCE(B2,\"price\",TODAY()-365,TODAY()))\n   ```\n   - Replace B2 with the appropriate cell reference (B3, B4, etc.) for each row\n   - This creates a visual chart showing 1-year price movement\n\n### Step 7: Populate Market Data Using GOOGLEFINANCE Formulas\nUse `GoogleSheets_apply_column_formula` tool to apply formulas to entire columns. This is more efficient than individual cell updates.\n\nFor each column, use the following formula patterns (where {source} refers to column B - NSE Symbol):\n\n1. **Current Price (Column D)**:\n   - Formula: `=GOOGLEFINANCE({source},\"price\")`\n   - Source column: B\n   - Destination column: D\n\n2. **Day Change (Column E)**:\n   - Formula: `=GOOGLEFINANCE({source},\"change\")`\n   - Source column: B\n   - Destination column: E\n\n3. **Day Change % (Column F)**:\n   - Formula: `=GOOGLEFINANCE({source},\"changepct\")`\n   - Source column: B\n   - Destination column: F\n\n4. **Volume (Column G)**:\n   - Formula: `=GOOGLEFINANCE({source},\"volume\")`\n   - Source column: B\n   - Destination column: G\n\n5. **52W High (Column H)**:\n   - Formula: `=GOOGLEFINANCE({source},\"high52\")`\n   - Source column: B\n   - Destination column: H\n\n6. **52W Low (Column I)**:\n   - Formula: `=GOOGLEFINANCE({source},\"low52\")`\n   - Source column: B\n   - Destination column: I\n\n7. **Market Cap (Column J)**:\n   - Formula: `=GOOGLEFINANCE({source},\"marketcap\")`\n   - Source column: B\n   - Destination column: J\n   - Note: May return #N/A for ETFs\n\n8. **P/E Ratio (Column K)**:\n   - Formula: `=GOOGLEFINANCE({source},\"pe\")`\n   - Source column: B\n   - Destination column: K\n   - Note: May return #N/A for ETFs\n\n9. **EPS (Column L)**:\n   - Formula: `=GOOGLEFINANCE({source},\"eps\")`\n   - Source column: B\n   - Destination column: L\n   - Note: May return #N/A for ETFs\n\n**Important**: When using `apply_column_formula`, do NOT specify `start_row` and `end_row` parameters as strings. Either omit them (to auto-detect) or use integers. The tool will automatically detect data rows and apply formulas accordingly.\n\n### Step 8: Fetch Real-Time Quotes (Optional Enhancement)\n1. Use `kite_get_quotes` with all NSE symbols to get real-time data\n2. This can be used to verify or supplement GOOGLEFINANCE data\n3. Note: GOOGLEFINANCE formulas will auto-update, so this is mainly for initial verification\n\n### Step 9: Populate News Summary\n1. For each stock symbol, use web search to find recent news\n2. Search terms should include:\n   - Stock symbol/company name\n   - \"latest news\"\n   - Current date context\n3. Summarize key news points (2-3 sentences) for each stock\n4. Use `GoogleSheets_modify_sheet_values` to populate Column M (News Summary) with the summaries\n\n### Step 10: Verify and Present Results\n1. Read back the sheet data using `GoogleSheets_read_sheet_values` to verify all data is populated\n2. Present the spreadsheet URL to the user\n3. Inform the user that:\n   - GOOGLEFINANCE formulas will auto-update (with ~20 minute delay)\n   - Sparkline charts will update automatically\n   - News summaries are static and may need manual updates\n\n## Key Tools Reference\n\n### Trading with Kite Tools:\n- `kite_login`: Authenticate with Zerodha Kite\n- `kite_get_holdings`: Get current portfolio holdings\n- `kite_get_quotes`: Get real-time market quotes\n- `kite_search_instruments`: Search for instrument details (useful for BSE to NSE conversion)\n\n### Google Sheets Tools:\n- `GoogleSheets_create_spreadsheet`: Create new spreadsheet\n- `GoogleSheets_modify_sheet_values`: Write data to cells\n- `GoogleSheets_execute_cell_formula`: Execute formula in specific cell\n- `GoogleSheets_apply_column_formula`: Apply formula to entire column (RECOMMENDED for bulk operations)\n- `GoogleSheets_read_sheet_values`: Read data from sheet\n\n## Important Notes\n\n1. **BSE to NSE Conversion**: Always check if NSE equivalent exists using `kite_search_instruments`. Many stocks trade on both exchanges with the same symbol.\n\n2. **Formula Application**: Prefer `apply_column_formula` over individual `execute_cell_formula` calls for columns D through L, as it's more efficient.\n\n3. **GOOGLEFINANCE Limitations**: \n   - Some metrics (Market Cap, P/E, EPS) may not be available for ETFs\n   - Data has ~20 minute delay\n   - Format: Use \"NSE:SYMBOL\" format for Indian stocks\n\n4. **Sparkline Formula**: The sparkline formula uses GOOGLEFINANCE to fetch historical price data and creates a visual chart. Ensure the NSE symbol format is correct.\n\n5. **Error Handling**: If GOOGLEFINANCE returns #N/A or errors, this is expected for some ETFs. Continue with other columns.\n\n## Expected Output\n\nA Google Sheet with:\n- All holdings listed with stock symbols\n- NSE equivalents for all symbols\n- Visual sparkline charts showing 1-year price trends\n- Real-time (auto-updating) market data: prices, changes, volume, 52W high/low\n- Financial metrics: Market cap, P/E ratio, EPS (where available)\n- News summaries for each holding\n- Professional formatting ready for analysis\n\n## Example Formula Reference\n\n```\nSparkline Chart: =SPARKLINE(GOOGLEFINANCE(B2,\"price\",TODAY()-365,TODAY()))\nCurrent Price: =GOOGLEFINANCE(B2,\"price\")\nDay Change: =GOOGLEFINANCE(B2,\"change\")\nDay Change %: =GOOGLEFINANCE(B2,\"changepct\")\nVolume: =GOOGLEFINANCE(B2,\"volume\")\n52W High: =GOOGLEFINANCE(B2,\"high52\")\n52W Low: =GOOGLEFINANCE(B2,\"low52\")\nMarket Cap: =GOOGLEFINANCE(B2,\"marketcap\")\nP/E Ratio: =GOOGLEFINANCE(B2,\"pe\")\nEPS: =GOOGLEFINANCE(B2,\"eps\")\n```\n\nReplace B2 with the appropriate cell reference for each row.\n\n",
+      "variables": [],
+      "description": "Analyse the portfolio with kite and google sheets",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    },
+    {
+      "name": "nifty_option_chain_analysis",
+      "text": "\n## Objective\nFetch Nifty 50 options data for the nearest expiry, get prices and volumes for options within ±250 points of current Nifty price, and calculate the Put-Call Ratio (PCR) to analyze market sentiment.\n\n## Step-by-Step Instructions\n\n### Step 1: Login to Kite API\n1. Users login status is @tool.kite.login()\n2. If the user is logged in , the contiunue to next steps else ask user to login based on the link generated. \n\n### Step 2: Get Nifty 50 Current Price (LTP)\n1. Use `kite_get_ltp` tool with instrument: `[\"NSE:NIFTY 50\"]`\n2. Extract the `last_price` value - this is the current Nifty 50 index value\n3. Save this price for calculating strike range\n\n### Step 3: Find Nearest Expiry for Nifty Options\n1. Use `kite_search_instruments` tool with:\n   - `query`: \"NIFTY\" (or try \"NIFTY25\" for current year)\n   - `filter_on`: \"underlying\" (to get options)\n2. Parse the results to find Nifty options (name should be \"NIFTY\", not \"BANKNIFTY\" or \"MIDCPNIFTY\")\n3. Extract expiry dates from the options data\n4. Find the nearest future expiry date (closest to today but in the future)\n5. Extract the expiry string format from one of the option symbols\n   - Format: `NIFTY25N1126750CE` where `25N11` is the expiry string (5 characters)\n   - The expiry string format is: `YYM##` where:\n     - `YY` = 2-digit year (e.g., 25 for 2025)\n     - `M` = Month code (N=November, D=December, J=January, F=February, etc.)\n     - `##` = Day of month (e.g., 11 for 11th)\n6. Save the expiry string (e.g., \"25N11\")\n\n**Note**: The expiry string is exactly 5 characters and appears after \"NIFTY\" in the trading symbol.\n\n### Step 4: Calculate Strike Range\n1. Based on current Nifty price from Step 2, calculate strike range:\n   - Minimum strike: `int((current_price - 250) // 50) * 50`\n   - Maximum strike: `int((current_price + 250 + 49) // 50) * 50`\n   - This ensures strikes are rounded to nearest 50 (Nifty options are 50 points apart)\n2. Generate list of strikes: `range(min_strike, max_strike + 1, 50)`\n3. This should give approximately 11 strikes (e.g., 25300, 25350, 25400, ..., 25850)\n\n### Step 5: Generate Option Symbols\n1. For each strike price, create two option symbols:\n   - Call option: `NFO:NIFTY{expiry_string}{strike}CE`\n   - Put option: `NFO:NIFTY{expiry_string}{strike}PE`\n2. Example: For strike 25500 and expiry \"25N11\":\n   - Call: `NFO:NIFTY25N1125500CE`\n   - Put: `NFO:NIFTY25N1125500PE`\n3. Create a list of all option symbols (calls + puts)\n\n### Step 6: Get Quotes for All Options\n1. Use `kite_get_quotes` tool with the complete list of option symbols\n2. Extract from each quote:\n   - `last_price`: Current option price\n   - `volume`: Trading volume (critical for PCR calculation)\n   - `oi`: Open Interest (optional, for additional analysis)\n\n**Important**: Use `kite_get_quotes` (not just `kite_get_ltp`) because you need volume data for PCR calculation.\n\n### Step 7: Calculate Put-Call Ratio (PCR)\n1. Separate call and put options from the quotes\n2. Sum all call volumes: `total_call_volume = sum(volume for all CE options)`\n3. Sum all put volumes: `total_put_volume = sum(volume for all PE options)`\n4. Calculate PCR: `PCR = total_put_volume / total_call_volume`\n\n### Step 8: Interpret and Present Results\n1. Display the following information:\n   - Current Nifty 50 Price\n   - Expiry Date and Expiry String\n   - Strike Range Analyzed\n   - Total Call Volume\n   - Total Put Volume\n   - Overall PCR Ratio\n2. Provide interpretation:\n   - **PCR > 1.0**: More Put buying than Call buying (bearish sentiment)\n   - **PCR < 1.0**: More Call buying than Put buying (bullish sentiment)\n   - **PCR = 1.0**: Balanced sentiment\n3. Optionally, show per-strike PCR breakdown for detailed analysis\n\n### Step 9: Optional - Per-Strike Analysis\n1. For each strike, calculate individual PCR: `strike_pcr = put_volume / call_volume`\n2. Display a table showing:\n   - Strike price\n   - Call volume\n   - Put volume\n   - Individual PCR for that strike\n3. This helps identify where maximum activity is concentrated\n\n## Key Tools Reference\n\n### Trading with Kite Tools:\n- `kite_login`: Authenticate with Zerodha Kite\n- `kite_get_ltp`: Get last traded price (quick price check)\n- `kite_get_quotes`: Get detailed quote with price, volume, OI (use this for PCR)\n- `kite_search_instruments`: Search for instruments (to find expiry)\n\n## Important Notes\n\n1. **Option Symbol Format**: \n   - Format: `NFO:NIFTY{expiry_string}{strike}{CE/PE}`\n   - Example: `NFO:NIFTY25N1125500CE`\n   - Expiry string is 5 characters: `YYM##` (year + month code + day)\n\n2. **Strike Spacing**: Nifty options are always 50 points apart. Always round strikes to nearest 50.\n\n3. **Volume vs Open Interest**:\n   - **Volume**: Number of contracts traded today (use for PCR)\n   - **Open Interest (OI)**: Total outstanding contracts (alternative PCR metric)\n   - This prompt uses Volume-based PCR, but OI-based PCR is also commonly used\n\n4. **PCR Interpretation**:\n   - PCR > 1.0: Bearish (more puts being bought)\n   - PCR < 1.0: Bullish (more calls being bought)\n   - Extreme values (> 1.5 or < 0.5) may indicate strong sentiment\n\n5. **Expiry Finding**: The nearest expiry is typically the weekly expiry (usually Thursday) or monthly expiry. Use the expiry_date field to find the closest future date.\n\n6. **Error Handling**: \n   - Some strikes may not have active trading (zero volume)\n   - Handle division by zero when calculating per-strike PCR\n   - If an option symbol doesn't exist, skip it and continue\n\n## Expected Output Format\n\n```\nNifty 50 Current Price: 25574.35\nExpiry: 25N11 (2025-11-11)\nStrike Range: 25300 to 25850 (±250 points)\n\nTotal Call Volume: 3,372,156,225\nTotal Put Volume: 3,101,062,125\n\nPCR (Put-Call Ratio): 0.9196\n\nInterpretation:\n  - PCR < 1.0 indicates more Call buying (bullish sentiment)",
+      "variables": [],
+      "description": "Get Nifty 50 Options Data and Calculate Put-Call Ratio (PCR)",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": []
+    },
+    {
+      "name": "Option_chain_analysis_generic",
+      "text": "\n## Objective\nFetch options data for any underlying @param.SYMBOL get prices and volumes for options within ±250 points of current price, and calculate the Put-Call Ratio (PCR) to analyze market sentiment.\n\n## Step-by-Step Instructions\n\n### Step 1: Login to Kite API\n1. Users login status is @tool.kite.login()\n2. If the user is logged in, continue to next steps else ask user to login based on the link generated.\n\n\n### Step 2: Get Current Price (LTP) of the Underlying\n1. Determine the exchange and symbol format:\n   - For indices: Use `NSE:{SYMBOL}` (e.g., `NSE:NIFTY 50`, `NSE:BANKNIFTY`)\n   - For stocks: Use `NSE:{SYMBOL}` (e.g., `NSE:SBIN`, `NSE:RELIANCE`)\n2. Use `kite_get_ltp` tool with the instrument identifier\n3. Extract the `last_price` value - this is the current underlying price\n4. Save this price for calculating strike range\n\n### Step 3: Find Nearest Expiry and Understand Option Format\n1. Use `kite_search_instruments` tool with:\n   - `query`: The symbol name (e.g., \"NIFTY\", \"SBIN\", \"RELIANCE\")\n   - `filter_on`: \"underlying\" (to get options)\n2. Parse the results to find options for the specific underlying:\n   - Filter by `name` field matching the symbol exactly\n   - Exclude futures (instrument_type != \"FUT\")\n3. Extract expiry dates from the options data\n4. Find the nearest future expiry date (closest to today but in the future)\n5. **Critical**: Extract and understand the expiry string format from one of the option symbols\n   \n   **Different symbols use different expiry formats:**\n   \n   - **Nifty/Bank Nifty format**: `NIFTY25N1125500CE`\n     - Format: `{SYMBOL}{YY}{M}{##}{STRIKE}{CE/PE}`\n     - Expiry string: `25N11` (5 chars: YY + Month code + Day)\n     - Example: `NIFTY25N1125500CE` → expiry \"25N11\"\n   \n   - **Stock options format**: `SBIN25NOV950CE`\n     - Format: `{SYMBOL}{YY}{MONTH}{STRIKE}{CE/PE}`\n     - Expiry string: `25NOV` (5 chars: YY + 3-letter month)\n     - Example: `SBIN25NOV950CE` → expiry \"25NOV\"\n   \n   - **Other formats may exist**: Always examine sample symbols to determine the pattern\n   \n6. Save the expiry string format (e.g., \"25N11\" or \"25NOV\")\n\n### Step 4: Determine Strike Spacing\n1. From the options data in Step 3, extract strike prices\n2. Calculate the difference between consecutive strikes\n3. **Common strike spacings:**\n   - **Nifty/Bank Nifty**: 50 points apart\n   - **Stock options**: Usually 10 points apart (but can vary: 5, 10, 20, 50)\n   - **Mid-cap indices**: May vary\n4. Save the strike spacing value (e.g., 50 or 10)\n\n### Step 5: Calculate Strike Range\n1. Based on current underlying price from Step 2, calculate strike range:\n   - Minimum strike: `int((current_price - 250) // strike_spacing) * strike_spacing`\n   - Maximum strike: `int((current_price + 250 + strike_spacing - 1) // strike_spacing) * strike_spacing`\n   - This ensures strikes are rounded to the correct spacing\n2. Generate list of strikes: `range(min_strike, max_strike + 1, strike_spacing)`\n3. This should give approximately 10-50 strikes depending on spacing\n\n### Step 6: Generate Option Symbols\n1. Determine the option symbol format based on what you found in Step 3:\n   \n   **For Nifty/Bank Nifty format:**\n   - Call: `NFO:{SYMBOL}{expiry_string}{strike}CE`\n   - Put: `NFO:{SYMBOL}{expiry_string}{strike}PE`\n   - Example: `NFO:NIFTY25N1125500CE`\n   \n   **For Stock options format:**\n   - Call: `NFO:{SYMBOL}{expiry_string}{strike}CE`\n   - Put: `NFO:{SYMBOL}{expiry_string}{strike}PE`\n   - Example: `NFO:SBIN25NOV950CE`\n   \n   **Note**: The format is the same, but expiry_string format differs!\n   \n2. For each strike price, create two option symbols (Call and Put)\n3. Create a complete list of all option symbols\n\n### Step 7: Get Quotes for All Options\n1. Use `kite_get_quotes` tool with the complete list of option symbols\n2. **Important**: If you have many options (>50), consider splitting into batches\n3. Extract from each quote:\n   - `last_price`: Current option price\n   - `volume`: Trading volume (critical for PCR calculation)\n   - `oi`: Open Interest (optional, for additional analysis)\n   - `strike`: Strike price (verify from quote data)\n\n**Important**: Use `kite_get_quotes` (not just `kite_get_ltp`) because you need volume data for PCR calculation.\n\n### Step 8: Calculate Put-Call Ratio (PCR)\n1. Separate call and put options from the quotes\n2. Sum all call volumes: `total_call_volume = sum(volume for all CE options)`\n3. Sum all put volumes: `total_put_volume = sum(volume for all PE options)`\n4. Calculate PCR: `PCR = total_put_volume / total_call_volume`\n5. Handle edge cases:\n   - If total_call_volume is 0, PCR is undefined (report as \"N/A\")\n   - If some options have zero volume, include them (they still count as 0)\n\n### Step 9: Interpret and Present Results\n1. Display the following information:\n   - Underlying Symbol and Current Price\n   - Expiry Date and Expiry String Format\n   - Strike Range Analyzed\n   - Strike Spacing Used\n   - Total Call Volume\n   - Total Put Volume\n   - Overall PCR Ratio\n2. Provide interpretation:\n   - **PCR > 1.0**: More Put buying than Call buying (bearish sentiment)\n   - **PCR < 1.0**: More Call buying than Put buying (bullish sentiment)\n   - **PCR = 1.0**: Balanced sentiment\n   - **PCR > 1.5**: Strong bearish sentiment\n   - **PCR < 0.5**: Strong bullish sentiment\n3. Optionally, show per-strike PCR breakdown for detailed analysis\n\n### Step 10: Optional - Per-Strike Analysis\n1. For each strike, calculate individual PCR: `strike_pcr = put_volume / call_volume`\n2. Display a table showing:\n   - Strike price\n   - Call volume\n   - Put volume\n   - Individual PCR for that strike\n   - Option prices (Call and Put)\n3. This helps identify:\n   - Where maximum activity is concentrated\n   - Support/resistance levels based on high PCR\n   - At-the-money (ATM) options activity\n\n## Key Tools Reference\n\n### Trading with Kite Tools:\n- `kite_login`: Authenticate with Zerodha Kite\n- `kite_get_ltp`: Get last traded price (quick price check)\n- `kite_get_quotes`: Get detailed quote with price, volume, OI (use this for PCR)\n- `kite_search_instruments`: Search for instruments (to find expiry and format)\n\n## Important Notes\n\n1. **Option Symbol Format Variations**:\n   - **Indices (Nifty, Bank Nifty)**: Expiry format `YYM##` (e.g., \"25N11\" = 2025 Nov 11)\n   - **Stocks**: Expiry format `YYMON` (e.g., \"25NOV\" = 2025 November)\n   - Always examine actual option symbols to determine the exact format\n\n2. **Strike Spacing**:\n   - **Nifty/Bank Nifty**: 50 points\n   - **Stock options**: Usually 10 points (verify from data)\n   - **Some stocks**: May use 5, 20, or 50 point spacing\n   - Always calculate from actual option data\n\n3. **Volume vs Open Interest**:\n   - **Volume**: Number of contracts traded today (use for PCR)\n   - **Open Interest (OI)**: Total outstanding contracts (alternative PCR metric)\n   - This prompt uses Volume-based PCR, but OI-based PCR is also commonly used\n\n4. **PCR Interpretation**:\n   - PCR > 1.0: Bearish (more puts being bought)\n   - PCR < 1.0: Bullish (more calls being bought)\n   - Extreme values (> 1.5 or < 0.5) may indicate strong sentiment\n   - Context matters: High PCR near expiry might indicate hedging\n\n5. **Expiry Finding**: \n   - The nearest expiry is typically weekly (usually Thursday) or monthly\n   - Use the `expiry_date` field to find the closest future date\n   - Some symbols may have multiple weekly expiries\n\n6. **Error Handling**: \n   - Some strikes may not have active trading (zero volume) - include them anyway\n   - Handle division by zero when calculating per-strike PCR\n   - If an option symbol doesn't exist, skip it and continue\n   - If too many options (>100), consider reducing the range or batching API calls\n\n7. **Symbol Format Examples**:\n   - Nifty 50: `NSE:NIFTY 50` (note the space)\n   - Bank Nifty: `NSE:BANKNIFTY`\n   - Stocks: `NSE:SBIN`, `NSE:RELIANCE`, `NSE:TCS`\n   - Always use the exact symbol format as shown in Kite\n\n## Expected Output Format\n\n```\n[Symbol] Current Price: [price]\nExpiry: [expiry_string] ([expiry_date])\nStrike Range: [min] to [max] (±250 points)\nStrike Spacing: [spacing] points\n\nTotal Call Volume: [volume]\nTotal Put Volume: [volume]\n\nPCR (Put-Call Ratio): [ratio]\n\nInterpretation:\n  - [bullish/bearish/balanced sentiment explanation]\n\nOptional - Key Strikes Around Current Price:\nStrike     Call Volume     Put Volume      PCR       Call Price    Put Price\n---------------------------------------------------------------------------\n[strike]   [volume]        [volume]        [pcr]     [price]       [price]\n...\n```\n\n## Example Workflows\n\n### Example 1: Nifty 50\n- Symbol: `NSE:NIFTY 50`\n- Current Price: 25574.35\n- Expiry Format: `25N11` (5 chars: YY + Month code + Day)\n- Strike Spacing: 50 points\n- Strike Range: 25300 to 25850\n- Option Format: `NFO:NIFTY25N1125500CE`\n\n### Example 2: SBIN (Stock)\n- Symbol: `NSE:SBIN`\n- Current Price: 951.15\n- Expiry Format: `25NOV` (5 chars: YY + 3-letter month)\n- Strike Spacing: 10 points\n- Strike Range: 700 to 1210\n- Option Format: `NFO:SBIN25NOV950CE`\n\n### Example 3: Bank Nifty\n- Symbol: `NSE:BANKNIFTY`\n- Current Price: [varies]\n- Expiry Format: Similar to Nifty (`25N11` format)\n- Strike Spacing: 100 points (typically)\n- Strike Range: [calculate based on price]\n- Option Format: `NFO:BANKNIFTY25N1159200CE`\n\n## Key Differences Summary\n\n| Aspect | Nifty/Bank Nifty | Stock Options |\n|--------|------------------|---------------|\n| Expiry Format | `YYM##` (e.g., 25N11) | `YYMON` (e.g., 25NOV) |\n| Strike Spacing | 50 or 100 points | Usually 10 points |\n| Symbol Format | `NIFTY25N1125500CE` | `SBIN25NOV950CE` |\n| Price Range | Large (20k-30k) | Smaller (hundreds-thousands) |\n\n**Always verify these from actual option data rather than assuming!**\n\n",
+      "variables": [
+        {
+          "name": "SYMBOL",
+          "description": "Symbol whose option analysis needs to be done",
+          "required": false
+        }
+      ],
+      "description": "Get Options Data and Calculate Put-Call Ratio (PCR) for any index/",
+      "environment_variables": [],
+      "tool_calls": [],
+      "atomic_blocks": [
+        {
+          "id": "block_1762845645148_1nesnmpz5",
+          "startLine": 8,
+          "startColumn": 32,
+          "endLine": 8,
+          "endColumn": 44,
+          "type": "tool",
+          "server": "kite",
+          "serverId": "18a7c4d9ce586ff0",
+          "name": "kite.login",
+          "text": "kite.login()",
+          "data": {
+            "label": "kite.login",
+            "name": "login",
+            "server": "kite",
+            "serverId": "18a7c4d9ce586ff0",
+            "description": "Login to Kite API. This tool helps you log in to the Kite API. If you are starting off a new conversation call this tool before hand. Call this if you get a session error. Returns a link that the user should click to authorize access, present as markdown if your client supports so that they can click it easily when rendered.",
+            "inputSchema": {
+              "properties": {},
+              "type": "object"
+            }
+          },
+          "parameters": {}
+        }
+      ]
+    }
+  ],
+  "custom_tools": [],
+  "custom_resources": [],
+  "environment_variables": [],
+  "system_prompt": {
+    "text": "You are a helpful AI assistant with access to various tools and resources. You can help users with a wide range of tasks using the available MCP (Model Context Protocol) tools.\n\nAvailable capabilities:\n- Execute tools to perform specific actions\n- Access resources for information\n- Use prompts for structured interactions\n\nAlways be helpful, accurate, and explain what you're doing when using tools.",
+    "variables": [],
+    "environment_variables": [],
+    "tool_calls": []
+  },
+  "metadata": {
+    "url": "http://localhost:8000/private/trading_analyst_with_kite/vmcp",
+    "type": "vmcp"
+  }
+}

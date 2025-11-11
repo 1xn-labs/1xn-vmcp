@@ -1,0 +1,1063 @@
+
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode, useRef, useMemo } from 'react';
+// import { newApi, MCPServer, MCPRegistryServer } from '@/lib/new-api';
+import { apiClient } from '@/api/client';
+import type { MCPServer, MCPRegistryServer } from '@/lib/new-api';
+import { useAuth } from './auth-context';
+import { parseEnvVars } from '@/lib/app-utils';
+
+interface ServerStats {
+  total: number;
+  connected: number;
+  disconnected: number;
+  auth_required: number;
+  errors: number;
+}
+
+interface ServersState {
+  servers: MCPServer[];
+  mcpregistryservers: MCPRegistryServer[]; // MCP server registry
+  serverStats: ServerStats;
+  mcpregistryserverStats: ServerStats; // Stats for MCP registry servers
+  loading: boolean;
+  mcpregistryLoading: boolean; // Loading state for MCP registry servers
+  error: string | null;
+  lastUpdated: number | null;
+  initialized: boolean;
+  hasError: boolean;
+}
+
+interface ServersContextType extends ServersState {
+  refreshServers: () => Promise<void>;
+  refreshMCPRegistryServers: () => Promise<void>;
+  connectServer: (serverId: string) => Promise<void>;
+  disconnectServer: (serverId: string) => Promise<void>;
+  clearCacheServer: (serverId: string) => Promise<void>;
+  authorizeServer: (serverId: string) => Promise<void>;
+  addServer: (serverTemplate: any) => Promise<void>;
+  updateServer: (serverData: any) => Promise<void>;
+  removeServer: (serverId: string) => Promise<void>;
+  clearError: () => void;
+  refreshServerCapabilities: (serverId: string) => Promise<void>;
+  refreshAllCapabilities: () => Promise<void>;
+  refreshServerStatus: (serverId: string) => Promise<void>;
+  refreshAllStatus: () => Promise<void>;
+  clearServerAuth: (serverId: string) => Promise<void>;
+  installMCPRegistryServer: (serverId: string) => Promise<void>;
+}
+
+// Create separate contexts for state and actions
+const ServersStateContext = createContext<ServersState | undefined>(undefined);
+const ServersActionsContext = createContext<Omit<ServersContextType, keyof ServersState> | undefined>(undefined);
+
+interface ServersProviderProps {
+  children: ReactNode;
+}
+
+export function ServersProvider({ children }: ServersProviderProps) {
+  const { isAuthenticated, user } = useAuth();
+  const [state, setState] = useState<ServersState>({
+    servers: [],
+    mcpregistryservers: [],
+    serverStats: {
+      total: 0,
+      connected: 0,
+      disconnected: 0,
+      auth_required: 0,
+      errors: 0
+    },
+    mcpregistryserverStats: {
+      total: 0,
+      connected: 0,
+      disconnected: 0,
+      auth_required: 0,
+      errors: 0
+    },
+    loading: true, // Start with loading true to prevent undefined access
+    mcpregistryLoading: false,
+    error: null,
+    lastUpdated: null,
+    initialized: false,
+    hasError: false
+  });
+
+  // Add refs to prevent duplicate calls and track retry attempts
+  const loadingRef = useRef(false);
+  const retryCountRef = useRef(0);
+  const hasErrorRef = useRef(false);
+  const maxRetries = 3;
+
+  // Helper function to recalculate server stats based on current server statuses
+  const recalculateStats = useCallback((servers: MCPServer[]) => {
+    return {
+      total: servers.length,
+      connected: servers.filter(s => s.status === 'connected').length,
+      disconnected: servers.filter(s => s.status === 'disconnected').length,
+      auth_required: servers.filter(s => s.status === 'auth_required').length,
+      errors: servers.filter(s => s.status === 'error').length
+    };
+  }, []);
+
+  const refreshServerCapabilities = useCallback(async (serverId: string) => {
+    try {
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) {
+        throw new Error('No access token available');
+      }
+  
+      const result = await apiClient.discoverMCPServerCapabilities(serverId, accessToken);
+        
+      if (result.success && result.data) {
+        // Extract capabilities from the response
+        const capabilities = result.data;
+        
+        console.log(`🔧 Raw capabilities response for ${serverId}:`, result.data);
+        console.log(`🔧 Processed capabilities for ${serverId}:`, {
+          hasCapabilities: !!result.data.capabilities,
+          toolsCount: capabilities.tools_count,
+          resourcesCount: capabilities.resources_count,
+          promptsCount: capabilities.prompts_count,
+          toolsListLength: capabilities.tools_list?.length,
+          toolDetailsLength: capabilities.tool_details?.length,
+          toolsList: capabilities.tools_list,
+          resourcesList: capabilities.resources_list,
+          promptsList: capabilities.prompts_list
+        });
+        
+        // Update the specific server with new capabilities
+        setState(prevState => {
+          const updatedServers = prevState.servers.map(server => {
+            if (server.server_id === serverId) {
+              const updatedServer = {
+                ...server,
+                capabilities: capabilities.capabilities || {},
+                // Update the individual list fields that the UI expects
+                tools_list: capabilities.tools_list || [],
+                resources_list: capabilities.resources_list || [],
+                prompts_list: capabilities.prompts_list || [],
+                // Update the count fields
+                tools_count: capabilities.capabilities.tools_count || 0,
+                resources_count: capabilities.capabilities.resources_count || 0,
+                prompts_count: capabilities.capabilities.prompts_count || 0,
+                // Update detailed information
+                tool_details: capabilities.tool_details || [],
+                resource_details: capabilities.resource_details || [],
+                resource_template_details: capabilities.resource_template_details || [],
+                prompt_details: capabilities.prompt_details || [],
+                last_capabilities_update: new Date().toISOString()
+              };
+              
+              console.log(`🔧 Updated server ${serverId} with capabilities:`, {
+                tools_list: updatedServer.tools_list,
+                resources_list: updatedServer.resources_list,
+                prompts_list: updatedServer.prompts_list,
+                tools_count: updatedServer.tools_count,
+                resources_count: updatedServer.resources_count,
+                prompts_count: updatedServer.prompts_count
+              });
+              
+              return updatedServer;
+            }
+            return server;
+          });
+          
+          return {
+            ...prevState,
+            servers: updatedServers as MCPServer[],
+            serverStats: recalculateStats(updatedServers as MCPServer[]),
+            lastUpdated: Date.now()
+          };
+        });
+      } else {
+        console.error(`Failed to refresh capabilities for ${serverId}:`, result.error);
+        setState(prevState => ({
+          ...prevState,
+          error: `Failed to refresh capabilities for ${serverId}: ${result.error}`,
+          hasError: true
+        }));
+      }
+    } catch (error) {
+      console.error(`Error refreshing capabilities for ${serverId}:`, error);
+      setState(prevState => ({
+        ...prevState,
+        error: `Error refreshing capabilities for ${serverId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        hasError: true
+      }));
+    }
+  }, [recalculateStats]);
+
+  const refreshAllCapabilities = useCallback(async () => {
+    if (!state.servers.length) return;
+    
+    setState(prev => ({ ...prev, loading: true, error: null }));
+    
+    try {
+      const promises = state.servers.map(server => refreshServerCapabilities(server.server_id));
+      await Promise.allSettled(promises);
+      
+      setState(prev => ({ ...prev, loading: false, lastUpdated: Date.now() }));
+    } catch (error) {
+      console.error('Error refreshing all capabilities:', error);
+      setState(prev => ({ 
+        ...prev, 
+        loading: false, 
+        error: 'Failed to refresh all capabilities',
+        hasError: true
+      }));
+    }
+  }, [state.servers, refreshServerCapabilities]);
+
+  const refreshServerStatus = useCallback(async (serverId: string) => {
+    try {
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) {
+        throw new Error('No access token available');
+      }
+  
+      const result = await apiClient.getServerStatus(serverId, accessToken);
+        
+      if (result.success && result.data) {
+        const statusData = result.data.status || result.data;
+        // Extract status string from response, handling both object and string formats
+        const status = typeof statusData === 'object' && statusData.status 
+          ? statusData.status 
+          : (typeof statusData === 'string' ? statusData : 'disconnected');
+        
+        // Ensure status is one of the expected values and cast to proper type
+        const validStatus = (['connected', 'disconnected', 'auth_required', 'error'].includes(status) 
+          ? status 
+          : 'disconnected') as 'connected' | 'disconnected' | 'auth_required' | 'error';
+        
+        // Update the specific server with new status
+        setState(prevState => {
+          const updatedServers = prevState.servers.map(server => {
+            if (server.server_id === serverId) {
+              return {
+                ...server,
+                status: validStatus,
+                last_status_update: new Date().toISOString()
+              };
+            }
+            return server;
+          });
+          
+          return {
+            ...prevState,
+            servers: updatedServers as MCPServer[],
+            serverStats: recalculateStats(updatedServers as MCPServer[]),
+            lastUpdated: Date.now()
+          };
+        });
+      } else {
+        console.error(`Failed to refresh status for ${serverId}:`, result.error);
+      }
+    } catch (error) {
+      console.error(`Error refreshing status for ${serverId}:`, error);
+    }
+  }, [recalculateStats]);
+
+  const refreshAllStatus = useCallback(async () => {
+    if (!state.servers.length) return;
+    
+    setState(prev => ({ ...prev, loading: true, error: null }));
+    
+    try {
+      const promises = state.servers.map(server => refreshServerStatus(server.server_id));
+      await Promise.allSettled(promises);
+      
+      setState(prev => ({ ...prev, loading: false, lastUpdated: Date.now() }));
+    } catch (error) {
+      console.error('Error refreshing all statuses:', error);
+      setState(prev => ({ 
+        ...prev, 
+        loading: false, 
+        error: 'Failed to refresh all statuses',
+        hasError: true
+      }));
+    }
+  }, [state.servers, refreshServerStatus]);
+
+  const connectServer = useCallback(async (serverId: string) => {
+    try {
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) {
+        throw new Error('No access token available');
+      }
+  
+      const result = await apiClient.connectMCPServer(serverId, accessToken);
+        
+      if (result.success) {
+        // Update server status based on response
+        const status = result.data?.status || 'connected';
+        setState(prevState => {
+          const updatedServers = prevState.servers.map(server => {
+            if (server.server_id === serverId) {
+              return {
+                ...server,
+                status: status as 'connected' | 'disconnected' | 'auth_required' | 'error',
+                last_status_update: new Date().toISOString()
+              };
+            }
+            return server;
+          });
+          
+          return {
+            ...prevState,
+            servers: updatedServers as MCPServer[],
+            serverStats: recalculateStats(updatedServers as MCPServer[]),
+            lastUpdated: Date.now()
+          };
+        });
+      } else {
+        console.error(`Failed to connect to ${serverId}:`, result.error);
+        setState(prevState => ({
+          ...prevState,
+          error: `Failed to connect to ${serverId}: ${result.error}`,
+          hasError: true
+        }));
+      }
+    } catch (error) {
+      console.error(`Error connecting to ${serverId}:`, error);
+      setState(prevState => ({
+        ...prevState,
+        error: `Error connecting to ${serverId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        hasError: true
+      }));
+    }
+  }, [recalculateStats]);
+
+  const disconnectServer = useCallback(async (serverId: string) => {
+    try {
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) {
+        throw new Error('No access token available');
+      }
+  
+      const result = await apiClient.disconnectMCPServer(serverId, accessToken);
+        
+      if (result.success) {
+        // Update server status to disconnected
+        setState(prevState => {
+          const updatedServers = prevState.servers.map(server => {
+            if (server.server_id === serverId) {
+              return {
+                ...server,
+                status: 'disconnected' as const,
+                auth_information: 'absent',
+                last_status_update: new Date().toISOString()
+              };
+            }
+            return server;
+          });
+          
+          return {
+            ...prevState,
+            servers: updatedServers as MCPServer[],
+            serverStats: recalculateStats(updatedServers as MCPServer[]),
+            lastUpdated: Date.now()
+          };
+        });
+      } else {
+        console.error(`Failed to disconnect from ${serverId}:`, result.error);
+        setState(prevState => ({
+          ...prevState,
+          error: `Failed to disconnect from ${serverId}: ${result.error}`,
+          hasError: true
+        }));
+      }
+    } catch (error) {
+      console.error(`Error disconnecting from ${serverId}:`, error);
+      setState(prevState => ({
+        ...prevState,
+        error: `Error disconnecting from ${serverId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        hasError: true
+      }));
+    }
+  }, [recalculateStats]);
+
+  const clearCacheServer = useCallback(async (serverId: string) => {
+    try {
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) {
+        throw new Error('No access token available');
+      }
+  
+      const result = await apiClient.clearCacheMCPServer(serverId, accessToken);
+        
+      if (result.success) {
+        // Update server status based on response
+        const status = result.data?.status || 'disconnected';
+        setState(prevState => {
+          const updatedServers = prevState.servers.map(server => {
+            if (server.server_id === serverId) {
+              return {
+                ...server,
+                status: status as 'connected' | 'disconnected' | 'auth_required' | 'error',
+                auth_information: 'absent',
+                last_status_update: new Date().toISOString()
+              };
+            }
+            return server;
+          });
+          
+          return {
+            ...prevState,
+            servers: updatedServers as MCPServer[],
+            serverStats: recalculateStats(updatedServers as MCPServer[]),
+            lastUpdated: Date.now()
+          };
+        });
+      } else {
+        console.error(`Failed to clear cache for ${serverId}:`, result.error);
+        setState(prevState => ({
+          ...prevState,
+          error: `Failed to clear cache for ${serverId}: ${result.error}`,
+          hasError: true
+        }));
+      }
+    } catch (error) {
+      console.error(`Error clearing cache for ${serverId}:`, error);
+      setState(prevState => ({
+        ...prevState,
+        error: `Error clearing cache for ${serverId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        hasError: true
+      }));
+    }
+  }, [recalculateStats]);
+
+  const authorizeServer = useCallback(async (serverId: string) => {
+    try {
+      // Get access token
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) {
+        throw new Error('No access token available');
+      }
+
+      // Call API directly to get authorization URL
+      const result = await apiClient.initiateMCPServerAuth(serverId, accessToken);
+      
+      if (result.success && result.data?.authorization_url) {
+        // Open the authorization URL directly in a new tab
+        window.open(result.data.authorization_url, '_blank', 'noopener,noreferrer');
+        console.log('Authorization URL opened:', result.data.authorization_url);
+      } else {
+        throw new Error(result.error || 'Failed to get authorization URL');
+      }
+    } catch (error) {
+      console.error(`Error opening authorization for ${serverId}:`, error);
+      setState(prevState => ({
+        ...prevState,
+        error: `Error opening authorization for ${serverId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        hasError: true
+      }));
+    }
+  }, []);
+
+  const addServer = useCallback(async (serverData: any) => {
+    try {
+      // Validate that serverData is actually a server object
+      if (typeof serverData !== 'object' || !serverData.server_id) {
+        console.error('Invalid server object received:', serverData);
+        setState(prevState => ({
+          ...prevState,
+          error: 'Invalid server object received',
+          hasError: true
+        }));
+        return;
+      }
+      
+      // Transform the server object to match the MCPServer interface
+      const newServer: MCPServer = {
+        server_id: serverData.server_id,
+        name: serverData.name,
+        description: serverData.description || '',
+        status: serverData.status || 'disconnected',
+        transport_type: serverData.transport_type || 'stdio',
+        url: serverData.url || '',
+        command: serverData.command || '',
+        last_connected: serverData.last_connected || null,
+        last_error: serverData.last_error || null,
+        capabilities: serverData.capabilities || {},
+        auto_connect: serverData.auto_connect || false,
+        enabled: serverData.enabled !== undefined ? serverData.enabled : true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        // Use the provided data or initialize empty arrays
+        tools_list: serverData.tools || serverData.tools_list || [],
+        resources_list: serverData.resources || serverData.resources_list || [],
+        prompts_list: serverData.prompts || serverData.prompts_list || [],
+        resource_templates_list: serverData.resource_templates_list || serverData.resource_template_details || [],
+        tool_details: serverData.tool_details || [],
+        resource_details: serverData.resource_details || [],
+        resource_template_details: serverData.resource_template_details || [],
+        prompt_details: serverData.prompt_details || []
+      };
+      
+      console.log('🔧 Adding new server to state:', newServer);
+      
+      setState(prevState => {
+        console.log('🔧 Current servers state:', prevState.servers);
+        
+        // Check if server already exists to prevent duplicates
+        const serverExists = prevState.servers.some(s => s.server_id === newServer.server_id);
+        if (serverExists) {
+          console.log('🔧 Server already exists, updating instead of adding:', newServer.server_id);
+          const updatedServers = prevState.servers.map(s => 
+            s.server_id === newServer.server_id ? newServer : s
+          );
+          return {
+            ...prevState,
+            servers: updatedServers,
+            serverStats: recalculateStats(updatedServers),
+            lastUpdated: Date.now(),
+            error: null,
+            hasError: false
+          };
+        }
+        
+        const updatedServers = [...prevState.servers, newServer];
+        console.log('🔧 Updated servers array:', updatedServers);
+        return {
+          ...prevState,
+          servers: updatedServers,
+          serverStats: recalculateStats(updatedServers),
+          lastUpdated: Date.now(),
+          error: null,
+          hasError: false
+        };
+      });
+    } catch (error) {
+      console.error('Error adding server:', error);
+      setState(prevState => ({
+        ...prevState,
+        error: `Error adding server: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        hasError: true
+      }));
+    }
+  }, [recalculateStats]);
+
+  const updateServer = useCallback(async (serverData: any) => {
+    try {
+      // Validate that serverData is actually a server object
+      if (typeof serverData !== 'object' || !serverData.server_id) {
+        console.error('Invalid server object received for update:', serverData);
+        setState(prevState => ({
+          ...prevState,
+          error: 'Invalid server object received for update',
+          hasError: true
+        }));
+        return;
+      }
+      
+      // Transform the server object to match the MCPServer interface
+      const updatedServer: MCPServer = {
+        server_id: serverData.server_id,
+        name: serverData.name,
+        description: serverData.description || '',
+        status: serverData.status || 'disconnected',
+        transport_type: serverData.transport_type || 'stdio',
+        url: serverData.url || '',
+        command: serverData.command || '',
+        last_connected: serverData.last_connected || null,
+        last_error: serverData.last_error || null,
+        capabilities: serverData.capabilities || {},
+        auto_connect: serverData.auto_connect || false,
+        enabled: serverData.enabled !== undefined ? serverData.enabled : true,
+        created_at: serverData.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        // Use the provided data or initialize empty arrays
+        tools_list: serverData.tools || serverData.tools_list || [],
+        resources_list: serverData.resources || serverData.resources_list || [],
+        prompts_list: serverData.prompts || serverData.prompts_list || [],
+        resource_templates_list: serverData.resource_templates_list || serverData.resource_template_details || [],
+        tool_details: serverData.tool_details || [],
+        resource_details: serverData.resource_details || [],
+        resource_template_details: serverData.resource_template_details || [],
+        prompt_details: serverData.prompt_details || []
+      };
+      
+      console.log('🔧 Updating server in state:', updatedServer);
+      
+      setState(prevState => {
+        console.log('🔧 Current servers state:', prevState.servers);
+        
+        // Check if server exists to update
+        const serverExists = prevState.servers.some(s => s.server_id === updatedServer.server_id);
+        if (!serverExists) {
+          console.log('🔧 Server not found for update, adding instead:', updatedServer.server_id);
+          const updatedServers = [...prevState.servers, updatedServer];
+          return {
+            ...prevState,
+            servers: updatedServers,
+            serverStats: recalculateStats(updatedServers),
+            lastUpdated: Date.now(),
+            error: null,
+            hasError: false
+          };
+        }
+        
+        const updatedServers = prevState.servers.map(s => 
+          s.server_id === updatedServer.server_id ? updatedServer : s
+        );
+        console.log('🔧 Updated servers array:', updatedServers);
+        return {
+          ...prevState,
+          servers: updatedServers,
+          serverStats: recalculateStats(updatedServers),
+          lastUpdated: Date.now(),
+          error: null,
+          hasError: false
+        };
+      });
+    } catch (error) {
+      console.error('Error updating server:', error);
+      setState(prevState => ({
+        ...prevState,
+        error: `Error updating server: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        hasError: true
+      }));
+    }
+  }, [recalculateStats]);
+
+  const removeServer = useCallback(async (serverId: string) => {
+    try {
+      console.log('🔧 Removing server from state:', serverId);
+      
+      setState(prevState => {
+        console.log('🔧 Current servers state:', prevState.servers);
+        
+        const updatedServers = prevState.servers.filter(s => s.server_id !== serverId);
+        console.log('🔧 Updated servers array after removal:', updatedServers);
+        
+        return {
+          ...prevState,
+          servers: updatedServers,
+          serverStats: recalculateStats(updatedServers),
+          lastUpdated: Date.now(),
+          error: null,
+          hasError: false
+        };
+      });
+    } catch (error) {
+      console.error('Error removing server:', error);
+      setState(prevState => ({
+        ...prevState,
+        error: `Error removing server: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        hasError: true
+      }));
+    }
+  }, [recalculateStats]);
+
+  const clearError = useCallback(() => {
+    setState(prev => ({ ...prev, error: null, hasError: false }));
+  }, []);
+
+  const refreshMCPRegistryServers = useCallback(async () => {
+    if (!isAuthenticated || !user) {
+      console.log('❌ Not authenticated, skipping MCP registry server refresh');
+      return;
+    }
+
+    setState(prev => ({ ...prev, mcpregistryLoading: true, error: null }));
+
+    try {
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) {
+        throw new Error('No access token available');
+      }
+
+      console.log('🔄 Fetching MCP registry servers...');
+      const result = await apiClient.getGlobalMCPServers({}, accessToken);
+      
+      if (result.success && result.data) {
+        const servers = result.data.servers || [];
+        
+        // Process servers to MCPRegistryServer format
+        const processedServers: MCPRegistryServer[] = servers.map((server: any) => ({
+          id: server.id || server.server_id,
+          name: server.name,
+          description: server.description || '',
+          transport: server.transport || 'http',
+          url: server.url || '',
+          favicon_url: server.favicon_url,
+          category: server.category || 'MCP Servers',
+          icon: server.icon || '🔍',
+          requiresAuth: server.requiresAuth || false,
+          env_vars: server.env_vars || '',
+          note: server.note || '',
+          mcp_registry_config: server.mcp_registry_config || {},
+          mcp_server_config: server.mcp_server_config || {},
+          stats: server.stats || {},
+          created_at: server.created_at || new Date().toISOString(),
+          updated_at: server.updated_at || new Date().toISOString()
+        }));
+
+        // Calculate stats for registry servers
+        const registryServerStats = {
+          total: processedServers.length,
+          connected: 0, // Registry servers are not connected by default
+          disconnected: processedServers.length,
+          auth_required: processedServers.filter(s => s.requiresAuth).length,
+          errors: 0
+        };
+        
+        setState(prev => ({
+          ...prev,
+          mcpregistryservers: processedServers,
+          mcpregistryserverStats: registryServerStats,
+          mcpregistryLoading: false,
+          error: null,
+          lastUpdated: Date.now(),
+          hasError: false
+        }));
+
+        console.log(`✅ Successfully loaded ${processedServers.length} MCP registry servers`);
+      } else {
+        throw new Error(result.error || 'Failed to fetch MCP registry servers');
+      }
+    } catch (error) {
+      console.error('❌ Error fetching MCP registry servers:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      setState(prev => ({
+        ...prev,
+        mcpregistryLoading: false,
+        error: errorMessage,
+        hasError: true
+      }));
+    }
+  }, [isAuthenticated, user]);
+
+  const installMCPRegistryServer = useCallback(async (serverId: string) => {
+    try {
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) {
+        throw new Error('No access token available');
+      }
+
+      console.log(`🔄 Installing MCP registry server: ${serverId}`);
+      const result = await apiClient.installGlobalMCPServer(serverId, accessToken);
+      
+      if (result.success) {
+        console.log(`✅ Successfully installed MCP registry server: ${serverId}`);
+        // Note: refreshServers will be called after this function is defined
+        // For now, we'll just show success message
+      } else {
+        throw new Error(result.error || 'Failed to install MCP registry server');
+      }
+    } catch (error) {
+      console.error('❌ Error installing MCP registry server:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      setState(prev => ({
+        ...prev,
+        error: errorMessage,
+        hasError: true
+      }));
+      
+      throw error;
+    }
+  }, []);
+
+  const refreshServers = useCallback(async () => {
+    if (loadingRef.current) {
+      console.log('🔄 Refresh already in progress, skipping...');
+      return;
+    }
+
+    if (!isAuthenticated || !user) {
+      console.log('❌ Not authenticated, skipping server refresh');
+      return;
+    }
+
+    loadingRef.current = true;
+    setState(prev => ({ ...prev, loading: true, error: null }));
+
+    try {
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) {
+        throw new Error('No access token available');
+      }
+
+      console.log('🔄 Fetching servers...');
+      const result = await apiClient.listMCPServers(accessToken);
+      
+      if (result.success && result.data) {
+        const servers = Array.isArray(result.data) ? result.data : [result.data];
+        
+        // Process servers and add computed fields
+        const processedServers = servers.map(server => ({
+          ...server,
+          env_vars: server.env_vars ? parseEnvVars(server.env_vars) : {},
+          last_capabilities_update: server.last_capabilities_update || null,
+          last_status_update: server.last_status_update || null,
+          // Ensure status is one of the expected values
+          status: ['connected', 'disconnected', 'auth_required', 'error'].includes(server.status) 
+            ? server.status 
+            : 'disconnected'
+        }));
+
+        // Extract stats from response data if available
+        const responseData = result.data as any;
+        // Stats might be in result.data.stats or at the top level of responseData
+        const stats = (responseData && typeof responseData === 'object' && 'stats' in responseData) 
+          ? responseData.stats 
+          : (responseData?.total !== undefined ? responseData : null);
+        // Use stats from backend response if available, otherwise recalculate
+        const serverStats = {
+          total: stats?.total || processedServers.length,
+          connected: stats?.connected || 0,
+          disconnected: stats?.disconnected || 0,
+          auth_required: stats?.auth_required || 0,
+          errors: stats?.errors || 0
+        };
+        
+        setState(prev => ({
+          ...prev,
+          servers: processedServers,
+          serverStats,
+          loading: false,
+          error: null,
+          lastUpdated: Date.now(),
+          initialized: true,
+          hasError: false
+        }));
+
+        console.log(`✅ Successfully loaded ${processedServers.length} servers`);
+        retryCountRef.current = 0; // Reset retry count on success
+        hasErrorRef.current = false;
+      } else {
+        throw new Error(result.error || 'Failed to fetch servers');
+      }
+    } catch (error) {
+      console.error('❌ Error fetching servers:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      setState(prev => ({
+        ...prev,
+        loading: false,
+        error: errorMessage,
+        hasError: true
+      }));
+
+      hasErrorRef.current = true;
+      
+      // Implement retry logic
+      if (retryCountRef.current < maxRetries) {
+        retryCountRef.current++;
+        console.log(`🔄 Retry attempt ${retryCountRef.current}/${maxRetries} in 5 seconds...`);
+        
+        setTimeout(() => {
+          if (hasErrorRef.current) {
+            refreshServers();
+          }
+        }, 5000);
+      } else {
+        console.log('❌ Max retries reached, giving up');
+      }
+    } finally {
+      loadingRef.current = false;
+    }
+  }, [isAuthenticated, user, recalculateStats]);
+
+  // Initialize servers on mount and when auth changes
+  useEffect(() => {
+    if (isAuthenticated && user && !state.initialized) {
+      refreshServers();
+      refreshMCPRegistryServers();
+    }
+  }, [isAuthenticated, user, state.initialized, refreshServers, refreshMCPRegistryServers]);
+
+  const clearServerAuth = useCallback(async (serverId: string) => {
+    try {
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) {
+        throw new Error('No access token available');
+      }
+
+      const result = await apiClient.clearMCPServerAuth(serverId, accessToken);
+      
+      if (result.success) {
+        // Update server status to disconnected and clear auth info
+        setState(prevState => {
+          const updatedServers = prevState.servers.map(server => {
+            if (server.server_id === serverId) {
+              return {
+                ...server,
+                status: 'disconnected' as const,
+                auth_information: 'absent',
+                last_status_update: new Date().toISOString()
+              };
+            }
+            return server;
+          });
+          
+          return {
+            ...prevState,
+            servers: updatedServers as MCPServer[],
+            serverStats: recalculateStats(updatedServers as MCPServer[]),
+            lastUpdated: Date.now()
+          };
+        });
+        
+        console.log(`✅ Successfully cleared auth for server: ${serverId}`);
+      } else {
+        throw new Error(result.error || 'Failed to clear server auth');
+      }
+    } catch (error) {
+      console.error('❌ Error clearing server auth:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      setState(prev => ({
+        ...prev,
+        error: errorMessage,
+        hasError: true
+      }));
+      
+      throw error;
+    }
+  }, []);
+
+  // Memoize actions to prevent unnecessary re-renders
+  const actions = useMemo(() => ({
+    refreshServers,
+    refreshMCPRegistryServers,
+    connectServer,
+    disconnectServer,
+    clearCacheServer,
+    authorizeServer,
+    addServer,
+    updateServer,
+    removeServer,
+    clearError,
+    refreshServerCapabilities,
+    refreshAllCapabilities,
+    refreshServerStatus,
+    refreshAllStatus,
+    clearServerAuth,
+    installMCPRegistryServer,
+  }), [
+    refreshServers,
+    refreshMCPRegistryServers,
+    connectServer,
+    disconnectServer,
+    clearCacheServer,
+    authorizeServer,
+    addServer,
+    updateServer,
+    removeServer,
+    clearError,
+    refreshServerCapabilities,
+    refreshAllCapabilities,
+    refreshServerStatus,
+    refreshAllStatus,
+    clearServerAuth,
+    installMCPRegistryServer,
+  ]);
+
+  return (
+    <ServersStateContext.Provider value={state}>
+      <ServersActionsContext.Provider value={actions}>
+        {children}
+      </ServersActionsContext.Provider>
+    </ServersStateContext.Provider>
+  );
+}
+
+// Custom hooks with selectors to prevent unnecessary re-renders
+export function useServersState() {
+  const context = useContext(ServersStateContext);
+  if (context === undefined) {
+    throw new Error('useServersState must be used within a ServersProvider');
+  }
+  return context;
+}
+
+export function useServersActions() {
+  const context = useContext(ServersActionsContext);
+  if (context === undefined) {
+    throw new Error('useServersActions must be used within a ServersProvider');
+  }
+  return context;
+}
+
+// Legacy hook for backward compatibility
+export function useServers() {
+  const state = useServersState();
+  const actions = useServersActions();
+  return { ...state, ...actions };
+}
+
+// Selector hooks for specific data
+export function useServersList() {
+  const { servers } = useServersState();
+  return servers || []; // Ensure we always return an array
+}
+
+export function useServerByName(serverId: string) {
+  const { servers } = useServersState();
+  return servers.find(server => server.server_id === serverId);
+}
+
+// Individual action hooks for convenience
+export const useAddServer = () => {
+  const { addServer } = useServersActions();
+  return addServer;
+};
+
+export const useUpdateServer = () => {
+  const { updateServer } = useServersActions();
+  return updateServer;
+};
+
+export const useRemoveServer = () => {
+  const { removeServer } = useServersActions();
+  return removeServer;
+};
+
+export function useServerStats() {
+  const { serverStats } = useServersState();
+  return serverStats;
+}
+
+export function useServersLoading() {
+  const { loading } = useServersState();
+  return loading;
+}
+
+export function useServersError() {
+  const { error, hasError } = useServersState();
+  return { error, hasError };
+}
+
+// MCP Registry Server selector hooks
+export function useMCPRegistryServersList() {
+  const { mcpregistryservers } = useServersState();
+  return mcpregistryservers || [];
+}
+
+export function useMCPRegistryServerStats() {
+  const { mcpregistryserverStats } = useServersState();
+  return mcpregistryserverStats;
+}
+
+export function useMCPRegistryServersLoading() {
+  const { mcpregistryLoading } = useServersState();
+  return mcpregistryLoading;
+}
+
+export function useMCPRegistryServerById(serverId: string) {
+  const { mcpregistryservers } = useServersState();
+  return mcpregistryservers.find(server => server.id === serverId);
+}
+
+// Action hooks for MCP registry servers
+export const useRefreshMCPRegistryServers = () => {
+  const { refreshMCPRegistryServers } = useServersActions();
+  return refreshMCPRegistryServers;
+};
+
+export const useInstallMCPRegistryServer = () => {
+  const { installMCPRegistryServer } = useServersActions();
+  return installMCPRegistryServer;
+}; 

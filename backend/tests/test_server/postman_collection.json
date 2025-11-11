@@ -1,0 +1,501 @@
+{
+  "info": {
+    "name": "Test HTTP Server",
+    "description": "A comprehensive test server for HTTP tool testing",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Root",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            ""
+          ]
+        },
+        "description": "Root endpoint with server information"
+      }
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "health"
+          ]
+        },
+        "description": "Health check endpoint"
+      }
+    },
+    {
+      "name": "Server Info",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/info",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "info"
+          ]
+        },
+        "description": "Detailed server information"
+      }
+    },
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/auth/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "description": "Login endpoint to get bearer token"
+      }
+    },
+    {
+      "name": "Logout",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/auth/logout",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "logout"
+          ]
+        },
+        "description": "Logout endpoint"
+      }
+    },
+    {
+      "name": "Get Current User",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/auth/me",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "me"
+          ]
+        },
+        "description": "Get current user information"
+      }
+    },
+    {
+      "name": "Get Users",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/users",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "users"
+          ]
+        },
+        "description": "Get all users with pagination and search"
+      }
+    },
+    {
+      "name": "Create User",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/users",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "users"
+          ]
+        },
+        "description": "Create a new user",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Get User",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/users/{user_id}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "users",
+            "{user_id}"
+          ]
+        },
+        "description": "Get user by ID"
+      }
+    },
+    {
+      "name": "Update User",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/users/{user_id}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "users",
+            "{user_id}"
+          ]
+        },
+        "description": "Update user by ID",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete User",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/users/{user_id}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "users",
+            "{user_id}"
+          ]
+        },
+        "description": "Delete user by ID"
+      }
+    },
+    {
+      "name": "Get Products",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/products",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "products"
+          ]
+        },
+        "description": "Get products with filtering"
+      }
+    },
+    {
+      "name": "Create Product",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/products",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "products"
+          ]
+        },
+        "description": "Create a new product",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Get Product",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/products/{product_id}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "products",
+            "{product_id}"
+          ]
+        },
+        "description": "Get product by ID"
+      }
+    },
+    {
+      "name": "Update Product",
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/products/{product_id}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "products",
+            "{product_id}"
+          ]
+        },
+        "description": "Partially update product",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Create Order",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/orders",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "orders"
+          ]
+        },
+        "description": "Create a new order",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Search",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/search",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "search"
+          ]
+        },
+        "description": "Complex search endpoint"
+      }
+    },
+    {
+      "name": "Error 400",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/errors/400",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "errors",
+            "400"
+          ]
+        },
+        "description": "Test 400 Bad Request error"
+      }
+    },
+    {
+      "name": "Error 401",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/errors/401",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "errors",
+            "401"
+          ]
+        },
+        "description": "Test 401 Unauthorized error"
+      }
+    },
+    {
+      "name": "Error 403",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/errors/403",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "errors",
+            "403"
+          ]
+        },
+        "description": "Test 403 Forbidden error"
+      }
+    },
+    {
+      "name": "Error 404",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/errors/404",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "errors",
+            "404"
+          ]
+        },
+        "description": "Test 404 Not Found error"
+      }
+    },
+    {
+      "name": "Error 429",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/errors/429",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "errors",
+            "429"
+          ]
+        },
+        "description": "Test 429 Too Many Requests error"
+      }
+    },
+    {
+      "name": "Error 500",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/errors/500",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "errors",
+            "500"
+          ]
+        },
+        "description": "Test 500 Internal Server Error"
+      }
+    },
+    {
+      "name": "Upload File",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/upload",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "upload"
+          ]
+        },
+        "description": "File upload endpoint"
+      }
+    },
+    {
+      "name": "Download File",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/download/{filename}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "download",
+            "{filename}"
+          ]
+        },
+        "description": "File download endpoint"
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8002",
+      "type": "string"
+    }
+  ]
+}

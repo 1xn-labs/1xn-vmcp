@@ -1,0 +1,110 @@
+name: Notify Enterprise Repo on Changes
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  notify-enterprise:
+    runs-on: ubuntu-latest
+    # Only run if the CI workflow succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+          fetch-depth: 0
+
+      - name: Get commit information
+        id: commit-info
+        run: |
+          COMMIT_SHA="${{ github.event.workflow_run.head_sha }}"
+          COMMIT_MESSAGE=$(git log -1 --pretty=format:"%s" $COMMIT_SHA)
+          COMMIT_AUTHOR=$(git log -1 --pretty=format:"%an" $COMMIT_SHA)
+          COMMIT_URL="${{ github.server_url }}/${{ github.repository }}/commit/$COMMIT_SHA"
+          
+          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+          echo "commit_message<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMIT_MESSAGE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "commit_author=$COMMIT_AUTHOR" >> $GITHUB_OUTPUT
+          echo "commit_url=$COMMIT_URL" >> $GITHUB_OUTPUT
+
+      - name: Send repository dispatch to enterprise repo
+        env:
+          ENTERPRISE_REPO_PAT: ${{ secrets.ENTERPRISE_REPO_PAT }}
+          ENTERPRISE_ORG: ${{ secrets.ENTERPRISE_ORG }}
+          ENTERPRISE_REPO: ${{ secrets.ENTERPRISE_REPO }}
+        run: |
+          if [ -z "$ENTERPRISE_REPO_PAT" ]; then
+            echo "❌ ERROR: ENTERPRISE_REPO_PAT secret is not set"
+            echo "   Please add this secret in repository settings > Secrets and variables > Actions"
+            exit 1
+          fi
+          
+          if [ -z "$ENTERPRISE_ORG" ] || [ -z "$ENTERPRISE_REPO" ]; then
+            echo "❌ ERROR: ENTERPRISE_ORG or ENTERPRISE_REPO secrets are not set"
+            echo "   Please add these secrets in repository settings > Secrets and variables > Actions"
+            exit 1
+          fi
+          
+          echo "📤 Sending repository dispatch to $ENTERPRISE_ORG/$ENTERPRISE_REPO..."
+          
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.ENTERPRISE_REPO_PAT }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ secrets.ENTERPRISE_ORG }}/${{ secrets.ENTERPRISE_REPO }}/dispatches \
+            -d "{
+              \"event_type\": \"submodule-update\",
+              \"client_payload\": {
+                \"oss_repo\": \"${{ github.repository }}\",
+                \"commit_sha\": \"${{ steps.commit-info.outputs.commit_sha }}\",
+                \"commit_message\": \"${{ steps.commit-info.outputs.commit_message }}\",
+                \"commit_author\": \"${{ steps.commit-info.outputs.commit_author }}\",
+                \"commit_url\": \"${{ steps.commit-info.outputs.commit_url }}\",
+                \"branch\": \"main\",
+                \"workflow_run_id\": \"${{ github.event.workflow_run.id }}\",
+                \"workflow_run_url\": \"${{ github.event.workflow_run.html_url }}\"
+              }
+            }")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          if [ "$HTTP_CODE" -eq 204 ]; then
+            echo "✅ Successfully sent repository dispatch to enterprise repo"
+            echo "   Event type: submodule-update"
+            echo "   Commit: ${{ steps.commit-info.outputs.commit_sha }}"
+          elif [ "$HTTP_CODE" -eq 404 ]; then
+            echo "❌ ERROR: Enterprise repository not found or PAT doesn't have access"
+            echo "   Check that ENTERPRISE_ORG and ENTERPRISE_REPO are correct"
+            echo "   Check that the PAT has access to the enterprise repo"
+            exit 1
+          elif [ "$HTTP_CODE" -eq 401 ]; then
+            echo "❌ ERROR: Authentication failed"
+            echo "   Check that ENTERPRISE_REPO_PAT is valid and has the correct permissions"
+            exit 1
+          else
+            echo "❌ ERROR: Failed to send repository dispatch (HTTP $HTTP_CODE)"
+            echo "Response: $BODY"
+            exit 1
+          fi
+
+      - name: Verify dispatch was sent
+        if: failure()
+        run: |
+          echo "⚠️  Failed to notify enterprise repo"
+          echo ""
+          echo "Troubleshooting steps:"
+          echo "1. Verify ENTERPRISE_REPO_PAT secret is set in repository settings"
+          echo "2. Verify ENTERPRISE_ORG and ENTERPRISE_REPO secrets are set"
+          echo "3. Check that the PAT has 'repo' scope and access to the enterprise repository"
+          echo "4. Verify the enterprise repository exists and is accessible"
+
