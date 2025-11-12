@@ -54,7 +54,11 @@ class Settings(BaseSettings):
     )
 
     # Logging
-    log_level: str = Field(default="INFO", description="Logging level")
+    log_level: str = Field(
+        default="INFO",
+        description="Logging level",
+        env="VMCP_LOG_LEVEL"  # Explicitly set env var name (env_prefix will also work)
+    )
     log_format: str = Field(
         default="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         description="Log format string"
