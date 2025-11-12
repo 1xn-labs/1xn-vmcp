@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/1xn-labs-1xn-vmcp-badge.png)](https://mseep.ai/app/1xn-labs-1xn-vmcp)
+
 # vMCP - Virtual Model Context Protocol
 
 [![PyPI](https://img.shields.io/pypi/v/1xn-vmcp?style=flat-square)](https://pypi.org/project/1xn-vmcp/) [![Docs](https://img.shields.io/badge/docs-available-brightgreen?style=flat-square)](https://1xn.ai/docs/) [![1xn](https://img.shields.io/badge/1xn-Website-blue?logo=https%3A%2F%2F1xn.ai%2Fimg%2F1xn_logo.svg&style=flat-square)](https://1xn.ai)
