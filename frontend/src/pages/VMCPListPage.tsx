@@ -287,6 +287,9 @@ export default function VMCPPage() {
   const myVMCPS = vmcps.private || [];
   const publicVMCPS = vmcps.public || []; // These are user's public VMCPs, not community VMCPs
 
+  // Check if Community tab should be shown (Enterprise only, not OSS)
+  const showCommunityTab = import.meta.env.VITE_VMCP_OSS_BUILD !== 'true';
+
   if (loading && !initialized) {
     return (
       <div className="min-h-screen text-foreground flex items-center justify-center">
@@ -376,13 +379,15 @@ export default function VMCPPage() {
                 {myVMCPS.length}
               </Badge>
             </TabsTrigger>
-            <TabsTrigger value="publicvmcps" className="flex items-center gap-2">
-              <Globe className="h-4 w-4" />
-              Community
-              <Badge variant="outline" className="ml-2 text-xs">
-                {publicVMCPS.length}
-              </Badge>
-            </TabsTrigger>
+            {showCommunityTab && (
+              <TabsTrigger value="publicvmcps" className="flex items-center gap-2">
+                <Globe className="h-4 w-4" />
+                Community
+                <Badge variant="outline" className="ml-2 text-xs">
+                  {publicVMCPS.length}
+                </Badge>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="myvmcps" className="space-y-6">
@@ -604,7 +609,8 @@ export default function VMCPPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="publicvmcps" className="space-y-6">
+          {showCommunityTab && (
+            <TabsContent value="publicvmcps" className="space-y-6">
             <div className="text-left py-2 text-muted-foreground">
               <p className="text-sm">Below are the list of public vMCPs you have added to your collection. These are read-only vMCPs. To modify capabilities, fork them / make a copy and start extending the vMCPs.</p>
             </div>
@@ -815,6 +821,7 @@ export default function VMCPPage() {
                 </div>)}
             </div>
           </TabsContent>
+          )}
         </Tabs>
 
         {/* Discover Call-to-action for users with existing vMCPs */}
