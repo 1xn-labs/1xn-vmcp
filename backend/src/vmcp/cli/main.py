@@ -33,6 +33,7 @@ console = Console()
 def run(
     host: str = typer.Option(None, "--host", "-h", help="Host to bind to"),
     port: int = typer.Option(None, "--port", "-p", help="Port to bind to"),
+    log_level: str = typer.Option(None, "--log-level", "-l", help="Log level (debug, info, warning, error)"),
     skip_db_check: bool = typer.Option(False, "--skip-db-check", help="Skip database connectivity check"),
     open_browser: bool = typer.Option(True, "--open/--no-open", help="Open browser after starting")
 ):
@@ -49,6 +50,7 @@ def run(
         uvx vmcp run
         vmcp run --port 8080
         vmcp run --no-open
+        vmcp run --log-level debug
     """
     import time
     import webbrowser
@@ -65,6 +67,8 @@ def run(
         settings.host = host
     if port is not None:
         settings.port = port
+    if log_level is not None:
+        settings.log_level = log_level.upper()
 
     config_show()
 

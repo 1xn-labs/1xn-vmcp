@@ -54,7 +54,7 @@ class Settings(BaseSettings):
     )
 
     # Logging
-    log_level: str = Field(default="DEBUG", description="Logging level")
+    log_level: str = Field(default="INFO", description="Logging level")
     log_format: str = Field(
         default="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         description="Log format string"
