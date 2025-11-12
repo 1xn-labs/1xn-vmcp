@@ -34,7 +34,7 @@ vMCP solves these problems by providing a layer of abstraction and a no-code con
 - 🐳 **Docker Ready**: Official Docker images for easy deployment
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/1xn-labs/1xn-vmcp/main/assets/img/vmcp-arch.png" alt="vMCP Architecture" width="780"/>
+  <img src="https://raw.githubusercontent.com/1xn-labs/1xn-vmcp/main/.assets/img/vmcp-arch.png" alt="vMCP Architecture" width="780"/>
 </div>
 
 ## 🚀 Quickstart
