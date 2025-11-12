@@ -13,9 +13,14 @@ help: ## Show this help message
 	@echo "Available commands:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-15s$(RESET) %s\n", $$1, $$2}'
 
-run: ## Run the vMCP application
+run: ## Run the vMCP application (usage: make run LOG_LEVEL=debug)
 	@echo "$(CYAN)Starting vMCP application...$(RESET)"
-	cd backend && uv run python -m vmcp.cli.main run
+	@if [ -n "$(LOG_LEVEL)" ]; then \
+		echo "$(YELLOW)Using log level: $(LOG_LEVEL)$(RESET)"; \
+		cd backend && uv run python -m vmcp.cli.main run --log-level $(LOG_LEVEL); \
+	else \
+		cd backend && uv run python -m vmcp.cli.main run; \
+	fi
 
 test-servers: ## Start both test servers
 	@echo "$(CYAN)Killing processes on ports 8001 and 8002...$(RESET)"
