@@ -84,7 +84,7 @@ Issues = "https://github.com/1xn-labs/1xn-vmcp/issues"
 packages = ["src/vmcp", "mcp_server", "test_server"]
 
 [tool.hatch.build.targets.wheel.force-include]
-"public/frontend" = "vmcp/public/frontend"
+"./public/frontend" = "vmcp/public/frontend"
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -92,6 +92,9 @@ include = [
     "/README.md",
     "/LICENSE",
 ]
+
+[tool.hatch.build.targets.sdist.force-include]
+"./public" = "public"
 
 [tool.black]
 line-length = 120
