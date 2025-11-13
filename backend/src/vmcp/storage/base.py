@@ -527,6 +527,35 @@ class StorageBase:
                     continue
 
                 config = vmcp.vmcp_config or {}
+                
+                # Extract selected_servers for server count and basic info
+                # Check both top-level and nested in vmcp_config (VMCPConfig structure)
+                selected_servers = config.get("selected_servers") or config.get("vmcp_config", {}).get("selected_servers", [])
+                server_count = len(selected_servers) if isinstance(selected_servers, list) else 0
+                
+                # Create lightweight server summaries (id, name, status, url, favicon_url)
+                server_summaries = []
+                if isinstance(selected_servers, list):
+                    for server in selected_servers:
+                        if isinstance(server, dict):
+                            server_summaries.append({
+                                "id": server.get("server_id") or server.get("id"),
+                                "name": server.get("name", ""),
+                                "status": server.get("status", "unknown"),
+                                "url": server.get("url"),
+                                "favicon_url": server.get("favicon_url")
+                            })
+                
+                # Extract public status fields (check both top-level and nested in config)
+                is_public = config.get("is_public", False)
+                public_at = config.get("public_at")
+                public_tags = config.get("public_tags", [])
+                
+                # Build vmcp_config with selected_servers for frontend compatibility
+                vmcp_config_data = {}
+                if selected_servers:
+                    vmcp_config_data["selected_servers"] = server_summaries
+                
                 vmcp_list.append({
                     "id": vmcp.vmcp_id,
                     "vmcp_id": vmcp.vmcp_id,
@@ -538,6 +567,11 @@ class StorageBase:
                     "total_prompts": config.get("total_prompts", 0),
                     "created_at": vmcp.created_at.isoformat() if vmcp.created_at else None,
                     "updated_at": vmcp.updated_at.isoformat() if vmcp.updated_at else None,
+                    "is_public": is_public,
+                    "public_at": public_at,
+                    "public_tags": public_tags if isinstance(public_tags, list) else [],
+                    "server_count": server_count,
+                    "vmcp_config": vmcp_config_data if vmcp_config_data else None,
                 })
 
             logger.debug(f"Found {len(vmcp_list)} vMCPs for user {self.user_id}")

@@ -724,6 +724,11 @@ class VMCPListSummary(BaseModel):
     total_tools: Optional[int] = Field(0, description="Total number of tools")
     total_resources: Optional[int] = Field(0, description="Total number of resources")
     total_prompts: Optional[int] = Field(0, description="Total number of prompts")
+    is_public: bool = Field(False, description="Whether vMCP is public")
+    public_at: Optional[str] = Field(None, description="When vMCP was made public")
+    public_tags: List[str] = Field(default_factory=list, description="Public tags")
+    server_count: Optional[int] = Field(0, description="Number of MCP servers")
+    vmcp_config: Optional[Dict[str, Any]] = Field(None, description="vMCP configuration including selected_servers")
 
 # ============================================================================
 # VMCP RESPONSE MODELS

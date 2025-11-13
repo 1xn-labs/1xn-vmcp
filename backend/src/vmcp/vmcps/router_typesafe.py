@@ -1323,6 +1323,11 @@ async def list_vmcps(user_context: UserContext = Depends(get_user_context)) -> V
                 "total_tools": vmcp.get("total_tools", 0),
                 "total_resources": vmcp.get("total_resources", 0),
                 "total_prompts": vmcp.get("total_prompts", 0),
+                "is_public": vmcp.get("is_public", False),
+                "public_at": vmcp.get("public_at"),
+                "public_tags": vmcp.get("public_tags", []),
+                "server_count": vmcp.get("server_count", 0),
+                "vmcp_config": vmcp.get("vmcp_config"),
             }
             normalized_vmcps.append(normalized_vmcp)
         ### NEW CODE
@@ -1344,6 +1349,30 @@ async def list_vmcps(user_context: UserContext = Depends(get_user_context)) -> V
                 # Convert to VMCPListSummary format
                 for installed_vmcp in installed_public_vmcps:
                     vmcp_config = installed_vmcp.vmcp_config or {}
+                    
+                    # Extract selected_servers for server count and basic info
+                    # Check both top-level and nested in vmcp_config (VMCPConfig structure)
+                    selected_servers = vmcp_config.get("selected_servers") or vmcp_config.get("vmcp_config", {}).get("selected_servers", [])
+                    server_count = len(selected_servers) if isinstance(selected_servers, list) else 0
+                    
+                    # Create lightweight server summaries (id, name, status, url, favicon_url)
+                    server_summaries = []
+                    if isinstance(selected_servers, list):
+                        for server in selected_servers:
+                            if isinstance(server, dict):
+                                server_summaries.append({
+                                    "id": server.get("server_id") or server.get("id"),
+                                    "name": server.get("name", ""),
+                                    "status": server.get("status", "unknown"),
+                                    "url": server.get("url"),
+                                    "favicon_url": server.get("favicon_url")
+                                })
+                    
+                    # Build vmcp_config with selected_servers for frontend compatibility
+                    vmcp_config_data = {}
+                    if selected_servers:
+                        vmcp_config_data["selected_servers"] = server_summaries
+                    
                     public_vmcp = {
                         "id": installed_vmcp.public_vmcp_id,
                         "name": installed_vmcp.name,
@@ -1355,6 +1384,11 @@ async def list_vmcps(user_context: UserContext = Depends(get_user_context)) -> V
                         "total_tools": sum(len(tools) for tools in vmcp_config.get('selected_tools', {}).values()) if isinstance(vmcp_config.get('selected_tools'), dict) else 0,
                         "total_resources": sum(len(resources) for resources in vmcp_config.get('selected_resources', {}).values()) if isinstance(vmcp_config.get('selected_resources'), dict) else 0,
                         "total_prompts": sum(len(prompts) for prompts in vmcp_config.get('selected_prompts', {}).values()) if isinstance(vmcp_config.get('selected_prompts'), dict) else 0,
+                        "is_public": True,  # All installed public vMCPs are public by definition
+                        "public_at": vmcp_config.get("public_at"),
+                        "public_tags": vmcp_config.get("public_tags", []),
+                        "server_count": server_count,
+                        "vmcp_config": vmcp_config_data if vmcp_config_data else None,
                     }
                     public_vmcps.append(public_vmcp)
                 
@@ -1716,55 +1750,9 @@ async def delete_vmcp(
 # SHARING AND FORKING ENDPOINTS
 # ============================================================================
 
-@router.post("/share", response_model=VMCPShareResponse)
-async def share_vmcp(
-    request: VMCPShareRequest,
-    user_context: UserContext = Depends(get_user_context)
-) -> VMCPShareResponse:
-    """Share a vMCP publicly with type-safe request/response models."""
-    logger.info(f"📋 Share vMCP endpoint called for: {request.vmcp_id}")
-    logger.info(f"   👤 User context: {user_context.user_id if user_context else 'None'}")
-    
-    try:
-        # Get managers
-        vmcp_config_manager = VMCPConfigManager(user_context.user_id)
-        
-        # Get vMCP config
-        vmcp_config = vmcp_config_manager.load_vmcp_config(request.vmcp_id)
-        if not vmcp_config:
-            raise HTTPException(status_code=404, detail=f"vMCP '{request.vmcp_id}' not found")
-        
-        # Update vMCP to be public (following old router pattern)
-        success = vmcp_config_manager.update_vmcp_config(
-            request.vmcp_id,
-            is_public=True,
-            public_tags=[request.state.value],
-            public_at=datetime.utcnow().isoformat(),
-            creator_username=f"user_{user_context.user_id}"
-        )
-        if not success:
-            raise HTTPException(status_code=500, detail="Failed to update vMCP configuration")
-        
-        logger.info(f"   ✅ Successfully shared vMCP '{request.vmcp_id}'")
-        
-        return VMCPShareResponse(
-            success=True,
-            message=f"vMCP '{request.vmcp_id}' shared successfully",
-            data={
-                "vmcp_id": request.vmcp_id,
-                "state": request.state,
-                "tags": request.tags or [],
-                "public_url": f"/api/vmcps/public/{request.vmcp_id}"
-            }
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"   ❌ Error sharing vMCP: {e}")
-        logger.error(f"   ❌ Exception type: {type(e).__name__}")
-        logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Failed to share vMCP: {str(e)}")
+# NOTE: Share endpoint moved to enterprise/backend/src/vmcp/vmcps/enterprise_router.py
+# This endpoint requires database access and GlobalPublicVMCPRegistry integration
+# which is only available in Enterprise edition.
 
 @router.get("/public/list", response_model=List[VMCPConfig])
 async def list_public_vmcps(

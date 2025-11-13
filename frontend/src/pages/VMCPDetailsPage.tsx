@@ -382,8 +382,9 @@ export default function VMCPDetailPage() {
   };
 
   const handleExtendClick = () => {
-    // Set default name to the part after "/" for public vMCPs
-    const defaultName = vmcpConfig.name.includes('/') 
+    // Set default name to the part after "/" for installed public vMCPs (community vMCPs)
+    // User's own vMCPs (even if public) should keep their original name
+    const defaultName = vmcpConfig.name.startsWith('@') && vmcpConfig.name.includes('/')
       ? vmcpConfig.name.split('/').slice(1).join('/')
       : vmcpConfig.name;
     setExtendName(defaultName);
@@ -802,11 +803,13 @@ export default function VMCPDetailPage() {
               <div>
                 <div className="flex items-center gap-2">
                   {hasVMCPName ? (
-                    vmcpConfig.is_public ? (
+                    vmcpConfig.name.startsWith('@') ? (
+                      // Installed public vMCP (community vMCP) - show with username prefix
                       <h1 className="text-3xl font-bold text-foreground">
                         vMCP: <span className=" text-primary">{vmcpConfig.name.split('/')[0]}/</span>{vmcpConfig.name.split('/').slice(1).join('/')}
                       </h1>
                     ) : (
+                      // User's own vMCP (private or public) - show original name
                       <h1 className="text-3xl font-bold text-foreground">
                         Edit vMCP: {vmcpConfig.name}
                       </h1>
