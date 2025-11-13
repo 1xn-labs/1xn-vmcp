@@ -1950,7 +1950,7 @@
       "text": "",
       "environment_variables": [],
       "tool_calls": [],
-      "code": "def main(word str, character:str):\n  return word. count (character)",
+      "code": "def main(word:str, character:str):\n  return word. count (character)",
       "imports": [],
       "dependencies": [],
       "keywords": [
