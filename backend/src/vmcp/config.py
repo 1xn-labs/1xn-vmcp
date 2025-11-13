@@ -55,7 +55,7 @@ class Settings(BaseSettings):
 
     # Logging
     log_level: str = Field(
-        default="INFO",
+        default="WARNING",
         description="Logging level",
         env="VMCP_LOG_LEVEL"  # Explicitly set env var name (env_prefix will also work)
     )
