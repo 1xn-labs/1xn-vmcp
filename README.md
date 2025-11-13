@@ -2,7 +2,7 @@
 
 [![PyPI](https://img.shields.io/pypi/v/1xn-vmcp?style=flat-square)](https://pypi.org/project/1xn-vmcp/) [![Docs](https://img.shields.io/badge/docs-available-brightgreen?style=flat-square)](https://1xn.ai/docs/) [![1xn](https://img.shields.io/badge/1xn-Website-blue?logo=https%3A%2F%2F1xn.ai%2Fimg%2F1xn_logo.svg&style=flat-square)](https://1xn.ai)
 
-An open-source tool for aggregating, extending and managing multiple MCP servers with a unified interface.
+An open-source tool for composing, customizing and extending multiple MCP servers with a unified interface.
 
 vMCP (virtual Model Context Protocol) is an AI configuration and management platform built on top of the [Model Context Protocol](https://github.com/modelcontextprotocol/python-sdk). **Lego blocks for AI workflows and agents** - allowing you to compose, customize and extend multiple MCPs into powerful, reusable 
 (virtual) MCPs. Connect vMCPs to your AI clients (Claude, Chatgpt, VSCode) or to your agents built with any SDK and get the power of vMCPs.
@@ -10,6 +10,10 @@ vMCP (virtual Model Context Protocol) is an AI configuration and management plat
 vMCP is both 
 - a specification that builds on and extends MCPs [vMCP.json](https://github.com/1xn-labs/1xn-vmcp/blob/main/backend/src/vmcp/data/1xndemo_config.json)
 - a platform to create and deploy vMCPs 
+
+<div align="center">
+  <img src="https://1xn.ai/img/vmcp-intro-screen.png" alt="1xn vMCP Platform" width="780"/>
+</div>
 
 ## Why We Built This
 
