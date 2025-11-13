@@ -14,7 +14,9 @@ from vmcp.storage.base import StorageBase
 from vmcp.utilities.tracing import trace_method
 
 # Setup centralized logging for config module with span correlation
-logger = logging.getLogger("1xN_MCP_CONFIG")
+from vmcp.utilities.logging import setup_logging
+
+logger = setup_logging("1xN_MCP_CONFIG")
 
 class MCPConfigManager:
     """Manages MCP server configurations"""
@@ -276,7 +278,7 @@ class MCPConfigManager:
             current_status = await client_manager.ping_server(server_id)
             logger.info(f"   🔍 Server {server_id}: ping result = {current_status.value}")
         except AuthenticationError as e:
-            logger.error(f"   ❌ Authentication error for server {server_id}: {e}")
+            logger.debug(f"   ❌ Authentication error for server {server_id}: {e}")
             current_status = MCPConnectionStatus.AUTH_REQUIRED
         except Exception as e:
             logger.error(f"   ❌ Error pinging server {server_id}: {e}")

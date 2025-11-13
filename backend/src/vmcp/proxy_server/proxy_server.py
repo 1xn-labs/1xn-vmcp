@@ -937,7 +937,7 @@ if documentation_dist.exists():
     app.mount("/documentation", StaticFiles(directory=str(documentation_dist), html=True), name="documentation")
     logger.info("✅ Documentation served at /documentation")
 else:
-    logger.warning(f"⚠️ Documentation build directory not found at {documentation_dist}")
+    logger.debug(f"⚠️ Documentation build directory not found at {documentation_dist}")
 
 def create_app():
     """Factory function to create FastAPI app instance."""
