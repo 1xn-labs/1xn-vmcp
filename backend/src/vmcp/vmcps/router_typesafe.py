@@ -1170,6 +1170,20 @@ async def install_vmcp_from_remote(
         # Save the processed vMCP to UserPublicVMCPRegistry (enterprise only)
         # This happens AFTER server processing so we have the complete processed config
         try:
+            # Regenerate metadata URL to match current user/instance (same as create_vmcp)
+            from vmcp.config import settings
+            if public_vmcp.metadata:
+                public_vmcp.metadata = {
+                    **public_vmcp.metadata,  # Preserve other metadata fields (icon, etc.)
+                    "url": f"{settings.base_url}/private/{public_vmcp.name}/vmcp",
+                    "type": public_vmcp.metadata.get("type", "vmcp")
+                }
+            else:
+                public_vmcp.metadata = {
+                    "url": f"{settings.base_url}/private/{public_vmcp.name}/vmcp",
+                    "type": "vmcp"
+                }
+            
             # OLD CODE 
             #user_vmcp_manager.save_vmcp_config(public_vmcp)
             #logger.info(f"   ✅ Saved vMCP to database with processed servers")
@@ -1177,7 +1191,7 @@ async def install_vmcp_from_remote(
             registry_vmcp = public_vmcp.to_vmcp_registry_config()
             public_vmcp_registry_data = {
                 "vmcp_registry_config": registry_vmcp.to_dict(),
-                "vmcp_config": public_vmcp.to_dict()  # This now contains processed servers
+                "vmcp_config": public_vmcp.to_dict()  # This now contains processed servers with regenerated metadata
             }
             user_vmcp_manager.storage.update_public_vmcp_registry(public_vmcp.id, public_vmcp_registry_data, "add")
             logger.info(f"   ✅ Saved processed vMCP to UserPublicVMCPRegistry")
@@ -1199,6 +1213,22 @@ async def install_vmcp_from_remote(
         # Update vmcp_config with processed servers before creating response
         vmcp_config_dict = public_vmcp.vmcp_config.copy() if public_vmcp.vmcp_config else {}
         vmcp_config_dict['selected_servers'] = processed_servers
+        
+        # Regenerate metadata URL for response (ensure it's current)
+        # Note: metadata was already regenerated above before saving, but ensure it's correct here too
+        from vmcp.config import settings
+        response_metadata = getattr(public_vmcp, 'metadata', {}) or {}
+        if response_metadata:
+            response_metadata = {
+                **response_metadata,  # Preserve other metadata fields (icon, etc.)
+                "url": f"{settings.base_url}/private/{public_vmcp.name}/vmcp",
+                "type": response_metadata.get("type", "vmcp")
+            }
+        else:
+            response_metadata = {
+                "url": f"{settings.base_url}/private/{public_vmcp.name}/vmcp",
+                "type": "vmcp"
+            }
         
         vmcp_info = VMCPInfo(
             id=public_vmcp.id,
@@ -1229,7 +1259,7 @@ async def install_vmcp_from_remote(
             public_tags=getattr(public_vmcp, 'public_tags', []) or [],
             public_at=getattr(public_vmcp, 'public_at', None),
             is_wellknown=getattr(public_vmcp, 'is_wellknown', False),
-            metadata=getattr(public_vmcp, 'metadata', {}) or {}
+            metadata=response_metadata
         )
         
         return VMCPInstallResponse(
@@ -1562,7 +1592,7 @@ async def update_vmcp(
         new_name = request.name
         if new_name != vmcp_config.name:
             # Check if new name already exists
-            existing_vmcp_id = vmcp_config_manager.storage.find_vmcp_name_in_private_registry(new_name)
+            existing_vmcp_id = vmcp_config_manager.storage.find_vmcp_name(new_name)
             if existing_vmcp_id:
                 raise HTTPException(status_code=409, detail=f"vMCP with name '{new_name}' already exists")
             logger.info(f"   🔄 vMCP name will be changed from '{vmcp_config.name}' to '{new_name}'")
@@ -1721,8 +1751,8 @@ async def share_vmcp(
             message=f"vMCP '{request.vmcp_id}' shared successfully",
             data={
                 "vmcp_id": request.vmcp_id,
-                "share_token": f"share_{random.randint(100000, 999999)}",
-                "shared_at": datetime.utcnow().isoformat(),
+                "state": request.state,
+                "tags": request.tags or [],
                 "public_url": f"/api/vmcps/public/{request.vmcp_id}"
             }
         )

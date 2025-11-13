@@ -1353,14 +1353,15 @@ class StorageBase:
             session = self._get_session()
             try:
                 mapping = session.query(SessionMapping).filter(
-                    SessionMapping.session_id == session_id
+                    SessionMapping.session_id == session_id,
+                    SessionMapping.user_id == self.user_id
                 ).first()
                 
                 if mapping:
                     logger.debug(f"Found agent name for session {session_id[:10]}...: {mapping.agent_name}")
                     return mapping.agent_name
                 else:
-                    logger.debug(f"No session mapping found for {session_id[:10]}...")
+                    logger.debug(f"No session mapping found for {session_id[:10]}... (user_id: {self.user_id})")
                     return None
             finally:
                 session.close()
@@ -1546,8 +1547,20 @@ class StorageBase:
             logger.error(f"Error saving agent logs for {agent_name}: {e}")
             return False
     
-    def find_vmcp_name_in_private_registry(self, vmcp_name: str) -> Optional[str]:
-        """Find vMCP ID by name in private registry (OSS version)"""
+    def find_vmcp_name(self, vmcp_name: str, vmcp_username: Optional[str] = None) -> Optional[str]:
+        """Find vMCP ID by name.
+        
+        Searches both private registry and user_public_vmcp_registry (enterprise mode).
+        Checks private registry first, then falls back to public registry if not found.
+        
+        Args:
+            vmcp_name: Name of the vMCP (e.g., "google_workspace")
+            vmcp_username: Optional username prefix (e.g., "@sanket_onexn")
+                          If provided and starts with "@", constructs public_vmcp_id as "{vmcp_username}:{vmcp_name}"
+        
+        Returns:
+            vMCP ID (UUID for private vMCPs, public_vmcp_id for public vMCPs) or None if not found
+        """
         try:
             # Query the database directly to get the actual vmcp_config
             session = self._get_session()
@@ -1568,6 +1581,69 @@ class StorageBase:
                 if vmcp.name == vmcp_name and actual_vmcp_id:
                     logger.info(f"✅ Found vMCP: {vmcp_name} -> {actual_vmcp_id}")
                     return actual_vmcp_id  # Return the UUID from vmcp_config, not the table ID
+            
+            # If not found in private registry, check user_public_vmcp_registry (enterprise mode)
+            # This follows the same pattern as delete_vmcp method
+            logger.info(f"🔍 vMCP not found in private registry, checking user_public_vmcp_registry for user_id={self.user_id}")
+            try:
+                from models.user_public_vmcp_registry import UserPublicVMCPRegistry
+                
+                # If vmcp_username is provided and starts with "@", construct public_vmcp_id first
+                # This handles URLs like /@sanket_onexn/google_workspace/vmcp
+                if vmcp_username and vmcp_username.startswith('@'):
+                    constructed_public_vmcp_id = f"{vmcp_username}:{vmcp_name}"
+                    logger.info(f"🔍 Trying constructed public_vmcp_id from vmcp_username: {constructed_public_vmcp_id}")
+                    # Query by public_vmcp_id (same pattern as delete_vmcp)
+                    user_public_vmcp = session.query(UserPublicVMCPRegistry).filter(
+                        UserPublicVMCPRegistry.user_id == self.user_id,
+                        UserPublicVMCPRegistry.public_vmcp_id == constructed_public_vmcp_id
+                    ).first()
+                    
+                    if user_public_vmcp:
+                        public_vmcp_id = user_public_vmcp.public_vmcp_id
+                        logger.info(f"✅ Found vMCP in user_public_vmcp_registry by public_vmcp_id: {constructed_public_vmcp_id} -> {public_vmcp_id}")
+                        return public_vmcp_id
+                
+                # Try to find by name (for cases like "google_workspace")
+                user_public_vmcp = session.query(UserPublicVMCPRegistry).filter(
+                    UserPublicVMCPRegistry.user_id == self.user_id,
+                    UserPublicVMCPRegistry.name == vmcp_name
+                ).first()
+                
+                if user_public_vmcp:
+                    public_vmcp_id = user_public_vmcp.public_vmcp_id
+                    logger.info(f"✅ Found vMCP in user_public_vmcp_registry by name: {vmcp_name} -> {public_vmcp_id}")
+                    return public_vmcp_id
+                
+                # If name is in format @username/vmcp_name, try to construct public_vmcp_id
+                # Format: @username/vmcp_name -> @username:vmcp_name (same pattern as delete_vmcp)
+                if '/' in vmcp_name and vmcp_name.startswith('@'):
+                    parts = vmcp_name.split('/', 1)
+                    if len(parts) == 2:
+                        username_part = parts[0]  # @username
+                        vmcp_name_part = parts[1]  # vmcp_name
+                        constructed_public_vmcp_id = f"{username_part}:{vmcp_name_part}"
+                        
+                        logger.info(f"🔍 Trying constructed public_vmcp_id from name: {constructed_public_vmcp_id}")
+                        # Query by public_vmcp_id (same pattern as delete_vmcp)
+                        user_public_vmcp = session.query(UserPublicVMCPRegistry).filter(
+                            UserPublicVMCPRegistry.user_id == self.user_id,
+                            UserPublicVMCPRegistry.public_vmcp_id == constructed_public_vmcp_id
+                        ).first()
+                        
+                        if user_public_vmcp:
+                            public_vmcp_id = user_public_vmcp.public_vmcp_id
+                            logger.info(f"✅ Found vMCP in user_public_vmcp_registry by public_vmcp_id: {vmcp_name} -> {public_vmcp_id}")
+                            return public_vmcp_id
+                
+                logger.info("🔍 vMCP not found in user_public_vmcp_registry (checked by public_vmcp_id and name)")
+            except ImportError:
+                # OSS mode - UserPublicVMCPRegistry not available
+                logger.debug("UserPublicVMCPRegistry not available (OSS mode)")
+            except Exception as e:
+                logger.error(f"Error checking user_public_vmcp_registry: {e}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
             
             logger.warning(f"❌ vMCP not found: {vmcp_name}")
             return None

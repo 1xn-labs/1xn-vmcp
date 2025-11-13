@@ -78,7 +78,7 @@ class DummyUserContext:
             if self.vmcp_name:
                 logger.info(f"🔍 DummyUserContext: Resolving vmcp_name '{self.vmcp_name}' to UUID for user '{user_id_int}'")
                 storage = StorageBase(user_id=user_id_int)
-                vmcp_id = storage.find_vmcp_name_in_private_registry(self.vmcp_name)
+                vmcp_id = storage.find_vmcp_name(self.vmcp_name)
                 if vmcp_id:
                     logger.info(f"✅ DummyUserContext: Resolved '{self.vmcp_name}' -> '{vmcp_id}'")
                 else:

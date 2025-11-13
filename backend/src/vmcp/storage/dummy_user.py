@@ -98,7 +98,7 @@ class UserContext:
             if self.vmcp_name and self.vmcp_name != "vmcp" and self.vmcp_name != "unknown":
                 # Create storage instance to find the actual vmcp_id
                 storage = StorageBase(user_id=self.user_id)
-                vmcp_id = storage.find_vmcp_name_in_private_registry(self.vmcp_name)
+                vmcp_id = storage.find_vmcp_name(self.vmcp_name)
                 if vmcp_id:
                     self.vmcp_config_manager = VMCPConfigManager(self.user_id, vmcp_id)
                     logger.info(f"VMCP Config manager set: {vmcp_id}")
