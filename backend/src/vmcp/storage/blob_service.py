@@ -12,7 +12,9 @@ import logging
 from .database import get_db
 from .models import Blob
 
-logger = logging.getLogger("BLOB_SERVICE")
+from vmcp.utilities.logging import setup_logging
+
+logger = setup_logging("BLOB_SERVICE")
 
 @dataclass
 class BlobMetadata:

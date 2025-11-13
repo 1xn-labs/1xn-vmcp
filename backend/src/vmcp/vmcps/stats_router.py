@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from vmcp.storage.database import SessionLocal
 from vmcp.storage.dummy_user import UserContext, get_user_context
 from vmcp.storage.models import VMCP, VMCPStats, AgentLogs
+from vmcp.utilities.logging import setup_logging
 
 # Import type-safe models
 from vmcp.vmcps.models import (
@@ -17,7 +18,7 @@ from vmcp.vmcps.models import (
     StatsSummary,
 )
 
-logger = logging.getLogger(__name__)
+logger = setup_logging(__name__)
 
 
 router = APIRouter(tags=["Stats"])
