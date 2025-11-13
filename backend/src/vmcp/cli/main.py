@@ -159,9 +159,8 @@ def run(
     console.print(Panel.fit(
         f"[bold cyan]Server Configuration[/bold cyan]\n\n"
         f"URL: [green]{settings.base_url}[/green]\n"
-        f"API: [green]{settings.base_url}/api[/green]\n"
-        f"Docs: [green]{settings.base_url}/docs[/green]\n"
-        f"Documentation: [green]{settings.base_url}/documentation[/green]",
+        f"API: [green]{settings.base_url}/docs[/green]\n"
+        f"Docs: [green]https://1xn.ai/docs[/green]\n",
         border_style="cyan"
     ))
 
