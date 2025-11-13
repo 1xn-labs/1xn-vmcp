@@ -10,8 +10,9 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from vmcp.storage.models import User
 from vmcp.config import settings
+from vmcp.utilities.logging import setup_logging
 
-logger = logging.getLogger(__name__)
+logger = setup_logging(__name__)
 
 
 def get_or_create_dummy_user(db: Session) -> User:

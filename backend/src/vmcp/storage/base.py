@@ -34,8 +34,9 @@ from vmcp.storage.models import (
     VMCPStats,
 )
 from vmcp.vmcps.models import VMCPConfig
+from vmcp.utilities.logging import setup_logging
 
-logger = logging.getLogger(__name__)
+logger = setup_logging(__name__)
 
 
 def sanitize_agent_name(agent_name: str) -> str:

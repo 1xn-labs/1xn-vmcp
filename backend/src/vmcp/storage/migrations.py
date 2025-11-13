@@ -11,8 +11,9 @@ from sqlalchemy.exc import OperationalError
 
 from vmcp.storage.database import get_engine
 from vmcp.config import settings
+from vmcp.utilities.logging import setup_logging
 
-logger = logging.getLogger(__name__)
+logger = setup_logging(__name__)
 
 
 class DatabaseMigrator:

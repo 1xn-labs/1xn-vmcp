@@ -15,7 +15,9 @@ from .models import Blob
 from ..vmcps.vmcp_config_manager.config_core import VMCPConfigManager
 
 import logging
-logger = logging.getLogger("BLOB_ROUTER")
+from vmcp.utilities.logging import setup_logging
+
+logger = setup_logging("BLOB_ROUTER")
 
 router = APIRouter(prefix="/blob", tags=["blob"])
 

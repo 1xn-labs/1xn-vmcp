@@ -83,8 +83,9 @@ from . import server_manager
 from . import template_parser
 from . import logger as vmcp_logger
 from .custom_tool_engines import prompt_tool, python_tool, http_tool
+from vmcp.utilities.logging import setup_logging
 
-logger = logging.getLogger("1xN_vMCP_CONFIG_MANAGER")
+logger = setup_logging("1xN_vMCP_CONFIG_MANAGER")
 
 
 class VMCPConfigManager:

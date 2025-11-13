@@ -13,8 +13,9 @@ from sqlalchemy.pool import Pool
 
 from vmcp.config import settings
 from vmcp.storage.models import Base
+from vmcp.utilities.logging import setup_logging
 
-logger = logging.getLogger(__name__)
+logger = setup_logging(__name__)
 
 # Ensure database directory exists for SQLite
 def _ensure_db_directory():

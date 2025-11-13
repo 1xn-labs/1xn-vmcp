@@ -17,7 +17,9 @@ from typing import Dict, List, Optional, Any
 from vmcp.storage.base import StorageBase
 
 
-logger = logging.getLogger("1xN_vMCP_LOGGER")
+from vmcp.utilities.logging import setup_logging
+
+logger = setup_logging("1xN_vMCP_LOGGER")
 
 
 async def log_vmcp_operation(
