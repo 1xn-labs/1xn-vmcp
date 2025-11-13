@@ -78,10 +78,11 @@ from vmcp.vmcps.models import (
     VMCPUpdateResponse,
 )
 from vmcp.vmcps.vmcp_config_manger import VMCPConfigManager
+from vmcp.utilities.logging import setup_logging
 
 router = APIRouter(prefix="/vmcps", tags=["vMCPs"])
 
-logger = logging.getLogger(__name__)
+logger = setup_logging(__name__)
 
 # ============================================================================
 # PYTHON TOOL GENERATION MODELS (Keep existing functionality)
@@ -814,7 +815,7 @@ async def _process_servers_for_vmcp_import(
                     config_manager.update_server_status(server_id, ping_status)
                     existing_server.status = ping_status
                 except AuthenticationError as e:
-                    logger.error(f"   ❌ Authentication error for server {server_name}: {e}")
+                    logger.debug(f"   ❌ Authentication error for server {server_name}: {e}")
                     ping_status = MCPConnectionStatus.AUTH_REQUIRED
                     config_manager.update_server_status(server_id, ping_status)
                     existing_server.status = ping_status
@@ -950,7 +951,7 @@ async def _process_servers_for_vmcp_import(
                                 config_manager.update_server_config(server_config.server_id, server_config)
                     
                 except AuthenticationError as e:
-                    logger.error(f"   ❌ Authentication error for new server {server_name}: {e}")
+                    logger.debug(f"   ❌ Authentication error for new server {server_name}: {e}")
                     ping_status = MCPConnectionStatus.AUTH_REQUIRED
                     config_manager.update_server_status(server_config.server_id, ping_status)
                     server_config.status = ping_status
@@ -1410,7 +1411,7 @@ async def refresh_vmcp(
                         logger.info(f"   🔍 Server {mcp_server.name}: ping result = {current_status.value}")
                     except AuthenticationError as e:
                         logger.error(f"   ❌ Traceback: {traceback.format_exc()}")
-                        logger.error(f"   ❌ Authentication error for server {mcp_server.name}: {e}")
+                        logger.debug(f"   ❌ Authentication error for server {mcp_server.name}: {e}")
                         current_status = MCPConnectionStatus.AUTH_REQUIRED
                     except Exception as e:
                         logger.error(f"   ❌ Traceback: {traceback.format_exc()}")
@@ -2537,8 +2538,8 @@ async def add_server_to_vmcp(
                     current_status = await client_manager.ping_server(mcp_server.server_id)
                     logger.info(f"   🔍 Server {mcp_server.server_id}: ping result = {current_status.value}")
                 except AuthenticationError as e:
-                    logger.error(f"   ❌ Traceback: {traceback.format_exc()}")
-                    logger.error(f"   ❌ Authentication error for server {mcp_server.server_id}: {e}")
+                    logger.debug(f"   ❌ Traceback: {traceback.format_exc()}")
+                    logger.debug(f"   ❌ Authentication error for server {mcp_server.server_id}: {e}")
                     current_status = MCPConnectionStatus.AUTH_REQUIRED
                 except Exception as e:
                     logger.error(f"   ❌ Traceback: {traceback.format_exc()}")

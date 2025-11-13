@@ -41,7 +41,9 @@ from datetime import datetime
 from vmcp.mcps.models import MCPServerConfig
 import asyncio
 
-logger = logging.getLogger("1xN_vMCP_CONFIG_MANAGER")
+from vmcp.utilities.logging import setup_logging
+
+logger = setup_logging("1xN_vMCP_CONFIG_MANAGER")
 @dataclass
 class ReadResourceContents:
     """Contents returned from a read_resource call."""

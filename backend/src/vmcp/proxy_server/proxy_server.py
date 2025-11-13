@@ -914,31 +914,6 @@ else:
 # Serve documentation from public/documentation
 # First try: environment variable (for enterprise override)
 # ================================================
-
-docs_path_env = os.getenv("VMCP_DOCS_PATH")
-if docs_path_env:
-    documentation_dist = Path(docs_path_env)
-    # If relative path, resolve from project root
-    if not documentation_dist.is_absolute():
-        project_root = os.getenv("VMCP_PROJECT_ROOT")
-        if project_root:
-            documentation_dist = Path(project_root) / documentation_dist
-else:
-    # Second try: packaged version
-    documentation_dist = Path(__file__).parent.parent / "public" / "documentation"
-    # Third try: development version
-    if not documentation_dist.exists():
-        documentation_dist = Path(__file__).parent.parent.parent.parent / "public" / "documentation"
-
-if documentation_dist.exists():
-    logger.info(f"📁 Serving documentation from {documentation_dist}")
-
-    # Mount documentation as static files
-    app.mount("/documentation", StaticFiles(directory=str(documentation_dist), html=True), name="documentation")
-    logger.info("✅ Documentation served at /documentation")
-else:
-    logger.warning(f"⚠️ Documentation build directory not found at {documentation_dist}")
-
 def create_app():
     """Factory function to create FastAPI app instance."""
     return app

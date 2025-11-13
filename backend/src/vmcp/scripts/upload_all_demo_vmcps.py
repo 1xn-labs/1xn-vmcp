@@ -26,12 +26,12 @@ sys.path.insert(0, str(project_root))
 from vmcp.vmcps.models import VMCPConfig
 from vmcp.storage.database import init_db, SessionLocal
 from vmcp.storage.models import GlobalPublicVMCPRegistry
+from vmcp.utilities.logging import setup_logging
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
 
 # Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("upload_all_demo_vmcps")
+logger = setup_logging("upload_all_demo_vmcps")
 
 # Get the package root directory
 PACKAGE_ROOT = Path(__file__).parent.parent

@@ -12,8 +12,9 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from vmcp.storage.base import StorageBase
+from vmcp.utilities.logging import setup_logging
 
-logger = logging.getLogger(__name__)
+logger = setup_logging(__name__)
 
 class OAuthStateManager:
     """

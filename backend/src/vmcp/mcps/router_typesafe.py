@@ -513,7 +513,7 @@ async def connect_mcp_server_with_capabilities(
             current_status = await client_manager.ping_server(server_id)
             logger.info(f"   🔍 Server {server_id}: ping result = {current_status.value if current_status else 'None'}")
         except AuthenticationError as e:
-            logger.error(f"   ❌ Authentication error for server {server_id}: {e}")
+            logger.debug(f"   ❌ Authentication error for server {server_id}: {e}")
             current_status = MCPConnectionStatus.AUTH_REQUIRED
         except Exception as e:
             logger.error(f"   ❌ Error pinging server {server_id}: {traceback.format_exc()}")
@@ -708,7 +708,7 @@ async def ping_mcp_server(
         if status:
             success = True
     except AuthenticationError as e:
-        logger.error(f"   ❌ Authentication error for server {server_id}: {e}")
+        logger.debug(f"   ❌ Authentication error for server {server_id}: {e}")
     except Exception as e:
         logger.error(f"   ❌ Error pinging server {server_id}: {e}")
 
@@ -749,7 +749,7 @@ async def get_server_status(
             current_status = await client_manager.ping_server(server_id)
             logger.info(f"   🔍 Server {server_id}: ping result = {current_status.value}")
         except AuthenticationError as e:
-            logger.error(f"   ❌ Authentication error for server {server_id}: {e}")
+            logger.debug(f"   ❌ Authentication error for server {server_id}: {e}")
             current_status = MCPConnectionStatus.AUTH_REQUIRED
         except Exception as e:
             logger.error(f"   ❌ Error pinging server {server_id}: {e}")
@@ -889,7 +889,7 @@ async def discover_server_capabilities(
                 raise HTTPException(status_code=500, detail="Failed to discover capabilities")
 
         except AuthenticationError as e:
-            logger.error(f"   ❌ Authentication error for server {server_id}: {e}")
+            logger.debug(f"   ❌ Authentication error for server {server_id}: {e}")
             return MCPCapabilitiesResponse(
                 success=False,
                 message=f"Authentication required for server '{server_id}'",
@@ -1171,7 +1171,7 @@ async def list_server_tools(
 
         tools_dict = await client_manager.tools_list(server_id)
     except AuthenticationError as e:
-        logger.error(f"   ❌ Authentication error for server {server_id}: {e}")
+        logger.debug(f"   ❌ Authentication error for server {server_id}: {e}")
         raise HTTPException(status_code=401, detail=f"Authentication error for server {server_id}: {e}") from e
     except Exception as e:
         logger.error(f"   ❌ Error listing server tools: {e}")
@@ -1226,7 +1226,7 @@ async def list_server_resources(
 
         resources_dict = await client_manager.resources_list(server_id)
     except AuthenticationError as e:
-        logger.error(f"   ❌ Authentication error for server {server_id}: {e}")
+        logger.debug(f"   ❌ Authentication error for server {server_id}: {e}")
         raise HTTPException(status_code=401, detail=f"Authentication error for server {server_id}: {e}") from e
     except Exception as e:
         logger.error(f"   ❌ Error listing server resources: {e}")

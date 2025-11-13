@@ -164,8 +164,8 @@ def mcp_operation(func):
                 return None
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
-                logger.error(f"Authentication failed for server {server_config.name}: 401 Unauthorized")
-                logger.error("Please check your access token and authentication configuration")
+                logger.debug(f"Authentication failed for server {server_config.name}: 401 Unauthorized")
+                logger.debug("Please check your access token and authentication configuration")
                 raise AuthenticationError(f"Authentication failed for server {server_config.name}: 401 Unauthorized") from e
             else:
                 status_code, error_text = safe_extract_response_info(e.response)
@@ -178,8 +178,8 @@ def mcp_operation(func):
             logger.error(f"Operation timed out for server {server_config.name}")
             raise OperationTimedOutError(f"Operation timed out for server {server_config.name}") from e
         except Exception as e:
-            logger.error(f"Failed to connect to server {server_config.name}: {e}")
-            logger.error(traceback.format_exc())
+            logger.debug(f"Failed to connect to server {server_config.name}: {e}")
+            logger.debug(traceback.format_exc())
 
             # Handle ExceptionGroup and extract status code from nested exceptions
             status_code = None
@@ -187,7 +187,7 @@ def mcp_operation(func):
             nested_errors = []
 
             if isinstance(e, ExceptionGroup):
-                logger.error(f"ExceptionGroup with {len(e.exceptions)} sub-exceptions:")
+                logger.debug(f"ExceptionGroup with {len(e.exceptions)} sub-exceptions:")
                 for i, sub_exception in enumerate(e.exceptions):
                     nested_errors.append(f"{type(sub_exception).__name__}: {sub_exception}")
 
@@ -198,7 +198,7 @@ def mcp_operation(func):
                         status_code, error_text = safe_extract_response_info(sub_exception.response)
                     else:
                         error_text = str(sub_exception)
-                    logger.error(f"Sub-exception {i+1}: {type(sub_exception).__name__}: {sub_exception} {status_code} {error_text} ")
+                    logger.debug(f"Sub-exception {i+1}: {type(sub_exception).__name__}: {sub_exception} {status_code} {error_text} ")
                     logger.info("Handling 401 Unauthorized")
                     if status_code == 401:
                         if func.__name__ in ("call_tool", "get_prompt", "read_resource"):
@@ -267,8 +267,8 @@ def mcp_operation(func):
                             )
 
                         else:
-                            logger.error(f"Authentication failed for server {server_config.name}: 401 Unauthorized")
-                            logger.error("Please check your access token and authentication configuration")
+                            logger.debug(f"Authentication failed for server {server_config.name}: 401 Unauthorized")
+                            logger.debug("Please check your access token and authentication configuration")
                             raise AuthenticationError(f"""
                             Authentication failed for server {server_config.name}: 401 Unauthorized
                             {error_text}
@@ -387,8 +387,8 @@ def mcp_operation(func):
                                         logger.error(f"❌ Error initiating OAuth flow: {oauth_error}")
 
                                 else:
-                                    logger.error(f"Authentication failed for server {server_config.name}: 401 Unauthorized")
-                                    logger.error("Please check your access token and authentication configuration")
+                                    logger.debug(f"Authentication failed for server {server_config.name}: 401 Unauthorized")
+                                    logger.debug("Please check your access token and authentication configuration")
                                     raise AuthenticationError(f"""
                                     Authentication failed for server {server_config.name}: 401 Unauthorized
                                     {error_text}
@@ -425,7 +425,7 @@ def mcp_operation(func):
                     self.config_manager.update_server_config(server_config.server_id, server_config)
                 continue
             except Exception as e:
-                logger.error(f"Attempt {retry_count+1} of {retries} failed: {e}")
+                logger.debug(f"Attempt {retry_count+1} of {retries} failed: {e}")
                 raise
 
     return retry_wrapper
@@ -544,7 +544,7 @@ class MCPClientManager:
             capabilities['resources'] = [str(resource.uri) for resource in resources_result.resources]
             capabilities['resource_details'] = resources_result.resources
         except Exception as e:
-            logger.error(f"Failed to discover resources from server: {e}")
+            logger.warning(f"Failed to discover resources from server: {e}")
             errors_if_any['resources'] = e
             capabilities['resources'] = []
             capabilities['resource_details'] = []
@@ -555,7 +555,7 @@ class MCPClientManager:
             capabilities['resource_templates'] = [template.name for template in templates_result.resourceTemplates]
             capabilities['resource_template_details'] = templates_result.resourceTemplates
         except Exception as e:
-            logger.error(f"Failed to discover resource templates from server: {e}")
+            logger.warning(f"Failed to discover resource templates from server: {e}")
             errors_if_any['resource_templates'] = e
             capabilities['resource_templates'] = []
             capabilities['resource_template_details'] = []
@@ -566,7 +566,7 @@ class MCPClientManager:
             capabilities['prompts'] = [prompt.name for prompt in prompts_result.prompts]
             capabilities['prompt_details'] = prompts_result.prompts
         except Exception as e:
-            logger.error(f"Failed to discover prompts from server: {e}")
+            logger.warning(f"Failed to discover prompts from server: {e}")
             errors_if_any['prompts'] = e
             capabilities['prompts'] = []
             capabilities['prompt_details'] = []
