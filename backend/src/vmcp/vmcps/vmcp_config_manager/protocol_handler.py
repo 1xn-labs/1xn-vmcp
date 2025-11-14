@@ -272,7 +272,7 @@ async def tools_list(
     if user_id and log_vmcp_operation:
         asyncio.create_task(
             log_vmcp_operation(
-                operation_type="tool_list",
+                operation_type="tools_list",
                 operation_id=vmcp_id,
                 arguments=None,
                 result=all_tools,

@@ -71,7 +71,7 @@ async def log_vmcp_operation(
             "mcp_method": operation_type,
             "original_name": metadata.get("tool") if operation_type in ["tool_call"] else metadata.get("prompt") if operation_type in ["prompt_get"] else metadata.get("resource") if operation_type in ["resource_read"] else operation_type,
             "arguments": arguments,
-            "result": result.to_dict() if hasattr(result, 'to_dict') else str(result),
+            "result": result.to_dict() if hasattr(result, 'to_dict') else (result if isinstance(result, dict) else str(result)),
             "vmcp_id": vmcp_id,
             "vmcp_name": vmcp_config.name if vmcp_config else None,
             "total_tools": total_tools,

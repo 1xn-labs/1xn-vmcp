@@ -6,7 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException
 # Import dependencies
 from vmcp.storage.database import SessionLocal
 from vmcp.storage.dummy_user import UserContext, get_user_context
-from vmcp.storage.models import VMCP, VMCPStats, AgentLogs
+
+from vmcp.storage.models import VMCP, VMCPStats
 from vmcp.utilities.logging import setup_logging
 
 # Import type-safe models
@@ -20,7 +21,6 @@ from vmcp.vmcps.models import (
 
 logger = setup_logging(__name__)
 
-
 router = APIRouter(tags=["Stats"])
 
 @router.post("/stats", response_model=StatsResponse)
@@ -31,19 +31,17 @@ async def get_stats(request: StatsFilterRequest, user_context: UserContext = Dep
     logger.info(f"   📄 Pagination: page={request.page}, limit={request.limit}")
 
     try:
-        # OSS: Query both VMCPStats and AgentLogs from database
+        # OSS: Query only VMCPStats from database (no agent logs)
         session = SessionLocal()
         try:
             # Query vMCP stats
             stats_records = session.query(VMCPStats).join(VMCP).filter(
                 VMCP.user_id == user_context.user_id
             ).all()
-
             # Query agent logs filtered by user_id
-            agent_logs = session.query(AgentLogs).filter(
-                AgentLogs.user_id == user_context.user_id
-            ).all()
-
+            # agent_logs = session.query(AgentLogs).filter(
+            #     AgentLogs.user_id == user_context.user_id
+            # ).all()
             # Convert vMCP stats to log format with rich data from operation_metadata
             all_logs = []
             for stat in stats_records:
@@ -81,48 +79,48 @@ async def get_stats(request: StatsFilterRequest, user_context: UserContext = Dep
                 })
 
             # Convert agent logs to log format
-            import json
-            for agent_log in agent_logs:
-                # Parse the log_entry JSON
-                log_entry = agent_log.log_entry
-                if isinstance(log_entry, str):
-                    try:
-                        log_entry = json.loads(log_entry)
-                    except json.JSONDecodeError:
-                        logger.warning(f"Failed to parse agent log entry JSON: {agent_log.id}")
-                        log_entry = {}
+            # import json
+            # for agent_log in agent_logs:
+            #     # Parse the log_entry JSON
+            #     log_entry = agent_log.log_entry
+            #     if isinstance(log_entry, str):
+            #         try:
+            #             log_entry = json.loads(log_entry)
+            #         except json.JSONDecodeError:
+            #             logger.warning(f"Failed to parse agent log entry JSON: {agent_log.id}")
+            #             log_entry = {}
 
-                all_logs.append({
-                    "timestamp": agent_log.created_at.isoformat() if agent_log.created_at else None,
-                    "created_at": agent_log.created_at,  # Keep datetime for sorting
-                    "log_type": "agent",
-                    "method": log_entry.get("method", "unknown"),
-                    "agent_name": log_entry.get("agent_name") or agent_log.agent_name,
-                    "agent_id": log_entry.get("agent_id", "unknown"),
-                    "user_id": int(log_entry.get("user_id", agent_log.user_id)) if log_entry.get("user_id") else agent_log.user_id,
-                    "client_id": log_entry.get("client_id", ""),
-                    "operation_id": str(log_entry.get("id", "")) if log_entry.get("id") is not None else None,
-                    "mcp_server": None,  # Agent logs don't have mcp_server
-                    "mcp_method": log_entry.get("method", "unknown"),
-                    "original_name": log_entry.get("method", "unknown"),
-                    "arguments": log_entry.get("params", {}),
-                    "result": None,  # Agent logs don't have results
-                    "vmcp_id": None,  # Agent logs don't have vmcp_id
-                    "vmcp_name": None,  # Agent logs don't have vmcp_name
-                    "total_tools": None,
-                    "total_resources": None,
-                    "total_resource_templates": None,
-                    "total_prompts": None,
-                    "success": None,  # Agent logs don't track success/failure
-                    "error_message": None,
-                    "duration_ms": None,
-                    # Application log fields (None for agent logs)
-                    "level": None,
-                    "logger_name": None,
-                    "message": None,
-                    "traceback": None,
-                    "log_metadata": log_entry  # Store full log_entry as metadata
-                })
+            #     all_logs.append({
+            #         "timestamp": agent_log.created_at.isoformat() if agent_log.created_at else None,
+            #         "created_at": agent_log.created_at,  # Keep datetime for sorting
+            #         "log_type": "agent",
+            #         "method": log_entry.get("method", "unknown"),
+            #         "agent_name": log_entry.get("agent_name") or agent_log.agent_name,
+            #         "agent_id": log_entry.get("agent_id", "unknown"),
+            #         "user_id": int(log_entry.get("user_id", agent_log.user_id)) if log_entry.get("user_id") else agent_log.user_id,
+            #         "client_id": log_entry.get("client_id", ""),
+            #         "operation_id": str(log_entry.get("id", "")) if log_entry.get("id") is not None else None,
+            #         "mcp_server": None,  # Agent logs don't have mcp_server
+            #         "mcp_method": log_entry.get("method", "unknown"),
+            #         "original_name": log_entry.get("method", "unknown"),
+            #         "arguments": log_entry.get("params", {}),
+            #         "result": None,  # Agent logs don't have results
+            #         "vmcp_id": None,  # Agent logs don't have vmcp_id
+            #         "vmcp_name": None,  # Agent logs don't have vmcp_name
+            #         "total_tools": None,
+            #         "total_resources": None,
+            #         "total_resource_templates": None,
+            #         "total_prompts": None,
+            #         "success": None,  # Agent logs don't track success/failure
+            #         "error_message": None,
+            #         "duration_ms": None,
+            #         # Application log fields (None for agent logs)
+            #         "level": None,
+            #         "logger_name": None,
+            #         "message": None,
+            #         "traceback": None,
+            #         "log_metadata": log_entry  # Store full log_entry as metadata
+            #     })
 
             # Sort all logs by created_at timestamp (most recent first)
             # Use datetime.min for None values to ensure they sort last
@@ -194,9 +192,9 @@ async def get_stats(request: StatsFilterRequest, user_context: UserContext = Dep
                 search_term in log.get("mcp_server", "").lower() or
                 search_term in log.get("operation_id", "").lower() or
                 search_term in str(log.get("arguments", "")).lower() or
-                search_term in str(log.get("result", "")).lower() or
+                search_term in str(log.get("result", "")).lower()
                 # Also search in agent log metadata (contains full log_entry JSON)
-                search_term in str(log.get("log_metadata", "")).lower()
+                # search_term in str(log.get("log_metadata", "")).lower()
             ]
 
         # Calculate stats from filtered logs
@@ -332,7 +330,7 @@ async def get_stats_summary(user_context: UserContext = Depends(get_user_context
     logger.info(f"📊 Stats summary endpoint called for user: {user_context.user_id}")
 
     try:
-        # OSS: Query both VMCPStats and AgentLogs from database
+        # OSS: Query only VMCPStats from database (no agent logs)
         session = SessionLocal()
         try:
             # Query vMCP stats
@@ -341,10 +339,9 @@ async def get_stats_summary(user_context: UserContext = Depends(get_user_context
             ).all()
 
             # Query agent logs filtered by user_id
-            agent_logs = session.query(AgentLogs).filter(
-                AgentLogs.user_id == user_context.user_id
-            ).all()
-
+            # agent_logs = session.query(AgentLogs).filter(
+            #     AgentLogs.user_id == user_context.user_id
+            # ).all()
             # Convert vMCP stats to log format with rich data from operation_metadata
             all_logs = []
             for stat in stats_records:
@@ -382,48 +379,48 @@ async def get_stats_summary(user_context: UserContext = Depends(get_user_context
                 })
 
             # Convert agent logs to log format
-            import json
-            for agent_log in agent_logs:
-                # Parse the log_entry JSON
-                log_entry = agent_log.log_entry
-                if isinstance(log_entry, str):
-                    try:
-                        log_entry = json.loads(log_entry)
-                    except json.JSONDecodeError:
-                        logger.warning(f"Failed to parse agent log entry JSON: {agent_log.id}")
-                        log_entry = {}
+            # import json
+            # for agent_log in agent_logs:
+            #     # Parse the log_entry JSON
+            #     log_entry = agent_log.log_entry
+            #     if isinstance(log_entry, str):
+            #         try:
+            #             log_entry = json.loads(log_entry)
+            #         except json.JSONDecodeError:
+            #             logger.warning(f"Failed to parse agent log entry JSON: {agent_log.id}")
+            #             log_entry = {}
 
-                all_logs.append({
-                    "timestamp": agent_log.created_at.isoformat() if agent_log.created_at else None,
-                    "created_at": agent_log.created_at,  # Keep datetime for sorting
-                    "log_type": "agent",
-                    "method": log_entry.get("method", "unknown"),
-                    "agent_name": log_entry.get("agent_name") or agent_log.agent_name,
-                    "agent_id": log_entry.get("agent_id", "unknown"),
-                    "user_id": int(log_entry.get("user_id", agent_log.user_id)) if log_entry.get("user_id") else agent_log.user_id,
-                    "client_id": log_entry.get("client_id", ""),
-                    "operation_id": str(log_entry.get("id", "")) if log_entry.get("id") is not None else None,
-                    "mcp_server": None,  # Agent logs don't have mcp_server
-                    "mcp_method": log_entry.get("method", "unknown"),
-                    "original_name": log_entry.get("method", "unknown"),
-                    "arguments": log_entry.get("params", {}),
-                    "result": None,  # Agent logs don't have results
-                    "vmcp_id": None,  # Agent logs don't have vmcp_id
-                    "vmcp_name": None,  # Agent logs don't have vmcp_name
-                    "total_tools": None,
-                    "total_resources": None,
-                    "total_resource_templates": None,
-                    "total_prompts": None,
-                    "success": None,  # Agent logs don't track success/failure
-                    "error_message": None,
-                    "duration_ms": None,
-                    # Application log fields (None for agent logs)
-                    "level": None,
-                    "logger_name": None,
-                    "message": None,
-                    "traceback": None,
-                    "log_metadata": log_entry  # Store full log_entry as metadata
-                })
+            #     all_logs.append({
+            #         "timestamp": agent_log.created_at.isoformat() if agent_log.created_at else None,
+            #         "created_at": agent_log.created_at,  # Keep datetime for sorting
+            #         "log_type": "agent",
+            #         "method": log_entry.get("method", "unknown"),
+            #         "agent_name": log_entry.get("agent_name") or agent_log.agent_name,
+            #         "agent_id": log_entry.get("agent_id", "unknown"),
+            #         "user_id": int(log_entry.get("user_id", agent_log.user_id)) if log_entry.get("user_id") else agent_log.user_id,
+            #         "client_id": log_entry.get("client_id", ""),
+            #         "operation_id": str(log_entry.get("id", "")) if log_entry.get("id") is not None else None,
+            #         "mcp_server": None,  # Agent logs don't have mcp_server
+            #         "mcp_method": log_entry.get("method", "unknown"),
+            #         "original_name": log_entry.get("method", "unknown"),
+            #         "arguments": log_entry.get("params", {}),
+            #         "result": None,  # Agent logs don't have results
+            #         "vmcp_id": None,  # Agent logs don't have vmcp_id
+            #         "vmcp_name": None,  # Agent logs don't have vmcp_name
+            #         "total_tools": None,
+            #         "total_resources": None,
+            #         "total_resource_templates": None,
+            #         "total_prompts": None,
+            #         "success": None,  # Agent logs don't track success/failure
+            #         "error_message": None,
+            #         "duration_ms": None,
+            #         # Application log fields (None for agent logs)
+            #         "level": None,
+            #         "logger_name": None,
+            #         "message": None,
+            #         "traceback": None,
+            #         "log_metadata": log_entry  # Store full log_entry as metadata
+            #     })
 
             # Sort all logs by created_at timestamp (most recent first)
             # Use datetime.min for None values to ensure they sort last
@@ -511,4 +508,3 @@ async def get_stats_summary(user_context: UserContext = Depends(get_user_context
         logger.error(f"   ❌ Exception type: {type(e).__name__}")
         logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch stats summary: {str(e)}") from e
-
