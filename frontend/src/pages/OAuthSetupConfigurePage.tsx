@@ -106,10 +106,15 @@ export default function VMCPOAuthSetupConfigurePage() {
             (sum: number, resources: any) => sum + (Array.isArray(resources) ? resources.length : 0),
             0
           );
-          const totalPrompts = Object.values(vmcpConfig.selected_prompts || {}).reduce(
+          // Calculate prompts: use backend total_prompts if available, otherwise count selected_prompts + custom_prompts
+          const selectedPromptsCount = Object.values(vmcpConfig.selected_prompts || {}).reduce(
             (sum: number, prompts: any) => sum + (Array.isArray(prompts) ? prompts.length : 0),
             0
           );
+          const customPromptsCount = Array.isArray(vmcpConfig.custom_prompts) ? vmcpConfig.custom_prompts.length : 0;
+          const totalPrompts = vmcpConfig.total_prompts !== undefined 
+            ? vmcpConfig.total_prompts 
+            : selectedPromptsCount + customPromptsCount;
           
           // Extract name and description from VMCP config or first server
           const name = vmcpConfig.name || vmcpConfig.selected_servers?.[0]?.name || vmcpName;
