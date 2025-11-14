@@ -2,17 +2,17 @@
 
 [![PyPI](https://img.shields.io/pypi/v/1xn-vmcp?style=flat-square)](https://pypi.org/project/1xn-vmcp/) [![Docs](https://img.shields.io/badge/docs-available-brightgreen?style=flat-square)](https://1xn.ai/docs/) [![1xn](https://img.shields.io/badge/1xn-Website-blue?logo=https%3A%2F%2F1xn.ai%2Fimg%2F1xn_logo.svg&style=flat-square)](https://1xn.ai)
 
-An open-source tool for composing, customizing and extending multiple MCP servers with a unified interface.
+**Lego blocks for AI workflows and agents**
+An open-source tool for composing, customizing and extending multiple MCP servers into a single logical, virtual MCP server
 
-vMCP (virtual Model Context Protocol) is an AI configuration and management platform built on top of the [Model Context Protocol](https://github.com/modelcontextprotocol/python-sdk). **Lego blocks for AI workflows and agents** - allowing you to compose, customize and extend multiple MCPs into powerful, reusable 
-(virtual) MCPs. Connect vMCPs to your AI clients (Claude, Chatgpt, VSCode) or to your agents built with any SDK and get the power of vMCPs.
+vMCP (virtual Model Context Protocol) is an AI configuration and management platform built on top of the [Model Context Protocol](https://modelcontextprotocol.io/docs/getting-started/intro). Built for fine grained context-engineering, connect vMCPs to your AI clients (Claude, Chatgpt, VSCode) or to your agents like any other remote MCP. 
 
 vMCP is both 
-- a specification that builds on and extends MCPs [vMCP.json](https://github.com/1xn-labs/1xn-vmcp/blob/main/backend/src/vmcp/data/1xndemo_config.json)
-- a platform to create and deploy vMCPs 
+- A specification that builds on and extends MCPs [vMCP.json](https://github.com/1xn-labs/1xn-vmcp/blob/main/backend/src/vmcp/data/1xndemo_config.json)
+- A platform to create and deploy vMCP Servers
 
 <div align="center">
-  <img src="https://1xn.ai/img/vmcp-intro-screen.png" alt="1xn vMCP Platform" width="780"/>
+  <img src="https://raw.githubusercontent.com/1xn-labs/1xn-vmcp/main/.assets/img/vmcp-intro-screen.png" alt="1xn vMCP Platform" width="780"/>
 </div>
 
 ## Why We Built This
@@ -20,22 +20,22 @@ vMCP is both
 The Model Context Protocol has unlocked incredible possibilities for AI integrations, but users and developers quickly hit limitations:
 - **Configuration Hell**: Managing MCP configs across multiple clients (Claude, ChatGPT, VSCode, Cursor, Gemini) is tedious
 - **Auth**: Each mcp client needs its own auth for all the MCPs. vMCPs gives a standard auth for all MCPs 
-- **Lack of Customization**: Can't modify or extend existing MCPs for specific workflow needs
-- **No Composition**: Building complex workflows requires piecing together multiple tools manually in code
+- **Lack of Customization**: Can't modify or extend existing MCPs for specific workflow needs - "context rot / confusion"
+- **No Composition**: Building complex workflows requires piecing together multiple tools from multiple MCPs 
 
-vMCP solves these problems by providing a layer of abstraction and a no-code configuration interface on top of MCPs.
+vMCP solves these problems by providing a layer of abstraction and a no-code configuration interface on top of standard MCPs.
 
 ### Highlight Features
 
-- ✅ **Flexible vMCP Creation**: Compose different MCP servers into a unified MCP server with a no-code interface.
-- 𝌞 **Context Engineering with MCPs:** 
-  - 🛠️ **Customizable Tools**: Select and override tool names/descriptions and prefill tool arguments.
-  - ✨ **Extensible Tooling**: Create new tools using Python, REST APIs or plain text. 
+- **Flexible vMCP Creation**: Compose different MCP servers into a unified MCP server with a simple no-code interface.
+- **Context Engineering with MCPs:** 
+  - 🛠️ **Customizable Tools**: Select and override tool names/descriptions from upstream MCPs and prefill tool arguments.
+  - ✨ **Extensible Tooling**: Create new tools using Python, REST APIs or plain text (Prompt tools). 
   - 🗣️ **Programmable Prompts**: Define prompts that can invoke other tools and resources, enabling user-controlled tool chaining.
-  - 🔗 **Add files as resources**: Add 
-- 🔐 **MCP Server Authentication**: OAuth 2.0 support for MCP servers that require it
-- 📊 **Usage Statistics**: Track and analyze vMCP usage patterns
-- 🐳 **Docker Ready**: Official Docker images for easy deployment
+  - 🔗 **Add files as resources**: Select MCP resource and add your own knowledge base files
+- **MCP Server Authentication**: Authorize MCP servers once and re-use across clients (Claude, Cursor, ChatGPT, VSCode, Gemini, AI agents)
+- **Usage Statistics**: Track and analyze vMCP usage patterns with full MCP protocol level logging
+- **Docker and PyPi Ready**: Official Docker images for easy deployment. uv and pip command for quick trial
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/1xn-labs/1xn-vmcp/main/.assets/img/vmcp-arch.png" alt="vMCP Architecture" width="780"/>
@@ -181,6 +181,8 @@ make run-tests
 vMCP is open-source software licensed under the [MIT License](LICENSE).
 
 ## 🙏 Acknowledgments
+
+We want to give a huge shoutout to Anthropic and the entire [Model Context Protocol community](https://github.com/modelcontextprotocol/python-sdk) for creating such an incredible foundation. MCP has fundamentally changed how we think about AI integrations
 
 
 ## 📞 Support
