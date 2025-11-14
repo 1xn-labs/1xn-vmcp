@@ -60,7 +60,7 @@ export default function SettingsPage() {
         {/* User Profile Header */}
         <Card className="mb-8 flex flex-row items-center">
           <CardContent className="pt-6 flex-1">
-            <div className="flex-1 items-center space-x-6">
+            <div className="flex-1 items-center align-middle space-x-6">
               <Avatar className="h-16 w-16">
                 {user.photo_url ? (
                   <AvatarImage 
@@ -91,7 +91,7 @@ export default function SettingsPage() {
               </div>
             </div>
           </CardContent>
-          <CardContent>
+          {/* <CardContent>
             <div className="flex flex-col items-center justify-between p-4 border rounded-md">
                 <p className="font-medium">Theme Settings</p>
                 <p className="text-xs text-muted-foreground">
@@ -99,7 +99,7 @@ export default function SettingsPage() {
                 </p>
               <ThemeToggle />
             </div>
-          </CardContent>
+          </CardContent> */}
         </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -183,7 +183,7 @@ export default function SettingsPage() {
           </Card>
 
           {/* Session Information */}
-          <Card>
+          {/* <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Key className="h-5 w-5" />
@@ -221,7 +221,7 @@ export default function SettingsPage() {
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
 
           {/* Platform Settings */}
           <Card>
@@ -236,9 +236,9 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1">
-                <Label className="text-sm font-medium">MCP Server URL</Label>
+                <Label className="text-sm font-medium">MCP Server URL </Label>
                 <Input 
-                  value={import.meta.env.VITE_MCP_SERVER_URL || 'Not configured'}
+                  value={import.meta.env.VITE_BACKEND_URL?.replace(/\/api\/?$/, '') + "/private/{VMCP_NAME}/vmcp"}
                   disabled 
                 />
               </div>
@@ -272,7 +272,7 @@ export default function SettingsPage() {
           </Card>
 
           {/* Security Features */}
-          <Card>
+          {/* <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-primary">
                 <Shield className="h-5 w-5" />
@@ -302,7 +302,7 @@ export default function SettingsPage() {
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
       </div>
   );

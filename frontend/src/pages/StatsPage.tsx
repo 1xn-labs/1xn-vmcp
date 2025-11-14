@@ -5,23 +5,27 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from '@/components/ui/table';
 import { SearchableMultiSelect } from '@/components/ui/searchable-select';
-import { 
-  ArrowLeft, 
-  TrendingUp, 
-  Zap, 
-  Target, 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import {
+  Zap,
+  Target,
   RefreshCw,
-  Clock,
   Bot,
   Server,
   FileText,
@@ -32,8 +36,6 @@ import {
   ChartBar,
   Activity,
   Settings,
-  Eye,
-  EyeOff,
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
@@ -167,7 +169,6 @@ export default function StatsPage() {
 
   // Section collapse states
   const [filtersCollapsed, setFiltersCollapsed] = useState(true);
-  const [columnsCollapsed, setColumnsCollapsed] = useState(true);
 
   // Table scroll state
   const [tableScrollPosition, setTableScrollPosition] = useState(0);
@@ -382,64 +383,56 @@ export default function StatsPage() {
 
         {/* Statistics Cards */}
         {statsData && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 mb-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
             <Card>
-              <CardContent className="p-3">
+              <CardContent className="">
                 <div className="flex items-center gap-2">
                   <div className="h-6 w-6 rounded bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                    <Activity className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                    <Activity className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-medium text-muted-foreground truncate">Total Logs</p>
-                    <p className="text-sm font-bold text-foreground">{statsData.stats.total_logs.toLocaleString()}</p>
-                  </div>
+                    <p className="font-medium text-muted-foreground truncate">Total Logs</p>
+                    <p className="text-lg font-bold text-foreground">{statsData.stats.total_logs.toLocaleString()}</p>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className="p-3">
+              <CardContent className="">
                 <div className="flex items-center gap-2">
                   <div className="h-6 w-6 rounded bg-green-100 dark:bg-green-900 flex items-center justify-center">
-                    <Bot className="h-3 w-3 text-green-600 dark:text-green-400" />
+                    <Bot className="h-4 w-4 text-green-600 dark:text-green-400" />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-medium text-muted-foreground truncate">Active Clients</p>
-                    <p className="text-sm font-bold text-foreground">{statsData.stats.total_agents}</p>
-                  </div>
+                    <p className="font-medium text-muted-foreground truncate">Active Clients</p>
+                    <p className="text-lg font-bold text-foreground">{statsData.stats.total_agents}</p>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className="p-3">
+              <CardContent className="">
                 <div className="flex items-center gap-2">
                   <div className="h-6 w-6 rounded bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
-                    <Server className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+                    <Server className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-muted-foreground truncate">vMCPs</p>
-                    <p className="text-sm font-bold text-foreground">{statsData.stats.total_vmcps}</p>
-                  </div>
+                    <p className="font-medium text-muted-foreground truncate">vMCPs</p>
+                    <p className="text-lg font-bold text-foreground">{statsData.stats.total_vmcps}</p>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className="p-3">
+              <CardContent className="">
                 <div className="flex items-center gap-2">
                   <div className="h-6 w-6 rounded bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
-                    <Zap className="h-3 w-3 text-orange-600 dark:text-orange-400" />
+                    <Zap className="h-4 w-4  text-orange-600 dark:text-orange-400" />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-muted-foreground truncate">Tool Calls</p>
-                    <p className="text-sm font-bold text-foreground">{statsData.stats.total_tool_calls.toLocaleString()}</p>
-                  </div>
+                    <p className="font-medium text-muted-foreground truncate">Tool Calls</p>
+                    <p className="text-lg font-bold text-foreground">{statsData.stats.total_tool_calls.toLocaleString()}</p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            {/* <Card>
               <CardContent className="p-3">
                 <div className="flex items-center gap-2">
                   <div className="h-6 w-6 rounded bg-cyan-100 dark:bg-cyan-900 flex items-center justify-center">
@@ -451,36 +444,38 @@ export default function StatsPage() {
                   </div>
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
         )}
 
         {/* Filters */}
         <Card className="mb-4">
-          <CardHeader 
-            className="cursor-pointer hover:bg-muted/50 transition-colors"
-            onClick={() => setFiltersCollapsed(!filtersCollapsed)}
-          >
-            <CardTitle className="text-foreground flex items-center justify-between">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <div className="flex items-center gap-2">
-                <Filter className="h-5 w-5" />
-                Filters & Search
+                <div>
+                  <CardTitle className="flex flex-row text-foreground mb-2 gap-2">
+                    <Filter className="h-4 w-4" />
+                    Filters & Search
+                  </CardTitle>
+                  <CardDescription className="text-muted-foreground">
+                    Filter logs by client, vMCP, method, or search across all fields
+                  </CardDescription>
+                </div>
               </div>
-              {filtersCollapsed ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronUp className="h-4 w-4" />
-              )}
-            </CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Filter logs by client, vMCP, method, or search across all fields
-            </CardDescription>
-          </CardHeader>
-          {!filtersCollapsed && (
+              <div className="flex gap-2">
+                <Button onClick={handleFilterChange} size="sm" className="flex items-center gap-2">
+                  <Filter className="h-4 w-4" />
+                  Apply Filters
+                </Button>
+                <Button onClick={clearFilters} variant="outline" size="sm" className="flex items-center gap-2">
+                  Clear Filters
+                </Button>
+              </div>
+            </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground mb-2 block">vMCP Name</label>
+                  {/* <label className="text-sm font-medium text-muted-foreground mb-2 block">vMCP Name</label> */}
                   <SearchableMultiSelect
                     options={statsData?.filter_options?.vmcp_names || []}
                     value={vmcpNameFilter}
@@ -491,7 +486,7 @@ export default function StatsPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground mb-2 block">Client Name</label>
+                  {/* <label className="text-sm font-medium text-muted-foreground mb-2 block">Client Name</label> */}
                   <SearchableMultiSelect
                     options={statsData?.filter_options?.agent_names || []}
                     value={clientNameFilter}
@@ -502,7 +497,7 @@ export default function StatsPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground mb-2 block">Method</label>
+                  {/* <label className="text-sm font-medium text-muted-foreground mb-2 block">Method</label> */}
                   <SearchableMultiSelect
                     options={statsData?.filter_options?.methods || []}
                     value={methodFilter}
@@ -513,84 +508,64 @@ export default function StatsPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground mb-2 block">Search</label>
-                  <div className="flex gap-2">
+                  {/* <label className="text-sm font-medium text-muted-foreground mb-2 block">Search</label> */}
+                  <div className="flex gap-2 h-10 items-center">
                     <Input
                       placeholder="Search logs..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="bg-background border-border text-foreground"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSearch();
+                        }
+                      }}
+                      className="bg-background border-border text-foreground h-10"
                     />
                     <Button onClick={handleSearch} size="sm">
-                      <Search className="h-4 w-4" />
+                      <Search className="h-5 w-5" />
                     </Button>
                   </div>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <Button onClick={handleFilterChange} className="flex items-center gap-2">
-                  <Filter className="h-4 w-4" />
-                  Apply Filters
-                </Button>
-                <Button onClick={clearFilters} variant="outline" className="flex items-center gap-2">
-                  Clear Filters
-                </Button>
-              </div>
             </CardContent>
-          )}
-        </Card>
-
-        {/* Column Configuration */}
-        <Card className="mb-4">
-          <CardHeader 
-            className="cursor-pointer hover:bg-muted/50 transition-colors"
-            onClick={() => setColumnsCollapsed(!columnsCollapsed)}
-          >
-            <CardTitle className="text-foreground flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Column Visibility
-              </div>
-              {columnsCollapsed ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronUp className="h-4 w-4" />
-              )}
-            </CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Select which columns to display in the logs table
-            </CardDescription>
-          </CardHeader>
-          {!columnsCollapsed && (
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                {columnConfig.map((column) => (
-                  <div key={column.key} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={column.key}
-                      checked={columnVisibility[column.key as keyof typeof columnVisibility]}
-                      onCheckedChange={() => toggleColumnVisibility(column.key)}
-                    />
-                    <label
-                      htmlFor={column.key}
-                      className="text-sm font-medium text-foreground cursor-pointer"
-                    >
-                      {column.label}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          )}
         </Card>
 
         {/* Logs Table */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-foreground">System Logs</CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Detailed view of all system activities with filtering and pagination
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex flex-row items-center text-foreground mb-2 gap-2">
+                  <FileText className="h-4 w-4" />
+                  System Logs
+                </CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  Detailed view of all system activities with filtering and pagination
+                </CardDescription>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="ml-auto">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Columns
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-[200px]">
+                  <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {columnConfig.map((column) => (
+                    <DropdownMenuCheckboxItem
+                      key={column.key}
+                      checked={columnVisibility[column.key as keyof typeof columnVisibility]}
+                      onCheckedChange={() => toggleColumnVisibility(column.key)}
+                    >
+                      {column.label}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="w-full overflow-hidden">
@@ -599,10 +574,10 @@ export default function StatsPage() {
                   <TableHeader>
                     <TableRow className="border-border">
                       {columnVisibility.index && (
-                        <TableHead className="text-muted-foreground bg-background max-w-[10px]">#</TableHead>
+                        <TableHead className="text-muted-foreground bg-background">#</TableHead>
                       )}
                       {columnVisibility.client && (
-                        <TableHead className="text-muted-foreground  bg-background">Client</TableHead>
+                        <TableHead className="text-muted-foreground  bg-background max-w-[200px]">Client</TableHead>
                       )}
                       {columnVisibility.timestamp && (
                         <TableHead className="text-muted-foreground bg-background">Timestamp</TableHead>
@@ -620,7 +595,7 @@ export default function StatsPage() {
                         <TableHead className="text-muted-foreground  bg-background">Operation ID</TableHead>
                       )}
                       {columnVisibility.arguments && (
-                        <TableHead className="text-muted-foreground bg-background flex-2">Arguments</TableHead>
+                        <TableHead className="text-muted-foreground bg-background w-[400px]">Arguments</TableHead>
                       )}
                       {columnVisibility.result && (
                         <TableHead className="text-muted-foreground  bg-background flex-1">Result</TableHead>
@@ -646,7 +621,7 @@ export default function StatsPage() {
                             </TableCell>
                           )}
                           {columnVisibility.client && (
-                            <TableCell className="text-foreground ">
+                            <TableCell className="text-foreground max-w-[200px]">
                               <div className="flex items-center space-x-2">
                                 {getAgentIcon(log.agent_name)}
                                 <span className="text-sm font-medium truncate">
@@ -706,7 +681,7 @@ export default function StatsPage() {
                             </TableCell>
                           )}
                           {columnVisibility.arguments && (
-                            <TableCell className="text-foreground">
+                            <TableCell className="text-foreground max-w-[400px]">
                               <div className="truncate">
                                 {log.arguments ? (
                                   <CollapsibleJSON

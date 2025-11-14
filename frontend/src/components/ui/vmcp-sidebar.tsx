@@ -28,7 +28,7 @@ interface VMCPSidebarProps {
 
 }
 const menuItem = {
-    name: 'vMCP',
+    name: 'vMCPs',
     href: '/servers',
     icon: Container,
     key: 'servers',

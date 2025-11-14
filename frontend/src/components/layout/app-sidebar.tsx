@@ -1,12 +1,11 @@
 
 import { useAuth } from '@/contexts/auth-context';
 
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { useRouter } from '@/hooks/useRouter';
 import { 
   Server, 
-  MessageSquare,
+  BookOpenText,
   LogOut,
   Settings,
   Bot,
@@ -44,16 +43,16 @@ interface AppSidebarProps {
 
 const navigationItems = [
   {
-    name: 'vMCP',
+    name: 'vMCPs',
     href: '/vmcp',
     icon: Container,
     key: 'vmcp',
   },
   {
-    name: 'Discover',
-    href: '/discover',
-    icon: Globe,
-    key: 'discover',
+    name: 'Connections',
+    href: '/servers',
+    icon: Server,
+    key: 'Connections',
   },
   {
     name: 'Stats',
@@ -61,11 +60,12 @@ const navigationItems = [
     icon: ChartBar,
     key: 'stats',
   },
-  {
-    name: 'Connections',
-    href: '/servers',
-    icon: Server,
-    key: 'Connections',
+  
+   {
+    name: 'Discover',
+    href: '/discover',
+    icon: Globe,
+    key: 'discover',
   },
   // {
   //   name: 'Apps',
@@ -103,16 +103,23 @@ export function AppSidebar({}: AppSidebarProps) {
     <Sidebar collapsible="icon" className="border-sidebar-border bg-sidebar">
 
       <SidebarHeader>
-        <div className="flex gap-2 p-2 mb-2 bg-muted min-h-16 items-center">
-          <img  
-            src={`/app/1xn_logo_noframe.svg`} 
-            alt="1xN Logo" 
-            className="w-8 h-8 object-contain"
-          />
-          <span className="flex-1 text-2xl text-center font-bold text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-            1xn
-          </span>
-          <SidebarTrigger/>
+        <div className="flex items-center justify-between gap-2 p-2 mb-2 bg-muted min-h-16 relative">
+          <Link
+            to="https://1xn.ai/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 no-underline flex-1 group-data-[collapsible=icon]:justify-center"
+          >
+            <img
+              src={`/app/1xn_logo.svg`}
+              alt="1xN Logo"
+              className="w-8 h-8 object-contain"
+            />
+            <span className="flex-1 text-center text-2xl font-bold text-sidebar-foreground group-data-[collapsible=icon]:hidden">
+              1xn
+            </span>
+          </Link>
+          <SidebarTrigger className="group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:-right-8 group-data-[collapsible=icon]:top-1/2 group-data-[collapsible=icon]:-translate-y-1/2 group-data-[collapsible=icon]:z-50"/>
         </div>
       </SidebarHeader>
 
@@ -159,6 +166,27 @@ export function AppSidebar({}: AppSidebarProps) {
 
       <SidebarFooter>
         <SidebarMenu>
+          <SidebarMenuItem  className='px-2'>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Documentation"
+                  className='text-xs'
+                >
+                  <Link
+                    to="https://1xn.ai/docs/"
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      if (window.innerWidth < 768) {
+                        setOpenMobile(false);
+                      }
+                    }}
+                  >
+                    <BookOpenText className="h-4 w-4" />
+                    <span>Documentation</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
           <SidebarMenuItem>
             <div className="flex items-center gap-1 p-2 bg-muted">
               <Avatar className="h-8 w-8">
@@ -219,9 +247,9 @@ export function AppSidebar({}: AppSidebarProps) {
           </div>
         </SidebarMenu>
         
-        <div className="text-xs text-sidebar-foreground/50 text-center group-data-[collapsible=icon]:hidden">
+        {/* <div className="text-xs text-sidebar-foreground/50 text-center group-data-[collapsible=icon]:hidden">
           1xN web-client v1.1.4
-        </div>
+        </div> */}
       </SidebarFooter>
     </Sidebar>
   );
