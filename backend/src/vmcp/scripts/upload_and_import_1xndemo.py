@@ -21,9 +21,12 @@ sys.path.insert(0, str(project_root))
 
 from vmcp.vmcps.models import VMCPConfig
 from vmcp.storage.database import init_db, SessionLocal
-from vmcp.storage.models import GlobalPublicVMCPRegistry
+from vmcp.storage.models import GlobalPublicVMCPRegistry, Blob
 from vmcp.vmcps.vmcp_config_manager.config_core import VMCPConfigManager
 from rich.console import Console
+import uuid
+import base64
+from datetime import datetime
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -46,6 +49,115 @@ def load_json_file(file_path: Path) -> Optional[Dict[str, Any]]:
         return None
 
 
+def upload_and_update_custom_resources_for_1xndemo(session, json_data: Dict[str, Any]) -> bool:
+    """Upload blob files referenced in custom_resources to user's Blob table and update custom_resources (OSS only - no public vMCPs)"""
+    try:
+        custom_resources = json_data.get("custom_resources", [])
+        if not custom_resources:
+            logger.info("No custom_resources found in 1xndemo config")
+            return True
+        
+        user_id = int(json_data.get("user_id", "1"))
+        updated_resources = []
+        
+        for resource in custom_resources:
+            original_filename = resource.get("original_filename")
+            if not original_filename:
+                # Keep resources without filenames as-is (e.g., URI-based resources)
+                updated_resources.append(resource)
+                continue
+            
+            # Find the actual file in the data directory
+            file_path = DATA_DIR / original_filename
+            
+            if not file_path.exists():
+                # Try alternative paths
+                import os
+                cwd = Path(os.getcwd())
+                alt_path = cwd / "oss" / "backend" / "src" / "vmcp" / "data" / original_filename
+                if alt_path.exists():
+                    file_path = alt_path
+                else:
+                    logger.warning(f"File {original_filename} not found, skipping custom resource")
+                    # Keep original resource entry even if file not found
+                    updated_resources.append(resource)
+                    continue
+            
+            # Read file content
+            with open(file_path, 'rb') as f:
+                file_content = f.read()
+            
+            file_size = len(file_content)
+            normalized_name = Path(original_filename).stem
+            
+            # Generate unique blob ID
+            blob_id = str(uuid.uuid4())
+            
+            # Create stored filename
+            file_ext = Path(original_filename).suffix
+            stored_filename = f"{normalized_name}_{blob_id}{file_ext}"
+            
+            # Encode binary content as base64
+            content_type = resource.get("content_type", "application/octet-stream")
+            if content_type.startswith('text/'):
+                content_str = file_content.decode('utf-8')
+            else:
+                content_str = base64.b64encode(file_content).decode('utf-8')
+            
+            # Create Blob record in user's storage (OSS doesn't have public vMCPs)
+            new_blob = Blob(
+                id=blob_id,
+                user_id=user_id,
+                vmcp_id=PUBLIC_VMCP_ID,
+                original_filename=original_filename,
+                filename=stored_filename,
+                resource_name=resource.get("resource_name", original_filename),
+                content=content_str,
+                content_type=content_type,
+                size=file_size,
+                checksum=None,  # Could calculate MD5 if needed
+                is_public=False,
+                widget_id=None,
+                created_at=datetime.now(),
+                updated_at=datetime.now()
+            )
+            
+            session.add(new_blob)
+            session.flush()  # Get the blob ID without committing
+            
+            # Update resource with new blob ID (same format for both custom_resources and uploaded_files)
+            updated_resource = {
+                "id": blob_id,
+                "original_filename": original_filename,
+                "filename": stored_filename,
+                "resource_name": resource.get("resource_name", original_filename),
+                "content_type": content_type,
+                "size": file_size,
+                "vmcp_id": PUBLIC_VMCP_ID,
+                "user_id": str(user_id),
+                "created_at": datetime.now().isoformat(),
+                "name": resource.get("name"),  # Preserve name if exists
+                "uri": resource.get("uri"),  # Preserve uri if exists
+                "description": resource.get("description")  # Preserve description if exists
+            }
+            updated_resources.append(updated_resource)
+            
+            logger.info(f"Uploaded blob {blob_id} for custom resource {original_filename}")
+        
+        # Update JSON data with updated resources
+        # Frontend uses uploaded_files array for display, so populate both
+        json_data["custom_resources"] = updated_resources
+        json_data["uploaded_files"] = updated_resources  # Frontend displays from uploaded_files
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error uploading custom resources: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return False
+
+
 def upload_to_public_registry(session, json_data: Dict[str, Any]) -> bool:
     """Upload 1xndemo to GlobalPublicVMCPRegistry"""
     try:
@@ -62,7 +174,11 @@ def upload_to_public_registry(session, json_data: Dict[str, Any]) -> bool:
         if 'user_id' not in json_data:
             json_data['user_id'] = '1'
         
-        # Create VMCPConfig object from JSON data
+        # Upload custom resource blobs to user's Blob table and update custom_resources (OSS only)
+        if not upload_and_update_custom_resources_for_1xndemo(session, json_data):
+            logger.warning("Failed to upload custom resources, continuing with original blob IDs")
+        
+        # Create VMCPConfig object from JSON data (now with updated custom_resources)
         vmcp_config = VMCPConfig.from_dict(json_data)
         
         # Convert to registry format

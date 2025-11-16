@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, Query
 from fastapi.responses import FileResponse, Response
-from typing import List, Optional
+from typing import List, Optional, Union, Any
 from pydantic import BaseModel
 import uuid
 import base64
@@ -17,6 +17,26 @@ from ..vmcps.vmcp_config_manager.config_core import VMCPConfigManager
 import logging
 logger = logging.getLogger("BLOB_ROUTER")
 
+# Try to import GlobalBlob for Enterprise (public vMCPs)
+GlobalBlob = None
+try:
+    import importlib.util
+    from pathlib import Path as PathLib
+    # Try to find Enterprise models
+    current_file = PathLib(__file__)
+    # Go up to project root: oss/backend/src/vmcp/storage/blob_router.py -> enterprise/backend/src/vmcp/storage/models.py
+    enterprise_models_path = current_file.parent.parent.parent.parent.parent.parent / "enterprise" / "backend" / "src" / "vmcp" / "storage" / "models.py"
+    if enterprise_models_path.exists():
+        spec = importlib.util.spec_from_file_location("enterprise_vmcp_storage_models", enterprise_models_path)
+        if spec is not None and spec.loader is not None:
+            enterprise_models = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(enterprise_models)
+            if hasattr(enterprise_models, 'GlobalBlob'):
+                GlobalBlob = enterprise_models.GlobalBlob
+                logger.debug("Successfully imported GlobalBlob for public vMCP blob access")
+except Exception as e:
+    logger.debug(f"GlobalBlob not available (OSS mode or Enterprise not found): {e}")
+
 router = APIRouter(prefix="/blob", tags=["blob"])
 
 class DeleteBlobRequest(BaseModel):
@@ -25,6 +45,50 @@ class DeleteBlobRequest(BaseModel):
 class RenameBlobRequest(BaseModel):
     new_filename: str
     vmcp_id: Optional[str] = None
+
+def get_blob_from_db(db, blob_id: str, vmcp_id: Optional[str], user_id: str) -> Optional[Union[Blob, Any]]:
+    """
+    Get blob from database, checking GlobalBlob for public vMCPs first, then user's Blob table.
+    Returns a blob-like object (either Blob or GlobalBlob).
+    """
+    # Check if this is a public vMCP (Enterprise only - public vMCPs have "@" in ID)
+    is_public_vmcp = vmcp_id and vmcp_id.startswith("@")
+    
+    if is_public_vmcp and GlobalBlob:
+        # Try GlobalBlob first for public vMCPs
+        try:
+            query = db.query(GlobalBlob).filter(GlobalBlob.id == blob_id)
+            if vmcp_id:
+                query = query.filter(GlobalBlob.public_vmcp_id == vmcp_id)
+            
+            global_blob = query.first()
+            if global_blob:
+                # Create a wrapper to make GlobalBlob compatible with Blob interface
+                class BlobWrapper:
+                    def __init__(self, global_blob):
+                        self.id = global_blob.id
+                        self.content = global_blob.content
+                        self.content_type = global_blob.content_type
+                        self.original_filename = global_blob.original_filename
+                        self.filename = global_blob.filename
+                        self.resource_name = global_blob.resource_name
+                        self.size = global_blob.size
+                
+                logger.debug(f"Found global blob {blob_id} for public vMCP {vmcp_id}")
+                return BlobWrapper(global_blob)
+        except Exception as e:
+            logger.debug(f"Error querying GlobalBlob: {e}")
+    
+    # Fall back to user's Blob table
+    query = db.query(Blob).filter(Blob.id == blob_id, Blob.user_id == user_id)
+    if vmcp_id:
+        query = query.filter(Blob.vmcp_id == vmcp_id)
+    
+    blob = query.first()
+    if blob:
+        logger.debug(f"Found user blob {blob_id} for vMCP {vmcp_id}")
+    
+    return blob
 
 @router.post("/upload")
 async def upload_file(
@@ -156,14 +220,10 @@ async def get_blob_content(
         if not vmcp:
             raise HTTPException(status_code=404, detail="vMCP not found")
     
-    # Get blob from database
+    # Get blob from database (checks GlobalBlob for public vMCPs, then user's Blob table)
     db = next(get_db())
     try:
-        query = db.query(Blob).filter(Blob.id == blob_id, Blob.user_id == user_context.user_id)
-        if vmcp_id:
-            query = query.filter(Blob.vmcp_id == vmcp_id)
-        
-        blob = query.first()
+        blob = get_blob_from_db(db, blob_id, vmcp_id, user_context.user_id)
         if not blob:
             raise HTTPException(status_code=404, detail="Blob not found")
         
@@ -201,14 +261,10 @@ async def get_file(
         if not vmcp:
             raise HTTPException(status_code=404, detail="vMCP not found")
     
-    # Get blob from database
+    # Get blob from database (checks GlobalBlob for public vMCPs, then user's Blob table)
     db = next(get_db())
     try:
-        query = db.query(Blob).filter(Blob.id == blob_id, Blob.user_id == user_context.user_id)
-        if vmcp_id:
-            query = query.filter(Blob.vmcp_id == vmcp_id)
-        
-        blob = query.first()
+        blob = get_blob_from_db(db, blob_id, vmcp_id, user_context.user_id)
         if not blob:
             raise HTTPException(status_code=404, detail="Blob not found")
         
@@ -246,14 +302,10 @@ async def get_resource(
         if not vmcp:
             raise HTTPException(status_code=404, detail="vMCP not found")
     
-    # Get resource from database
+    # Get resource from database (checks GlobalBlob for public vMCPs, then user's Blob table)
     db = next(get_db())
     try:
-        query = db.query(Blob).filter(Blob.id == resource_id, Blob.user_id == user_context.user_id)
-        if vmcp_id:
-            query = query.filter(Blob.vmcp_id == vmcp_id)
-        
-        blob = query.first()
+        blob = get_blob_from_db(db, resource_id, vmcp_id, user_context.user_id)
         if not blob:
             raise HTTPException(status_code=404, detail="Resource not found")
         

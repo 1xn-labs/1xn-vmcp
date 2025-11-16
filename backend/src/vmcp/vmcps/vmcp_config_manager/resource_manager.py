@@ -307,24 +307,56 @@ async def call_custom_resource(
         raise ValueError(f"Custom resource '{resource_id}' not found in vMCP {vmcp_id}")
 
     # Direct database fetch for resource content
+    # For Enterprise: check GlobalBlob for public vMCPs, then fall back to user's Blob table
+    # For OSS: only check user's Blob table (no public vMCPs)
     from vmcp.storage.database import get_db
     from vmcp.storage.models import Blob
 
     db = next(get_db())
     try:
-        if vmcp_id and vmcp_id.startswith("@"):
+        blob_id = custom_resource.get('id')
+        blob = None
+        
+        # Check if this is a public vMCP (Enterprise only - public vMCPs have "@" in ID)
+        is_public_vmcp = vmcp_id and vmcp_id.startswith("@")
+        
+        if is_public_vmcp:
+            # Enterprise: Try GlobalBlob first for public vMCPs
+            try:
+                from vmcp.storage.models import GlobalBlob
+                global_blob = db.query(GlobalBlob).filter(
+                    GlobalBlob.id == blob_id,
+                    GlobalBlob.public_vmcp_id == vmcp_id
+                ).first()
+                
+                if global_blob:
+                    # Convert GlobalBlob to Blob-like object for compatibility
+                    class BlobWrapper:
+                        def __init__(self, global_blob):
+                            self.id = global_blob.id
+                            self.content = global_blob.content
+                            self.content_type = global_blob.content_type
+                            self.original_filename = global_blob.original_filename
+                            self.filename = global_blob.filename
+                            self.resource_name = global_blob.resource_name
+                            self.size = global_blob.size
+                    
+                    blob = BlobWrapper(global_blob)
+                    logger.info(f"Found global blob {blob_id} for public vMCP {vmcp_id}")
+            except ImportError:
+                # GlobalBlob not available (OSS mode), skip
+                pass
+        
+        # Fall back to user's Blob table if not found in GlobalBlob
+        if not blob:
             blob = db.query(Blob).filter(
-                Blob.id == custom_resource.get('id')
-            ).first()
-        else:
-            blob = db.query(Blob).filter(
-                Blob.id == custom_resource.get('id'),
+                Blob.id == blob_id,
                 Blob.user_id == user_id,
                 Blob.vmcp_id == vmcp_id
             ).first()
 
         if not blob:
-            raise ValueError(f"Resource blob '{custom_resource.get('id')}' not found in database")
+            raise ValueError(f"Resource blob '{blob_id}' not found in database")
 
         # Handle content based on content type
         content_type = custom_resource.get('content_type') or blob.content_type

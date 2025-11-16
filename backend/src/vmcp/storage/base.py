@@ -373,6 +373,12 @@ class StorageBase:
                 
                 vmcp_config = VMCPConfig.from_dict(vmcp_dict)
                 
+                # Sync uploaded_files from custom_resources if uploaded_files is empty
+                # This handles legacy vMCPs that were created before uploaded_files was populated
+                if not vmcp_config.uploaded_files and vmcp_config.custom_resources:
+                    logger.info(f"Syncing uploaded_files from custom_resources for public vMCP {public_vmcp_id}")
+                    vmcp_config.uploaded_files = vmcp_config.custom_resources.copy()
+                
                 logger.info(f"Successfully loaded public vMCP config: {vmcp_config.name} (ID: {public_vmcp_id})")
                 return vmcp_config
             else:
@@ -415,6 +421,12 @@ class StorageBase:
 
                 # Convert dict to VMCPConfig object
                 config = VMCPConfig.from_dict(vmcp_dict)
+                
+                # Sync uploaded_files from custom_resources if uploaded_files is empty
+                # This handles legacy vMCPs that were created before uploaded_files was populated
+                if not config.uploaded_files and config.custom_resources:
+                    logger.info(f"Syncing uploaded_files from custom_resources for vMCP {decoded_vmcp_id}")
+                    config.uploaded_files = config.custom_resources.copy()
                 
                 logger.info(f"Successfully loaded private vMCP config: {config.name} (ID: {decoded_vmcp_id})")
                 return config
