@@ -77,7 +77,7 @@ from vmcp.vmcps.models import (
     VMCPUdateRequest,
     VMCPUpdateResponse,
 )
-from vmcp.vmcps.vmcp_config_manger import VMCPConfigManager
+from vmcp.vmcps.vmcp_config_manager import VMCPConfigManager
 from vmcp.utilities.logging import setup_logging
 
 router = APIRouter(prefix="/vmcps", tags=["vMCPs"])

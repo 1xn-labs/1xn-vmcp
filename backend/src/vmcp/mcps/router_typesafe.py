@@ -64,7 +64,7 @@ from vmcp.shared.mcp_content_models import (
 from vmcp.shared.models import BaseResponse
 from vmcp.storage.dummy_user import UserContext, get_user_context
 from vmcp.utilities.logging.config import setup_logging
-from vmcp.vmcps.vmcp_config_manger import VMCPConfigManager
+from vmcp.vmcps.vmcp_config_manager import VMCPConfigManager
 
 logger = setup_logging("1xN_MCP_ROUTER_TYPESAFE")
 
@@ -468,6 +468,11 @@ async def uninstall_mcp_server(
     if not server_config:
         raise get_server_not_found_error(server_id, config_manager)
 
+    # If it's a stdio server, disconnect it first before uninstalling
+    if server_config.transport_type == TransportType.STDIO:
+        logger.info(f"   🔌 Disconnecting stdio server before uninstall: {server_id}")
+        await MCPClientManager.disconnect_stdio_server(server_id)
+
     # Remove from config
     success = config_manager.remove_server(server_id)
     if not success:
@@ -653,6 +658,15 @@ async def disconnect_mcp_server(
         # Clear auth and session information
         server_config.auth = None
         server_config.session_id = None
+
+        # If it's a stdio server, explicitly disconnect it from the connection pool
+        if server_config.transport_type == TransportType.STDIO:
+            logger.info(f"   🔌 Disconnecting stdio server: {server_id}")
+            disconnected = await MCPClientManager.disconnect_stdio_server(server_id)
+            if disconnected:
+                logger.info(f"   ✅ Successfully closed stdio connection for: {server_id}")
+            else:
+                logger.warning(f"   ⚠️  No active stdio connection found for: {server_id}")
 
         # Set status to disconnected
         config_manager.update_server_status(server_id, MCPConnectionStatus.DISCONNECTED)

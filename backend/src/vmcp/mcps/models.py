@@ -902,7 +902,24 @@ class MCPServerConfig:
         if not self.server_id:
             self.server_id = self.generate_server_id()
         return self.server_id
-    
+
+    @property
+    def server_params(self):
+        """Generate StdioServerParameters for stdio connections."""
+        from mcp import StdioServerParameters
+
+        if self.transport_type != MCPTransportType.STDIO:
+            raise ValueError(f"server_params only available for stdio servers, not {self.transport_type}")
+
+        if not self.command:
+            raise ValueError("command is required for stdio servers")
+
+        return StdioServerParameters(
+            command=self.command,
+            args=self.args or [],
+            env=self.env or {}
+        )
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         data = asdict(self)
