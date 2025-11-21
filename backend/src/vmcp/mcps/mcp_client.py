@@ -153,7 +153,7 @@ def mcp_operation(func):
             elif server_config.transport_type == MCPTransportType.STDIO:
                 server_id = server_config.server_id or server_config.name
 
-                # Check if we have an existing stdio connection in class-level storage
+                # Check if we have an existing stdio connection in this MCPClientManager instance
                 if server_id in self._stdio_sessions:
                     logger.info(f"♻️  [STDIO_REUSE] Reusing existing stdio connection for {server_config.name} (id={server_id})")
                     # Reuse existing session
@@ -189,7 +189,7 @@ def mcp_operation(func):
                     task.cancel()
                     raise MCPOperationError(f"Timeout initializing stdio server {server_config.name}")
 
-                # Get the session from class storage (set by background task)
+                # Get the session from instance storage (set by background task)
                 session = self._stdio_sessions.get(server_id)
                 if not session:
                     raise MCPOperationError(f"Failed to initialize stdio server {server_config.name}")
@@ -343,10 +343,10 @@ def mcp_operation(func):
                 # Clean up session if it exists and was successfully entered (HTTP/SSE only)
                 if session and session_entered and hasattr(session, '__aexit__'):
                     try:
-                        pass
+                        # pass
                         # Session cleanup is currently disabled for all transports
                         # Uncomment below if needed for HTTP/SSE cleanup
-                        # await session.__aexit__(None, None, None)
+                        await session.__aexit__(None, None, None)
                     except asyncio.CancelledError:
                         logger.warning(f"Session cleanup cancelled for {server_config.name}")
                     except Exception as cleanup_error:
@@ -355,10 +355,10 @@ def mcp_operation(func):
                 # Clean up context if it exists and was successfully entered (HTTP/SSE only)
                 if context and context_entered and hasattr(context, '__aexit__'):
                     try:
-                        pass
+                        # pass
                         # Context cleanup is currently disabled for all transports
                         # Uncomment below if needed for HTTP/SSE cleanup
-                        # await context.__aexit__(None, None, None)
+                        await context.__aexit__(None, None, None)
                     except asyncio.CancelledError:
                         logger.warning(f"Context cleanup cancelled for {server_config.name}")
                     except Exception as cleanup_error:
@@ -532,10 +532,10 @@ class MCPClientManager:
                     logger.info(f"🛑 [STDIO_TASK] Shutdown signal received for server_id={server_id}")
 
                 # Automatic session cleanup happens here
-                logger.info(f"🧹 [STDIO_TASK] Session context exited for server_id={server_id}")
+                # logger.info(f"🧹 [STDIO_TASK] Session context exited for server_id={server_id}")
 
             # Automatic stdio_client cleanup happens here
-            logger.info(f"🧹 [STDIO_TASK] stdio_client context exited for server_id={server_id}")
+           # logger.info(f"🧹 [STDIO_TASK] stdio_client context exited for server_id={server_id}")
 
         except Exception as e:
             logger.error(f"❌ [STDIO_TASK] Error in stdio connection task for server_id={server_id}: {e}")
@@ -551,7 +551,7 @@ class MCPClientManager:
             self._stdio_shutdown_events.pop(server_id, None)
             self._stdio_ready_events.pop(server_id, None)
 
-            logger.info(f"✅ [STDIO_TASK] Task completed for server_id={server_id}")
+            logger.info(f"✅ [STDIO_TASK] Task completed for server_id={server_id} server: {server_config.name}")
 
     async def cleanup(self, server_name: str) -> None:
         """Clean up server resources."""
