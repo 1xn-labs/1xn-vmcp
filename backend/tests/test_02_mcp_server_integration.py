@@ -21,31 +21,36 @@ if tests_dir not in sys.path:
 from conftest import streamablehttp_client
 
 
-@pytest.mark.mcp_server
-class TestMCPServerIntegration:
+class MCPServerIntegration:
     """Test MCP server integration functionality"""
 
+    @pytest.fixture(autouse=True)
+    def setup_vmcp(self, base_url, create_vmcp):
+        """Setup shared vMCP and streamable client for all tests in this class."""
+        self._vmcp = create_vmcp
+        self._base_url = base_url
+        # Create the MCP URL for streamable client
+        self._mcp_url = f"{base_url}private/{self._vmcp['name']}/vmcp"
+        
     def test_add_everything_server(self, base_url, create_vmcp, mcp_servers, helpers):
         """Test 2.1: Add Everything MCP server to vMCP"""
-        vmcp = create_vmcp
-        print(f"\n📦 Test 2.1 - Adding Everything server to vMCP: {vmcp['id']}")
+        print(f"\n📦 Test 2.1 - Adding Everything server to vMCP: {self._vmcp['id']}")
 
         result = helpers["add_server"](
-            vmcp["id"],
+            self._vmcp["id"],
             mcp_servers["everything"],
             "everything"
         )
 
         assert result is not None
-        print("✅ Everything server added successfully")
+        print("✅ Everything server (HTTP) added successfully")
 
     def test_add_allfeature_server(self, base_url, create_vmcp, mcp_servers, helpers):
         """Test 2.2: Add AllFeature MCP server to vMCP"""
-        vmcp = create_vmcp
-        print(f"\n📦 Test 2.2 - Adding AllFeature server to vMCP: {vmcp['id']}")
+        print(f"\n📦 Test 2.2 - Adding AllFeature server to vMCP: {self._vmcp['id']}")
 
         result = helpers["add_server"](
-            vmcp["id"],
+            self._vmcp["id"],
             mcp_servers["allfeature"],
             "allfeature"
         )
@@ -54,19 +59,15 @@ class TestMCPServerIntegration:
         print("✅ AllFeature server added successfully")
 
     @pytest.mark.asyncio
-    async def test_verify_tools_from_mcp_server(self, base_url, create_vmcp, mcp_servers, helpers, auth_headers):
+    async def test_verify_tools_from_mcp_server(self, base_url, mcp_servers, helpers, auth_headers):
         """Test 2.3: Verify tools are accessible from MCP server"""
-        vmcp = create_vmcp
-        print(f"\n📦 Test 2.3 - Verifying tools from MCP server: {vmcp['id']}")
+        print(f"\n📦 Test 2.3 - Verifying tools from MCP server: {self._vmcp['id']}")
 
         # Add server
-        helpers["add_server"](vmcp["id"], mcp_servers["everything"], "everything")
+        helpers["add_server"](self._vmcp["id"], mcp_servers["everything"], "everything")
 
-        # Connect via MCP client with auth headers
-        mcp_url = f"{base_url}private/{vmcp['name']}/vmcp"
-        
         # The patched streamablehttp_client will add Authorization automatically
-        async with streamablehttp_client(mcp_url) as (read_stream, write_stream, _):
+        async with streamablehttp_client(self._mcp_url) as (read_stream, write_stream, _):
             async with ClientSession(read_stream, write_stream) as session:
                 await session.initialize()
 
@@ -77,7 +78,7 @@ class TestMCPServerIntegration:
                 print(f"🔧 Available tools: {tool_names}")
 
                 # Verify some expected tools exist (tools are prefixed with server name)
-                expected_tools = ["everything_create_task", "everything_search_everything", "everything_generate_report"]
+                expected_tools = ["everything_test_simple_text", "everything_test_image_content", "everything_test_error_handling"]
                 for expected_tool in expected_tools:
                     assert expected_tool in tool_names, f"Expected tool '{expected_tool}' not found"
 
@@ -107,7 +108,7 @@ class TestMCPServerIntegration:
                 print(f"📋 Available prompts: {prompt_names}")
 
                 # Verify some expected prompts exist (prompts are prefixed with server name)
-                expected_prompts = ["everything_system_administration_prompt", "everything_data_analysis_prompt"]
+                expected_prompts = ["everything_test_simple_prompt", "everything_test_prompt_with_arguments", "everything_test_prompt_with_embedded_resource"]
                 for expected_prompt in expected_prompts:
                     assert expected_prompt in prompt_names, f"Expected prompt '{expected_prompt}' not found"
 
@@ -226,14 +227,16 @@ class TestMCPServerIntegration:
         print(f"\n📦 Test 2.8 - Adding OAuth MCP server: {vmcp['id']}")
 
         # Add server with SSE transport
-        server_url = "https://example-server.modelcontextprotocol.io/sse"
-        server_name = "oauth_example_server"
+        server_config = {
+            "url": "https://example-server.modelcontextprotocol.io/sse",
+            "name": "oauth_example_server",
+            "transport": "sse"
+        }
 
         result = helpers["add_server"](
             vmcp["id"],
-            server_url,
-            server_name,
-            transport="sse"
+            server_config,
+            "oauth_example_server"
         )
 
         assert result is not None
@@ -271,3 +274,44 @@ class TestMCPServerIntegration:
             headers=auth_headers  # Add auth headers here too
         )
         assert connection_result.status_code == 200, f"Failed to connect to server: {connection_result.text}"
+
+
+@pytest.mark.mcp_server
+class TestHTTPMCPServerIntegration (MCPServerIntegration):
+    """Test MCP server integration functionality"""
+    pass
+
+@pytest.mark.mcp_server
+class TestSTDIOMCPServerIntegration (MCPServerIntegration):
+    """Test MCP server integration functionality"""
+    def test_add_everything_server(self, base_url, create_vmcp, mcp_servers, helpers):
+        """Test 2.1: Add Everything MCP server to vMCP"""
+        print(f"\n📦 Test 2.1 - Adding Everything server (STDIO) to vMCP: {self._vmcp['id']}")
+
+        result = helpers["add_server"](
+            self._vmcp["id"],
+            mcp_servers["everything_stdio"],
+            "everything_stdio",
+        )
+
+        assert result is not None
+        print("✅ Everything server (STDIO) added successfully")
+    
+    def test_add_allfeature_server(self, base_url, create_vmcp, mcp_servers, helpers):
+        """Test 2.2: Add AllFeature MCP server to vMCP"""
+        print(f"\n📦 Test 2.2 - Adding AllFeature server (STDIO) to vMCP: {self._vmcp['id']}")
+
+        result = helpers["add_server"](
+            self._vmcp["id"],
+            mcp_servers["allfeature_stdio"],
+            "allfeature_stdio"
+        )
+
+        assert result is not None
+        print("✅ AllFeature server added successfully")
+
+    async def test_oauth_mcp_server(self, base_url, vmcp_name, helpers, auth_headers, request):
+        pass  # Override to skip this test for STDIO transport
+
+    
+
