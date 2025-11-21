@@ -1084,12 +1084,12 @@ export default function MCPServersTab({
                       <SelectValue/>
                     </SelectTrigger>
                     <SelectContent>
-                      {/* <SelectItem value="stdio">
+                      {<SelectItem value="stdio">
                         <div className="flex items-center gap-2">
                           <Terminal className="h-4 w-4" />
                           stdio
                         </div>
-                      </SelectItem> */}
+                      </SelectItem>}
                       <SelectItem value="http">
                         <div className="flex items-center gap-2">
                           <Globe className="h-4 w-4" />
@@ -1120,7 +1120,7 @@ export default function MCPServersTab({
               </div>
 
               {/* Transport-specific fields */}
-              {/* {customServerForm.transport === 'stdio' && (
+              {customServerForm.transport === 'stdio' && (
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="command">Command *</Label>
@@ -1143,7 +1143,7 @@ export default function MCPServersTab({
                     />
                   </div>
                 </div>
-              )} */}
+              )}
 
               {(customServerForm.transport === 'http' || customServerForm.transport === 'sse') && (
                 <div className="space-y-2">
