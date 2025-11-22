@@ -1,8 +1,8 @@
 """
-Custom Session Manager for vMCP with stdio cleanup support.
+Custom Session Manager for vMCP with MCP connection cleanup support.
 
-Extends StreamableHTTPSessionManager to handle proper cleanup of stdio MCP
-server connections when sessions end.
+Extends StreamableHTTPSessionManager to handle proper cleanup of all MCP
+server connections (stdio, SSE, HTTP) when sessions end.
 """
 
 from collections.abc import AsyncIterator
@@ -28,11 +28,14 @@ logger = get_logger("VMCPSessionManager")
 
 class VMCPSessionManager(StreamableHTTPSessionManager):
     """
-    Custom session manager that handles stdio MCP cleanup when sessions end.
+    Custom session manager that handles MCP connection cleanup when sessions end.
 
     Provides session lifecycle hooks:
     - on_session_start(session_id): Called once when a new session is created
     - on_session_end(session_id): Called once when a session ends (crash, close, or shutdown)
+
+    All MCP connections (stdio, SSE, HTTP) are managed by ClientSessionGroup and
+    cleaned up automatically when the session ends.
     """
 
     def __init__(self, vmcp_managers_ref: dict, *args, **kwargs):
@@ -53,7 +56,7 @@ class VMCPSessionManager(StreamableHTTPSessionManager):
     async def on_session_end(self, session_id: str) -> None:
         """
         Called once when an MCP session ends (crash, explicit close, or shutdown).
-        Cleans up stdio MCP connections for this session.
+        Cleans up all MCP connections (stdio, SSE, HTTP) for this session.
         """
         logger.info(f"[VMCP SESSION_END] Session ending: {session_id[:16]}...")
 
@@ -61,8 +64,9 @@ class VMCPSessionManager(StreamableHTTPSessionManager):
             if session_id in self._vmcp_managers_ref:
                 vmcp_manager = self._vmcp_managers_ref[session_id]
                 if hasattr(vmcp_manager, 'mcp_client_manager') and vmcp_manager.mcp_client_manager:
-                    cleaned = await vmcp_manager.mcp_client_manager.cleanup_all_stdio_servers()
-                    logger.info(f"[SESSION_END] Cleaned up {cleaned} stdio connections for session {session_id[:16]}...")
+                    # stop() cleans up all connections (stdio, SSE, HTTP) managed by ClientSessionGroup
+                    cleaned = await vmcp_manager.mcp_client_manager.stop()
+                    logger.info(f"[SESSION_END] Cleaned up {cleaned} MCP connections for session {session_id[:16]}...")
                 # Remove vmcp_manager from cache
                 del self._vmcp_managers_ref[session_id]
                 logger.info(f"[SESSION_END] Removed VMCPConfigManager for session {session_id[:16]}...")

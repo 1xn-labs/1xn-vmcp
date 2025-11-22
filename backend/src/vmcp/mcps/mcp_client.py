@@ -6,30 +6,20 @@ from typing import Any, Dict, Optional
 import anyio
 import httpx
 from mcp import ClientSession, StdioServerParameters
-from mcp.client.sse import sse_client
-from mcp.client.stdio import stdio_client
-from mcp.client.streamable_http import streamablehttp_client
-from mcp.types import (
-    CallToolResult,
-    GetPromptResult,
-    Prompt,
-    PromptMessage,
-    ReadResourceResult,
-    Resource,
-    ResourceTemplate,
-    TextContent,
-    TextResourceContents,
-    Tool,
+from mcp.client.session_group import (
+    ClientSessionGroup,
+    SseServerParameters,
+    StreamableHttpParameters,
 )
-from pydantic import AnyHttpUrl, AnyUrl
+# Note: sse_client, stdio_client, streamablehttp_client are now handled by ClientSessionGroup
+from mcp.types import Prompt, Resource, ResourceTemplate, Tool
+from pydantic import AnyUrl
 
-from vmcp.config import settings
 from vmcp.config import settings as AuthSettings
 from vmcp.mcps.mcp_auth_manager import MCPAuthManager
 from vmcp.mcps.mcp_configmanager import MCPConfigManager
 from vmcp.mcps.models import (
     AuthenticationError,
-    BadMCPRequestError,
     HTTPError,
     InvalidSessionIdError,
     MCPConnectionStatus,
@@ -90,118 +80,62 @@ def safe_extract_response_info(response):
 
     return status_code, error_text
 
+
+async def _handle_401_oauth(self, server_name: str, server_config, func, kwargs):
+    """Handle 401 Unauthorized by initiating OAuth flow."""
+    from vmcp.config import settings
+    from mcp.types import CallToolResult, GetPromptResult, PromptMessage, ReadResourceResult, TextContent, TextResourceContents
+    from pydantic import AnyHttpUrl
+
+    logger.info(f"Handling 401 Unauthorized for {func.__name__}")
+    user_id = self.config_manager.user_id
+    enhanced_callback = f"{settings.base_url}/api/otherservers/oauth/callback"
+
+    try:
+        oauth_result = await self.auth_manager.initiate_oauth_flow(
+            server_name=server_name,
+            server_url=server_config.url,
+            user_id=user_id,
+            callback_url=enhanced_callback,
+            headers=server_config.headers,
+            **kwargs
+        )
+        logger.info(f"OAuth flow result: {oauth_result}")
+
+        if oauth_result.get('status') == 'error':
+            auth_text = f"OAuth initiation failed: {oauth_result.get('error')}"
+        else:
+            auth_url = oauth_result.get('authorization_url', '')
+            auth_text = f"Server {server_name} is unauthenticated. Please authenticate using: {auth_url}"
+
+        match func.__name__:
+            case "call_tool":
+                return CallToolResult(content=[TextContent(type="text", text=auth_text)], isError=True)
+            case "get_prompt":
+                return GetPromptResult(description="Auth Error", messages=[PromptMessage(role="user", content=TextContent(type="text", text=auth_text))])
+            case "read_resource":
+                return ReadResourceResult(contents=[TextResourceContents(uri=AnyHttpUrl("https://1xn.ai/auth-error"), mimeType='text/plain', text=auth_text)])
+            case _:
+                raise AuthenticationError(f"Authentication failed for server {server_name}: 401 Unauthorized")
+
+    except Exception as oauth_error:
+        logger.error(f"Error initiating OAuth flow: {oauth_error}")
+        raise AuthenticationError(f"Authentication failed for server {server_name}: 401 Unauthorized") from oauth_error
+
+
 def mcp_operation(func):
-    """Decorator for MCP operations that handles connection management"""
+    """Decorator for MCP operations that handles connection management via ClientSessionGroup."""
     async def wrapper(self, server_name: str, *args, **kwargs):
         server_config = self.config_manager.get_server(server_name)
         if not server_config:
             server_config = self.config_manager.get_server_by_name(server_name)
             if not server_config:
                 raise ValueError(f"Server configuration not found for: {server_name}")
-        # Construct headers
-        headers = server_config.headers or {}
-        headers["mcp-protocol-version"] = "2025-06-18"
-        # Add authentication headers
-        if server_config.auth and server_config.auth.access_token:
-            headers['Authorization'] = f'Bearer {server_config.auth.access_token}'
-        if server_config.session_id:
-            headers['mcp-session-id'] = server_config.session_id
-        # headers['mcp-session-id'] = "kitemcp-07245b6c-77dc-4819-8798-3e8a8c1c7a39"
-        # headers['mcp-session-id'] = "kitemcp-07245b6c-77dc-4819-8798-3e8a8c1c"
-        logger.info(f"✅ Headers: {headers}")
-
-        session = None
-        context = None
-        session_entered = False
-        context_entered = False
 
         try:
-            if server_config.transport_type == MCPTransportType.SSE:
-                context = sse_client(server_config.url, headers)
-                read_stream, write_stream = await context.__aenter__()
-                context_entered = True
-                session = ClientSession(read_stream, write_stream)
-                await session.__aenter__()
-                session_entered = True
-                result = await session.initialize()
-                logger.info(f"✅ Initialized session: {result}")
-                self.sessions[server_config.name] = session
-                return await func(self, server_config, *args, **kwargs)
-            elif server_config.transport_type == MCPTransportType.HTTP:
-                context = streamablehttp_client(server_config.url, headers=headers, terminate_on_close=False)
-                read_stream, write_stream, get_session_id = await context.__aenter__()
-                context_entered = True
-                session = ClientSession(read_stream, write_stream)
-                await session.__aenter__()
-                session_entered = True
-                if not headers.get('mcp-session-id'):
-                    result = await session.initialize()
-                    session_id = get_session_id()
-
-                    server_config.session_id = session_id
-                    if self.config_manager:
-                        self.config_manager.update_server_config(server_config.server_id, server_config)
-                        logger.info(f"💾 [SESSION_PERSISTENCE: HTTP] Saved session ID to config for {server_config.name}: {session_id}")
-                    logger.info(f"✅ Session ID: {session_id}")
-                    logger.info(f"✅ Initialized session: {result}")
-                else:
-                    session_id = headers.get('mcp-session-id')
-                    logger.info(f"✅ Using existing session ID: {session_id}")
-
-                self.sessions[server_config.name] = session
-                return await func(self, server_config, *args, **kwargs)
-            elif server_config.transport_type == MCPTransportType.STDIO:
-                server_id = server_config.server_id or server_config.name
-
-                # Check if we have an existing stdio connection in this MCPClientManager instance
-                if server_id in self._stdio_sessions:
-                    logger.info(f"♻️  [STDIO_REUSE] Reusing existing stdio connection for {server_config.name} (id={server_id})")
-                    # Reuse existing session
-                    session = self._stdio_sessions[server_id]
-                    self.sessions[server_config.name] = session
-                    # Don't set context_entered since we're reusing
-                    return await func(self, server_config, *args, **kwargs)
-
-                # Create new stdio connection in a background task
-                # This runs in its own async context, independent of HTTP request lifecycle
-                logger.info(f"🆕 [STDIO_NEW] Creating new stdio connection for {server_config.name} (id={server_id})")
-
-                # Create events for coordination
-                ready_event = asyncio.Event()
-                shutdown_event = asyncio.Event()
-
-                self._stdio_ready_events[server_id] = ready_event
-                self._stdio_shutdown_events[server_id] = shutdown_event
-
-                # Launch background task to manage the stdio connection
-                task = asyncio.create_task(
-                    self._stdio_connection_task(server_id, server_config)
-                )
-                self._stdio_tasks[server_id] = task
-
-                # Wait for the connection to be ready (with timeout)
-                logger.info(f"⏳ [STDIO_NEW] Waiting for connection to be ready for {server_config.name}...")
-                try:
-                    await asyncio.wait_for(ready_event.wait(), timeout=30.0)
-                except asyncio.TimeoutError:
-                    logger.error(f"❌ [STDIO_NEW] Timeout waiting for connection for {server_config.name}")
-                    # Clean up the task
-                    task.cancel()
-                    raise MCPOperationError(f"Timeout initializing stdio server {server_config.name}")
-
-                # Get the session from instance storage (set by background task)
-                session = self._stdio_sessions.get(server_id)
-                if not session:
-                    raise MCPOperationError(f"Failed to initialize stdio server {server_config.name}")
-
-                # Store in instance sessions for this request
-                self.sessions[server_config.name] = session
-
-                logger.info(f"💾 [STDIO_PERSIST] Stored stdio connection for {server_config.name} (id={server_id})")
-                return await func(self, server_config, *args, **kwargs)
-            else:
-                logger.error(f"Invalid transport type for server {server_config.name}: {server_config.transport_type}")
-                return None
+            # Use ClientSessionGroup for all transport types (persistent connections)
+            session = await self.connect_server(server_config)
+            return await func(self, server_config, session, *args, **kwargs)
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
                 logger.debug(f"Authentication failed for server {server_config.name}: 401 Unauthorized")
@@ -224,235 +158,26 @@ def mcp_operation(func):
             # Handle ExceptionGroup and extract status code from nested exceptions
             status_code = None
             error_text = None
-            nested_errors = []
 
-            if isinstance(e, ExceptionGroup):
-                logger.debug(f"ExceptionGroup with {len(e.exceptions)} sub-exceptions:")
-                for i, sub_exception in enumerate(e.exceptions):
-                    nested_errors.append(f"{type(sub_exception).__name__}: {sub_exception}")
-
-                    # Extract status code and error text safely
+            if hasattr(eg, 'exceptions'):
+                for sub_exception in eg.exceptions:
                     if hasattr(sub_exception, 'status_code'):
                         status_code = sub_exception.status_code
                     elif hasattr(sub_exception, 'response'):
                         status_code, error_text = safe_extract_response_info(sub_exception.response)
-                    else:
-                        error_text = str(sub_exception)
-                    logger.debug(f"Sub-exception {i+1}: {type(sub_exception).__name__}: {sub_exception} {status_code} {error_text} ")
-                    logger.info("Handling 401 Unauthorized")
+
                     if status_code == 401:
-                        if func.__name__ in ("call_tool", "get_prompt", "read_resource"):
-                            logger.info(f"Handling 401 Unauthorized for {func.__name__}")
-                            conversation_id = kwargs.get('conversation_id')
-                            chat_client_callback_url = kwargs.get('chat_client_callback_url')
-                            user_id = self.config_manager.user_id
-                            logger.info(f"conversation_id in 401 Unauthorized: {conversation_id}")
-                            logger.info(f"chat_client_callback_url in 401 Unauthorized: {chat_client_callback_url}")
-
-                            if conversation_id and chat_client_callback_url:
-                                logger.info(f"🔄 Using dynamic callback flow for conversation {conversation_id} to generate auth url")
-
-                                enhanced_callback = f"{settings.base_url}/api/otherservers/oauth/callback"
-                            else:
-                                logger.info("🔄 Using default callback flow to generate auth url")
-                                enhanced_callback = f"{settings.base_url}/api/otherservers/oauth/callback"
-
-                            try:
-                                oauth_result = await self.auth_manager.initiate_oauth_flow(
-                                    server_name=server_name,
-                                    server_url=server_config.url,
-                                    user_id=user_id,
-                                    callback_url=enhanced_callback,
-                                    headers=server_config.headers,
-                                    **kwargs
-                                )
-                                logger.info(f"initialise auth flow result: {oauth_result} in call_tool")
-
-                                if oauth_result.get('status') == 'error':
-                                    auth_text = f"OAuth initiation failed: {oauth_result.get('error')}"
-                                else:
-                                    auth_text_tool_call = f"Server {server_name} is unauthenticated. Please Show the following authorisation link to the user: {oauth_result['authorization_url']} to authenticate server {server_name}"
-                                    auth_text_prompt = f"Server {server_name} is unauthenticated. Please authinticate using the link :  {oauth_result['authorization_url']} to authenticate server {server_name} to access the prompt"
-                                    auth_text_resource = f"Server {server_name} is unauthenticated. Please authinticate using the link :  {oauth_result['authorization_url']} to authenticate server {server_name} to access the resource"
-
-                                match func.__name__:
-                                    case "call_tool":
-                                        return CallToolResult(
-                                            content=[TextContent(type="text", text=auth_text_tool_call)],
-                                            isError=True
-                                        )
-                                    case "get_prompt":
-                                        return GetPromptResult(
-                                            description="Auth Error",
-                                            messages=[PromptMessage(role="user",content=TextContent(type="text", text=auth_text_prompt))]
-                                        )
-
-                                    case "read_resource":
-                                        return ReadResourceResult (
-                                            contents=[TextResourceContents(uri=AnyHttpUrl("https://1xn.ai/auth-error"), mimeType='text/plain', text=auth_text_resource)]
-                                        )
-
-
-                            except Exception as oauth_error:
-                                logger.error(f"❌ Error initiating OAuth flow: {oauth_error}")
-                                # Fallback to frontend flow on error
-
-                            # Fallback to frontend URL if missing parameters or OAuth initiation failed
-
-                            auth_url = f"{BACKEND_URL}/web-client/oauth/authorize?server_name={server_name}"
-                            auth_text = f"Ask user to authenticate server {server_name}. show the following authorisation link {auth_url} to the user. "
-                            return CallToolResult(
-                                content=[TextContent(type="text", text=auth_text)],
-                                isError=True
-                            )
-
-                        else:
-                            logger.debug(f"Authentication failed for server {server_config.name}: 401 Unauthorized")
-                            logger.debug("Please check your access token and authentication configuration")
-                            raise AuthenticationError(f"""
-                            Authentication failed for server {server_config.name}: 401 Unauthorized
-                            {error_text}
-                            """) from e
-                    elif status_code:
-                        logger.error(f"HTTP error for server {server_config.name}: {status_code} - {error_text}")
-                        raise MCPOperationError(f"HTTP error for server {server_config.name}: {status_code} - {error_text}") from e
-            else:
-                # Handle individual exceptions
-                if hasattr(e, 'status_code'):
-                    status_code = e.status_code
-                elif hasattr(e, 'response'):
-                    status_code, error_text = safe_extract_response_info(e.response)
-                else:
-                    error_text = str(e)
+                        # Handle 401 with OAuth flow
+                        return await _handle_401_oauth(self, server_name, server_config, func, kwargs)
 
             if status_code:
-                logger.error(f"Error status: {status_code}")
-            if error_text:
-                logger.error(f"Error text: {error_text}")
-            if nested_errors:
-                logger.error(f"Nested errors: {nested_errors}")
-            return None
-        finally:
-            # Skip cleanup for stdio connections - they are managed at class level
-            # Only cleanup HTTP/SSE connections which are request-scoped
-            is_stdio = server_config.transport_type == MCPTransportType.STDIO
-
-            if is_stdio:
-                logger.debug(f"[STDIO_PERSIST] Skipping cleanup for stdio connection {server_config.name} - keeping process alive")
-            else:
-                # Clean up session if it exists and was successfully entered (HTTP/SSE only)
-                if session and session_entered and hasattr(session, '__aexit__'):
-                    try:
-                        # pass
-                        # Session cleanup is currently disabled for all transports
-                        # Uncomment below if needed for HTTP/SSE cleanup
-                        await session.__aexit__(None, None, None)
-                    except asyncio.CancelledError:
-                        logger.warning(f"Session cleanup cancelled for {server_config.name}")
-                    except Exception as cleanup_error:
-                        logger.warning(f"Error during session cleanup for {server_config.name}: {cleanup_error}")
-
-                # Clean up context if it exists and was successfully entered (HTTP/SSE only)
-                if context and context_entered and hasattr(context, '__aexit__'):
-                    try:
-                        # pass
-                        # Context cleanup is currently disabled for all transports
-                        # Uncomment below if needed for HTTP/SSE cleanup
-                        await context.__aexit__(None, None, None)
-                    except asyncio.CancelledError:
-                        logger.warning(f"Context cleanup cancelled for {server_config.name}")
-                    except Exception as cleanup_error:
-                        logger.warning(f"Error during context cleanup for {server_config.name}: {cleanup_error}")
-                        if isinstance(cleanup_error, ExceptionGroup):
-                            logger.warning(f"Context cleanup ExceptionGroup details for {server_config.name}:")
-                            for i, sub_exception in enumerate(cleanup_error.exceptions):
-                                logger.warning(f"  Sub-exception {i+1}: {type(sub_exception).__name__}: {sub_exception}")
-                                # Extract status code and error text safely
-                                # Initialize with defaults to avoid UnboundLocalError
-                                status_code = None
-                                error_text = str(sub_exception)
-
-                                if hasattr(sub_exception, 'status_code'):
-                                    status_code = sub_exception.status_code
-                                elif hasattr(sub_exception, 'response'):
-                                    status_code, error_text = safe_extract_response_info(sub_exception.response)
-
-                                if status_code == 401:
-                                    logger.info("Handling 401 Unauthorized")
-                                    if func.__name__ in ("call_tool", "get_prompt", "read_resource"):
-                                        logger.info(f"Handling 401 Unauthorized for {func.__name__}")
-                                        conversation_id = kwargs.get('conversation_id')
-                                        chat_client_callback_url = kwargs.get('chat_client_callback_url')
-                                        user_id = self.config_manager.user_id
-                                        logger.info(f"conversation_id in 401 Unauthorized: {conversation_id}")
-                                        logger.info(f"chat_client_callback_url in 401 Unauthorized: {chat_client_callback_url}")
-
-                                        if conversation_id and chat_client_callback_url:
-                                            logger.info(f"🔄 Using dynamic callback flow for conversation {conversation_id} to generate auth url")
-
-                                            enhanced_callback = f"{settings.base_url}/api/otherservers/oauth/callback"
-                                        else:
-                                            logger.info("🔄 Using default callback flow to generate auth url")
-                                            enhanced_callback = f"{settings.base_url}/api/otherservers/oauth/callback"
-
-                                        try:
-                                            oauth_result = await self.auth_manager.initiate_oauth_flow(
-                                                server_name=server_name,
-                                                server_url=server_config.url,
-                                                user_id=user_id,
-                                                callback_url=enhanced_callback,
-                                                headers=server_config.headers,
-                                                **kwargs
-                                            )
-                                            logger.info(f"initialise auth flow result: {oauth_result} in {func.__name__}")
-
-                                            if oauth_result.get('status') == 'error':
-                                                auth_text = f"OAuth initiation failed: {oauth_result.get('error')}"
-                                            else:
-                                                auth_text = f"Server {server_name} is unauthenticated. Please Show the following authorisation link to the user: {oauth_result['authorization_url']} to authenticate server {server_name}"
-
-                                            match func.__name__:
-                                                case "call_tool":
-                                                    return CallToolResult(
-                                                        content=[TextContent(type="text", text=auth_text)],
-                                                        isError=True
-                                                    )
-                                                case "get_prompt":
-                                                    return GetPromptResult(
-                                                        description="Auth Error",
-                                                        messages=[PromptMessage(role="user",content=TextContent(type="text", text=auth_text))]
-                                                    )
-
-                                                case "read_resource":
-                                                    return ReadResourceResult (
-                                                        contents=[TextResourceContents(uri=AnyHttpUrl("https://1xn.ai/auth-error"), mimeType='text/plain', text=auth_text)]
-                                                    )
-
-
-                                        except Exception as oauth_error:
-                                            logger.error(f"❌ Error initiating OAuth flow: {oauth_error}")
-
-                                    else:
-                                        logger.debug(f"Authentication failed for server {server_config.name}: 401 Unauthorized")
-                                        logger.debug("Please check your access token and authentication configuration")
-                                        raise AuthenticationError(f"""
-                                        Authentication failed for server {server_config.name}: 401 Unauthorized
-                                        {error_text}
-                                        """) from cleanup_error
-                                elif status_code == 400:
-                                    logger.error(f"Bad request or Invalid session id for server {server_config.name}: 400 Bad Request")
-                                    logger.error("Please check your request and authentication configuration")
-                                    if headers.get('mcp-session-id'):
-                                        raise InvalidSessionIdError("Reset session id and try initialize again") from cleanup_error
-                                    else:
-                                        raise BadMCPRequestError("Bad request MCP errror") from cleanup_error
-                                elif status_code:
-                                    logger.error(f"HTTP error for server {server_config.name}: {status_code} - {error_text}")
-                                    raise MCPOperationError(f"HTTP error for server {server_config.name}: {status_code} - {error_text}") from cleanup_error
-
-                # Remove from connections if cleanup was successful
-                # if server_config.name in self.sessions:
-                #     del self.sessions[server_config.name]
+                logger.error(f"HTTP error for server {server_config.name}: {status_code} - {error_text}")
+                raise MCPOperationError(f"HTTP error: {status_code} - {error_text}") from eg
+            raise MCPOperationError(f"Connection failed: {eg}") from eg
+        except Exception as e:
+            logger.error(f"Unexpected error for server {server_config.name}: {e}")
+            raise MCPOperationError(f"Unexpected error: {e}") from e
+        # Note: No finally block needed - ClientSessionGroup handles cleanup automatically
 
     async def retry_wrapper(self, server_name: str, *args, **kwargs):
         retries = 2
@@ -478,96 +203,258 @@ def mcp_operation(func):
 
 # Most flexible approach - Generic decorator for any MCP operation:
 class MCPClientManager:
-    """Manages multiple MCP server connections"""
+    """Manages multiple MCP server connections using ClientSessionGroup.
 
-    # Class-level storage for persistent stdio connections in background tasks
-    # These survive across MCPClientManager instances (requests)
-    
+    Uses MCP's built-in ClientSessionGroup for persistent connections across all
+    transport types (stdio, SSE, HTTP). Connections are established once and reused
+    until the session ends.
+
+    IMPORTANT: ClientSessionGroup uses AsyncExitStack internally, which has task context
+    requirements - context managers must be entered and exited in the same task.
+    We run the session group in a background task to avoid "Attempted to exit cancel
+    scope in a different task" errors.
+    """
 
     def __init__(self, config_manager: Optional[MCPConfigManager] = None):
         logger.info("------------- Initializing MCPClientManager -------------")
         self.auth_manager = MCPAuthManager()
         self.config_manager = config_manager
-        self.sessions: Dict[str, ClientSession] = {}  # HTTP/SSE sessions (request-scoped)
         self._cleanup_lock: asyncio.Lock = asyncio.Lock()
-        self.cancel_scope = anyio.CancelScope()
-        self._stdio_sessions: Dict[str, ClientSession] = {}  # server_id -> ClientSession
-        self._stdio_tasks: Dict[str, asyncio.Task] = {}  # server_id -> Background task
-        self._stdio_shutdown_events: Dict[str, asyncio.Event] = {}  # server_id -> Shutdown signal
-        self._stdio_ready_events: Dict[str, asyncio.Event] = {}  # server_id -> Ready signal
-        self._stdio_locks: Dict[str, asyncio.Lock] = {}  # server_id -> Lock
 
-    
-    async def _stdio_connection_task(self, server_id: str, server_config: "MCPServerConfig"):
-        """
-        Background task that manages a stdio connection in its own async context.
-        This runs independently of HTTP request contexts, allowing proper cleanup.
-        Uses async with for automatic cleanup when task exits.
-        """
-        logger.info(f"🚀 [STDIO_TASK] Starting background task for server_id={server_id}")
+        # ClientSessionGroup manages all connections (stdio, SSE, HTTP)
+        self._session_group: ClientSessionGroup | None = None
+        self._server_sessions: Dict[str, ClientSession] = {}  # server_id -> session mapping
+        self._server_id_to_name: Dict[str, str] = {}  # server_id -> server_name mapping
+        self._started = False
 
-        ready_event = self._stdio_ready_events.get(server_id)
-        shutdown_event = self._stdio_shutdown_events.get(server_id)
+        # Background task infrastructure to avoid task context errors
+        self._background_task: asyncio.Task | None = None
+        self._ready_event: asyncio.Event | None = None
+        self._shutdown_event: asyncio.Event | None = None
+        self._request_queue: asyncio.Queue | None = None
+
+    async def _session_group_task(self) -> None:
+        """Background task that owns the ClientSessionGroup context.
+
+        All session group operations run in this task to avoid AsyncExitStack
+        task context issues.
+        """
+        logger.info("[MCPClientManager] Background task starting...")
+
+        def name_hook(name: str, server_info) -> str:
+            return f"{server_info.name}_{name}"
+
+        async with ClientSessionGroup(component_name_hook=name_hook) as session_group:
+            self._session_group = session_group
+            self._ready_event.set()
+            logger.info("[MCPClientManager] ClientSessionGroup ready in background task")
+
+            # Process requests until shutdown
+            while not self._shutdown_event.is_set():
+                try:
+                    # Wait for requests with timeout to check shutdown periodically
+                    request = await asyncio.wait_for(
+                        self._request_queue.get(),
+                        timeout=0.5
+                    )
+
+                    operation, args, result_future = request
+
+                    try:
+                        if operation == "connect":
+                            server_params = args["server_params"]
+                            server_name = args.get("server_name", "unknown")
+                            logger.info(f"[MCPClientManager] Background task connecting to: {server_name}")
+                            session = await session_group.connect_to_server(server_params)
+                            logger.info(f"[MCPClientManager] Background task connected to: {server_name}")
+                            result_future.set_result(session)
+                        elif operation == "disconnect":
+                            session = args["session"]
+                            server_name = args.get("server_name", "unknown")
+                            logger.info(f"[MCPClientManager] Background task disconnecting from: {server_name}")
+                            await session_group.disconnect_from_server(session)
+                            logger.info(f"[MCPClientManager] Background task disconnected from: {server_name}")
+                            result_future.set_result(True)
+                        else:
+                            result_future.set_exception(ValueError(f"Unknown operation: {operation}"))
+                    except Exception as e:
+                        result_future.set_exception(e)
+
+                except asyncio.TimeoutError:
+                    # Normal timeout, check shutdown flag
+                    continue
+                except asyncio.CancelledError:
+                    logger.info("[MCPClientManager] Background task cancelled")
+                    break
+                except Exception as e:
+                    logger.error(f"[MCPClientManager] Error in background task: {e}")
+
+            # Log sessions that will be cleaned up by context manager exit
+            # Note: We don't call disconnect_from_server here because it can cause
+            # task context errors. The ClientSessionGroup.__aexit__ handles cleanup.
+            logger.info(f"[MCPClientManager] Exiting context with {len(session_group.sessions)} sessions to clean up...")
+
+        logger.info("[MCPClientManager] Background task exiting, session group cleaned up")
+
+    async def start(self) -> None:
+        """Initialize the session group in a background task. Call once per vMCP session."""
+        if self._started:
+            logger.warning("[MCPClientManager] Already started, skipping")
+            return
+
+        logger.info("[MCPClientManager] Starting ClientSessionGroup in background task...")
+
+        self._ready_event = asyncio.Event()
+        self._shutdown_event = asyncio.Event()
+        self._request_queue = asyncio.Queue()
+
+        # Start the background task
+        self._background_task = asyncio.create_task(self._session_group_task())
+
+        # Wait for the session group to be ready
+        await self._ready_event.wait()
+        self._started = True
+        logger.info("[MCPClientManager] ClientSessionGroup started")
+
+    async def stop(self) -> int:
+        """Cleanup all connections. Call when vMCP session ends. Returns count of cleaned connections."""
+        if not self._started:
+            logger.warning("[MCPClientManager] Not started or already stopped")
+            return 0
+
+        count = len(self._server_sessions)
+        # Build list of "server_name (server_id)" for logging
+        server_info = [f"{self._server_id_to_name.get(sid, 'unknown')} ({sid})" for sid in self._server_sessions.keys()]
+        logger.info(f"[MCPClientManager] Stopping ClientSessionGroup ({count} connections): {server_info}")
+
+        # Signal shutdown
+        if self._shutdown_event:
+            self._shutdown_event.set()
+
+        # Wait for background task to finish
+        if self._background_task:
+            try:
+                await asyncio.wait_for(self._background_task, timeout=5.0)
+            except asyncio.TimeoutError:
+                logger.warning("[MCPClientManager] Background task timeout, cancelling...")
+                self._background_task.cancel()
+                try:
+                    await self._background_task
+                except asyncio.CancelledError:
+                    pass
+            except Exception as e:
+                logger.error(f"[MCPClientManager] Error stopping background task: {e}")
+
+        # Cleanup
+        self._session_group = None
+        self._server_sessions.clear()
+        self._server_id_to_name.clear()
+        self._background_task = None
+        self._ready_event = None
+        self._shutdown_event = None
+        self._request_queue = None
+        self._started = False
+
+        logger.info(f"[MCPClientManager] ClientSessionGroup stopped, cleaned {count} connections")
+        return count
+
+    def _to_server_params(self, server_config: "MCPServerConfig") -> "StdioServerParameters | SseServerParameters | StreamableHttpParameters":
+        """Convert MCPServerConfig to appropriate ServerParameters for ClientSessionGroup."""
+        # Build headers
+        headers = dict(server_config.headers) if server_config.headers else {}
+        headers["mcp-protocol-version"] = "2025-06-18"
+
+        if server_config.auth and server_config.auth.access_token:
+            headers['Authorization'] = f'Bearer {server_config.auth.access_token}'
+        if server_config.session_id:
+            headers['mcp-session-id'] = server_config.session_id
+
+        if server_config.transport_type == MCPTransportType.STDIO:
+            return server_config.server_params
+        elif server_config.transport_type == MCPTransportType.SSE:
+            return SseServerParameters(
+                url=str(server_config.url),
+                headers=headers,
+            )
+        elif server_config.transport_type == MCPTransportType.HTTP:
+            return StreamableHttpParameters(
+                url=str(server_config.url),
+                headers=headers,
+                terminate_on_close=False,
+            )
+        else:
+            raise ValueError(f"Unknown transport type: {server_config.transport_type}")
+
+    async def _send_request(self, operation: str, args: dict) -> Any:
+        """Send a request to the background task and wait for result."""
+        if not self._request_queue:
+            raise RuntimeError("MCPClientManager not started")
+
+        result_future = asyncio.get_event_loop().create_future()
+        await self._request_queue.put((operation, args, result_future))
+        return await result_future
+
+    async def connect_server(self, server_config: "MCPServerConfig") -> ClientSession:
+        """Connect to a server using the session group. Returns the session."""
+        if not self._started:
+            await self.start()
+
+        server_id = server_config.server_id or server_config.name
+
+        # Check if already connected
+        if server_id in self._server_sessions:
+            logger.info(f"♻️  [REUSE] Reusing existing connection for {server_config.name}")
+            return self._server_sessions[server_id]
+
+        logger.info(f"🆕 [CONNECT] Connecting to server {server_config.name} (id={server_id})")
 
         try:
-            # Use async with for proper context management
-            async with stdio_client(server_config.server_params) as (read_stream, write_stream):
-                async with ClientSession(read_stream, write_stream) as session:
-                    # Initialize session
-                    result = await session.initialize()
-                    logger.info(f"✅ [STDIO_TASK] Initialized session for server_id={server_id}: {result}")
-
-                    # Store the session so HTTP requests can use it
-                    self._stdio_sessions[server_id] = session
-
-                    # Signal that the connection is ready
-                    if ready_event:
-                        ready_event.set()
-                        logger.info(f"✅ [STDIO_TASK] Connection ready for server_id={server_id}")
-
-                    # Keep the connection alive until explicitly closed
-                    logger.info(f"💤 [STDIO_TASK] Waiting for shutdown signal for server_id={server_id}...")
-                    if shutdown_event:
-                        await shutdown_event.wait()
-                    logger.info(f"🛑 [STDIO_TASK] Shutdown signal received for server_id={server_id}")
-
-                # Automatic session cleanup happens here
-                # logger.info(f"🧹 [STDIO_TASK] Session context exited for server_id={server_id}")
-
-            # Automatic stdio_client cleanup happens here
-           # logger.info(f"🧹 [STDIO_TASK] stdio_client context exited for server_id={server_id}")
-
+            server_params = self._to_server_params(server_config)
+            # Send connect request to background task
+            session = await self._send_request("connect", {
+                "server_params": server_params,
+                "server_name": server_config.name
+            })
+            self._server_sessions[server_id] = session
+            self._server_id_to_name[server_id] = server_config.name
+            logger.info(f"✅ [CONNECT] Connected to {server_config.name}")
+            return session
         except Exception as e:
-            logger.error(f"❌ [STDIO_TASK] Error in stdio connection task for server_id={server_id}: {e}")
-            import traceback
-            logger.error(f"   Traceback: {traceback.format_exc()}")
-            # Signal ready event even on error so callers don't hang
-            if ready_event:
-                ready_event.set()
-        finally:
-            # Remove from storage
-            self._stdio_sessions.pop(server_id, None)
-            self._stdio_tasks.pop(server_id, None)
-            self._stdio_shutdown_events.pop(server_id, None)
-            self._stdio_ready_events.pop(server_id, None)
+            logger.error(f"❌ [CONNECT] Failed to connect to {server_config.name}: {e}")
+            raise
 
-            logger.info(f"✅ [STDIO_TASK] Task completed for server_id={server_id} server: {server_config.name}")
+    async def disconnect_server(self, server_config: "MCPServerConfig") -> bool:
+        """Disconnect from a specific server."""
+        if not self._started:
+            return False
 
-    async def cleanup(self, server_name: str) -> None:
-        """Clean up server resources."""
-        async with self._cleanup_lock:
-            try:
-                self.session = None
-                self.stdio_context = None
-            except Exception as e:
-                logger.error(f"Error during cleanup of server {server_name}: {e}")
+        server_id = server_config.server_id or server_config.name
+        session = self._server_sessions.get(server_id)
+
+        if not session:
+            logger.warning(f"[DISCONNECT] No session found for {server_config.name}")
+            return False
+
+        try:
+            # Send disconnect request to background task
+            await self._send_request("disconnect", {
+                "session": session,
+                "server_name": server_config.name
+            })
+            self._server_sessions.pop(server_id, None)
+            self._server_id_to_name.pop(server_id, None)
+            logger.info(f"✅ [DISCONNECT] Disconnected from {server_config.name}")
+            return True
+        except Exception as e:
+            logger.error(f"❌ [DISCONNECT] Error disconnecting from {server_config.name}: {e}")
+            return False
+
 
     @mcp_operation
     @trace_method("[MCPClientManager]: List Tools", operation="list_tools")
-    async def tools_list(self, server_config: MCPServerConfig, *args, **kwargs) -> Dict[str, Tool]:
+    async def tools_list(self, server_config: MCPServerConfig, session: ClientSession, *args, **kwargs) -> Dict[str, Tool]:
         """List available tools from the MCP server"""
-        session = self.sessions[server_config.name]
-        logger.info(f"✅ Tools list: {self.sessions}")
+        logger.info(f"✅ Tools list for {server_config.name}")
         try:
             result = await session.list_tools()
             tool_details = {}
@@ -590,9 +477,8 @@ class MCPClientManager:
 
     @mcp_operation
     @trace_method("[MCPClientManager]: List Prompts", operation="list_prompts")
-    async def prompts_list(self, server_config: MCPServerConfig, *args, **kwargs) -> Dict[str, Prompt]:
+    async def prompts_list(self, server_config: MCPServerConfig, session: ClientSession, *args, **kwargs) -> Dict[str, Prompt]:
         """List available prompts from the MCP server"""
-        session = self.sessions[server_config.name]
         try:
             result = await session.list_prompts()
             prompt_details = {}
@@ -606,9 +492,8 @@ class MCPClientManager:
 
     @mcp_operation
     @trace_method("[MCPClientManager]: List Resource Templates", operation="list_resource_templates")
-    async def resource_templates_list(self, server_config: MCPServerConfig, *args, **kwargs) -> Dict[str, ResourceTemplate]:
+    async def resource_templates_list(self, server_config: MCPServerConfig, session: ClientSession, *args, **kwargs) -> Dict[str, ResourceTemplate]:
         """List available resource templates from the MCP server"""
-        session = self.sessions[server_config.name]
         try:
             result = await session.list_resource_templates()
             resource_template_details = {}
@@ -622,9 +507,8 @@ class MCPClientManager:
 
     @mcp_operation
     @trace_method("[MCPClientManager]: List Resources", operation="list_resources")
-    async def resources_list(self, server_config: MCPServerConfig, *args, **kwargs) -> Dict[str, Resource]:
+    async def resources_list(self, server_config: MCPServerConfig, session: ClientSession, *args, **kwargs) -> Dict[str, Resource]:
         """List available resources from the MCP server"""
-        session = self.sessions[server_config.name]
         try:
             result = await session.list_resources()
             resource_details = {}
@@ -638,9 +522,8 @@ class MCPClientManager:
 
     @mcp_operation
     @trace_method("[MCPClientManager]: Discover Capabilities", operation="discover_capabilities")
-    async def discover_capabilities(self, server_config: MCPServerConfig, *args, **kwargs) -> Dict[str, Any]:
+    async def discover_capabilities(self, server_config: MCPServerConfig, session: ClientSession, *args, **kwargs) -> Dict[str, Any]:
         """Discover capabilities of the MCP server"""
-        session = self.sessions[server_config.name]
         capabilities: Dict[str, Any] = {}
         errors_if_any: Dict[str, Any] = {}
         try:
@@ -699,9 +582,8 @@ class MCPClientManager:
 
     @mcp_operation
     @trace_method("[MCPClientManager]: Call Tool", operation="call_tool")
-    async def call_tool(self, server_config: MCPServerConfig, tool_name: str, arguments: dict, *args, **kwargs):
+    async def call_tool(self, server_config: MCPServerConfig, session: ClientSession, tool_name: str, arguments: dict, *args, **kwargs):
         """Call a tool on the MCP server"""
-        session = self.sessions[server_config.name]
         try:
             result = await session.call_tool(tool_name, arguments)
             logger.info(f"✅ Called tool {tool_name} on server")
@@ -712,9 +594,8 @@ class MCPClientManager:
 
     @mcp_operation
     @trace_method("[MCPClientManager]: Read Resource", operation="read_resource")
-    async def read_resource(self, server_config: MCPServerConfig, resource_uri: str, *args, **kwargs):
+    async def read_resource(self, server_config: MCPServerConfig, session: ClientSession, resource_uri: str, *args, **kwargs):
         """Read a resource from the MCP server"""
-        session = self.sessions[server_config.name]
         try:
             # MCP resources can have custom URI schemes (e.g., everything://dashboard)
             # Convert string to AnyUrl (supports any URI scheme) for type compatibility
@@ -728,9 +609,8 @@ class MCPClientManager:
 
     @mcp_operation
     @trace_method("[MCPClientManager]: Get Prompt", operation="get_prompt")
-    async def get_prompt(self, server_config: MCPServerConfig, prompt_name: str, arguments: dict, *args, **kwargs):
+    async def get_prompt(self, server_config: MCPServerConfig, session: ClientSession, prompt_name: str, arguments: dict, *args, **kwargs):
         """Get a prompt from the MCP server"""
-        session = self.sessions[server_config.name]
         try:
             result = await session.get_prompt(prompt_name, arguments)
             logger.info(f"✅ Got prompt {prompt_name} from server")
@@ -741,9 +621,8 @@ class MCPClientManager:
 
     @mcp_operation
     @trace_method("[MCPClientManager]: Ping Server", operation="ping_server")
-    async def ping_server(self, server_config: MCPServerConfig, *args, **kwargs):
+    async def ping_server(self, server_config: MCPServerConfig, session: ClientSession, *args, **kwargs):
         """Ping the MCP server to check connectivity"""
-        session = self.sessions[server_config.name]
         try:
             await session.send_ping()
             logger.info("✅ Pinged server")
@@ -759,84 +638,3 @@ class MCPClientManager:
             logger.error(f"Failed to ping server: {e}")
             raise MCPOperationError(f"Failed to ping server: {e}") from e
 
-    async def disconnect_stdio_server(self, server_id: str) -> bool:
-        """
-        Explicitly disconnect and cleanup a stdio server connection.
-        This signals the background task to shut down cleanly.
-
-        Args:
-            server_id: The server ID to disconnect
-
-        Returns:
-            True if connection was found and disconnected, False otherwise
-        """
-        if server_id not in self._stdio_sessions:
-            logger.warning(f"[STDIO_DISCONNECT] No stdio connection found for server_id={server_id}")
-            return False
-
-        logger.info(f"🔌 [STDIO_DISCONNECT] Disconnecting stdio server (id={server_id})")
-
-        try:
-            # Get the shutdown event and task
-            shutdown_event = self._stdio_shutdown_events.get(server_id)
-            task = self._stdio_tasks.get(server_id)
-
-            if not shutdown_event or not task:
-                logger.warning(f"⚠️  [STDIO_DISCONNECT] No shutdown event or task found for server_id={server_id}")
-                # Still remove from sessions if present
-                self._stdio_sessions.pop(server_id, None)
-                self._stdio_tasks.pop(server_id, None)
-                self._stdio_shutdown_events.pop(server_id, None)
-                self._stdio_ready_events.pop(server_id, None)
-                return False
-
-            # Signal the background task to shutdown
-            logger.info(f"📡 [STDIO_DISCONNECT] Signaling shutdown for server_id={server_id}")
-            shutdown_event.set()
-
-            # Wait for the task to complete (with timeout)
-            try:
-                await asyncio.wait_for(task, timeout=5.0)
-                logger.info(f"✅ [STDIO_DISCONNECT] Background task completed for server_id={server_id}")
-            except asyncio.TimeoutError:
-                logger.warning(f"⚠️  [STDIO_DISCONNECT] Timeout waiting for task, cancelling for server_id={server_id}")
-                task.cancel()
-                try:
-                    await task
-                except asyncio.CancelledError:
-                    pass
-
-            logger.info(f"✅ [STDIO_DISCONNECT] Successfully disconnected stdio server (id={server_id})")
-            logger.info(f"   [STDIO_DISCONNECT] Remaining stdio connections: {len(self._stdio_sessions)}")
-            return True
-
-        except Exception as e:
-            logger.error(f"❌ [STDIO_DISCONNECT] Error during disconnect: {e}")
-            import traceback
-            logger.error(f"   Traceback: {traceback.format_exc()}")
-            # Clean up storage even if there was an error
-            self._stdio_sessions.pop(server_id, None)
-            self._stdio_tasks.pop(server_id, None)
-            self._stdio_shutdown_events.pop(server_id, None)
-            self._stdio_ready_events.pop(server_id, None)
-            return False
-
-    async def cleanup_all_stdio_servers(self) -> int:
-        """
-        Cleanup all stdio server connections.
-        Should be called during application shutdown.
-
-        Returns:
-            Number of connections cleaned up
-        """
-        server_ids = list(self._stdio_sessions.keys())
-        count = 0
-
-        logger.info(f"🧹 [STDIO_CLEANUP_ALL] Cleaning up {len(server_ids)} stdio connections")
-
-        for server_id in server_ids:
-            if await self.disconnect_stdio_server(server_id):
-                count += 1
-
-        logger.info(f"✅ [STDIO_CLEANUP_ALL] Cleaned up {count} stdio connections")
-        return count
