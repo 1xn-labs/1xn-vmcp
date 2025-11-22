@@ -1,3 +1,13 @@
+"""
+All Feature MCP Server - Comprehensive demonstration of MCP features
+
+Supports multiple transport types:
+- stdio: Standard input/output transport (for CLI usage)
+- sse: Server-Sent Events transport
+- streamable-http: Streamable HTTP transport (default)
+"""
+
+import argparse
 import logging
 import os
 import random
@@ -814,6 +824,116 @@ def roll_dice(num_dice: int = 1, num_sides: int = 6) -> str:
         return f"Error rolling dice: {str(e)}"
 
 
-# Run server with streamable_http transport
+def parse_args():
+    """Parse command line arguments for transport selection."""
+    parser = argparse.ArgumentParser(
+        description="All Feature MCP Server - Comprehensive MCP features demonstration",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Transport types:
+  stdio           Standard input/output transport (for CLI/subprocess usage)
+  sse             Server-Sent Events transport (HTTP-based, legacy)
+  streamable-http Streamable HTTP transport (default, recommended)
+
+Examples:
+  python all_feature_server.py                      # Default: streamable-http on port 8000
+  python all_feature_server.py --transport stdio    # Run with stdio transport
+  python all_feature_server.py --transport sse      # Run with SSE transport
+  python all_feature_server.py --port 9000          # Custom port for HTTP transports
+        """
+    )
+    parser.add_argument(
+        "--transport", "-t",
+        choices=["stdio", "sse", "streamable-http"],
+        default="streamable-http",
+        help="Transport type to use (default: streamable-http)"
+    )
+    parser.add_argument(
+        "--host",
+        default="0.0.0.0",
+        help="Host to bind to for HTTP transports (default: 0.0.0.0)"
+    )
+    parser.add_argument(
+        "--port", "-p",
+        type=int,
+        default=8000,
+        help="Port to listen on for HTTP transports (default: 8000)"
+    )
+    return parser.parse_args()
+
+
+def run_stdio():
+    """Run the server with stdio transport."""
+    logger.info("[all_feature_server] Starting All Feature MCP Server with stdio transport")
+    mcp.run(transport="stdio")
+
+
+def run_sse(host: str, port: int):
+    """Run the server with SSE transport."""
+    import uvicorn
+    from starlette.applications import Starlette
+    from starlette.responses import JSONResponse
+    from starlette.routing import Mount
+
+    logger.info(f"[all_feature_server] Starting All Feature MCP Server with SSE transport on {host}:{port}")
+
+    sse_app = Starlette(
+        routes=[
+            Mount("/", mcp.sse_app()),
+        ],
+    )
+
+    # Add health check endpoint
+    @sse_app.route("/health")
+    async def health_check(request):
+        return JSONResponse({"status": "healthy", "service": "all_feature_server", "transport": "sse"})
+
+    uvicorn.run(sse_app, host=host, port=port)
+
+
+def run_streamable_http(host: str, port: int):
+    """Run the server with streamable-http transport."""
+    import uvicorn
+    from starlette.applications import Starlette
+    from starlette.responses import JSONResponse
+    from starlette.routing import Mount
+
+    logger.info(f"[all_feature_server] Starting All Feature MCP Server with streamable-http transport on {host}:{port}")
+
+    http_app = Starlette(
+        routes=[
+            Mount("/", mcp.streamable_http_app()),
+        ],
+    )
+
+    # Add health check endpoint
+    @http_app.route("/health")
+    async def health_check(request):
+        return JSONResponse({"status": "healthy", "service": "all_feature_server", "transport": "streamable-http"})
+
+    uvicorn.run(http_app, host=host, port=port)
+
+
+# Run server with configurable transport
 if __name__ == "__main__":
-    mcp.run(transport="streamable-http")
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+
+    args = parse_args()
+
+    print("🚀 Starting All Feature MCP Server...")
+    print("📊 Comprehensive demonstration of MCP protocol features")
+    print("🔧 Features: Tools, Resources, Prompts, Sampling, Elicitation")
+    print("🌍 Weather API, Time zones, Dice rolling, and more")
+    print(f"🔌 Transport: {args.transport}")
+    print("=" * 60)
+
+    if args.transport == "stdio":
+        run_stdio()
+    elif args.transport == "sse":
+        run_sse(args.host, args.port)
+    else:  # streamable-http (default)
+        run_streamable_http(args.host, args.port)

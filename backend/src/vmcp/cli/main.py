@@ -33,9 +33,10 @@ console = Console()
 def run(
     host: str = typer.Option(None, "--host", "-h", help="Host to bind to"),
     port: int = typer.Option(None, "--port", "-p", help="Port to bind to"),
-    log_level: str = typer.Option(None, "--log-level", "-l", help="Log level (debug, info, warning, error)"),
+    log_level: str = typer.Option("info", "--log-level", "-l", help="Log level (debug, info, warning, error)"),
     skip_db_check: bool = typer.Option(False, "--skip-db-check", help="Skip database connectivity check"),
-    open_browser: bool = typer.Option(True, "--open/--no-open", help="Open browser after starting")
+    open_browser: bool = typer.Option(True, "--open/--no-open", help="Open browser after starting"),
+    hot_reload: bool = typer.Option(False, "--hot-reload", help="Enable hot-reload for development")
 ):
     """
     Run vMCP with automatic setup (single command start).
@@ -142,13 +143,13 @@ def run(
             console.print("    Continuing anyway (demo VMcPs may already exist)")
 
         # Upload and import 1xndemo (to public registry, then import to private)
-        console.print("\n[yellow]5. Loading and importing 1xndemo vMCP...[/yellow]")
-        try:
-            from vmcp.scripts.upload_and_import_1xndemo import main as upload_1xndemo_main
-            upload_1xndemo_main()
-        except Exception as e:
-            console.print(f"[yellow]⚠[/yellow] Warning: Could not upload/import 1xndemo: {e}")
-            console.print("    Continuing anyway (1xndemo may already exist)")
+        # console.print("\n[yellow]5. Loading and importing 1xndemo vMCP...[/yellow]")
+        # try:
+        #     from vmcp.scripts.upload_and_import_1xndemo import main as upload_1xndemo_main
+        #     upload_1xndemo_main()
+        # except Exception as e:
+        #     console.print(f"[yellow]⚠[/yellow] Warning: Could not upload/import 1xndemo: {e}")
+        #     console.print("    Continuing anyway (1xndemo may already exist)")
 
     except Exception as e:
         console.print(f"[yellow]⚠[/yellow] Database initialization warning: {e}")
@@ -210,11 +211,38 @@ def run(
             fastapi_app,
             host=settings.host,
             port=settings.port,
-            log_level=settings.log_level.lower()
+            log_level=settings.log_level.lower(),
+            #reload=hot_reload
         )
     except KeyboardInterrupt:
         console.print("\n\n[yellow]Shutting down vMCP...[/yellow]")
         console.print("[green]✓[/green] Goodbye!")
+
+
+@app.command("dev")
+def dev(
+   host: str = typer.Option(None, "--host", "-h", help="Host to bind to"),
+    port: int = typer.Option(None, "--port", "-p", help="Port to bind to"),
+    log_level: str = typer.Option("debug", "--log-level", "-l", help="Log level (debug, info, warning, error)"),
+    skip_db_check: bool = typer.Option(True, "--skip-db-check", help="Skip database connectivity check"),
+    open_browser: bool = typer.Option(False, "--open/--no-open", help="Open browser after starting"),
+    hot_reload: bool = typer.Option(True, "--hot-reload", help="Enable hot-reload for development")
+):
+    """
+    Start vMCP in development mode with hot-reload.
+
+    Example:
+        vmcp dev
+        vmcp dev --port 8080 --hot-reload
+    """
+    run(
+        host=host,
+        port=port,
+        log_level="debug",
+        skip_db_check=skip_db_check,
+        open_browser=open_browser,
+        hot_reload=hot_reload 
+    )
 
 
 @app.command("serve")

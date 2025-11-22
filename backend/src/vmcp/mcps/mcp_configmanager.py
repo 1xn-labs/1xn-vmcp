@@ -36,7 +36,6 @@ class MCPConfigManager:
     @trace_method("[MCPConfigManager]: Load Servers")
     def load_mcp_servers(self) -> None:
         servers_data = self.storage.get_mcp_servers()
-        logger.debug(f"Loaded {len(servers_data)} MCP servers {servers_data.keys()}")
         # Convert dictionaries back to MCPServerConfig objects
         self._servers = {}
         for id_, server_data in servers_data.items():

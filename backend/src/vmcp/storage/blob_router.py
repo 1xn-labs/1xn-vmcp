@@ -532,7 +532,7 @@ async def download_blob(
     """Download a blob file"""
     if vmcp_id:
         # Validate vmcp_id if provided
-        from vmcps.vmcp_config_manger import VMCPConfigManager
+        from vmcps.vmcp_config_manager import VMCPConfigManager
         vmcp_manager = VMCPConfigManager(user_context.user_id)
         vmcp = vmcp_manager.load_vmcp_config(specific_vmcp_id=vmcp_id)
         if not vmcp:
@@ -577,7 +577,7 @@ async def get_blob_metadata(
     """Get metadata about a blob"""
     if vmcp_id:
         # Validate vmcp_id if provided
-        from vmcps.vmcp_config_manger import VMCPConfigManager
+        from vmcps.vmcp_config_manager import VMCPConfigManager
         vmcp_manager = VMCPConfigManager(user_context.user_id)
         vmcp = vmcp_manager.load_vmcp_config(specific_vmcp_id=vmcp_id)
         if not vmcp:
@@ -626,7 +626,7 @@ async def delete_blob(
     """Delete a blob"""
     if vmcp_id:
         # Validate vmcp_id if provided
-        from vmcps.vmcp_config_manger import VMCPConfigManager
+        from vmcps.vmcp_config_manager import VMCPConfigManager
         vmcp_manager = VMCPConfigManager(user_context.user_id)
         vmcp = vmcp_manager.load_vmcp_config(specific_vmcp_id=vmcp_id)
         if not vmcp:

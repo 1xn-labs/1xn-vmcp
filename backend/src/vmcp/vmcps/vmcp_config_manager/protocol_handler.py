@@ -513,9 +513,9 @@ async def prompts_list(
     Returns:
         List of Prompt objects available in this vMCP
     """
-    if not vmcp_id:
-        # Return default system prompts even without vMCP
-        return get_all_default_prompts()
+    # if not vmcp_id:
+    #     # Return default system prompts even without vMCP
+    #     return get_all_default_prompts()
 
     vmcp_config = storage.load_vmcp_config(vmcp_id)
     if not vmcp_config:

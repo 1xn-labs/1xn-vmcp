@@ -180,14 +180,16 @@ class VMCPUdateRequest(VMCPBaseRequest):
 
 class VMCPToolCallRequest(VMCPBaseRequest):
     """Request model for calling a vMCP tool.
-    
+
     Matches frontend interface: VMCPToolCallRequest
     - tool_name: Name of the tool to execute
     - arguments: Tool-specific parameters as key-value pairs
+    - progress_token: Optional progress token from downstream client for progress notifications
     """
-    
+
     tool_name: str = Field(..., description="Name of the tool to call (without server prefix)")
     arguments: Dict[str, Any] = Field(default_factory=dict, description="Tool arguments/parameters as a dictionary")
+    progress_token: Optional[Union[str, int]] = Field(default=None, description="Progress token from downstream client for forwarding progress notifications")
     
     @validator('tool_name')
     def validate_tool_name(cls, v):

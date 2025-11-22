@@ -10,7 +10,7 @@ import sys
 import uuid
 import os
 import pytest
-import asyncio
+
 from contextlib import asynccontextmanager
 
 
@@ -84,9 +84,12 @@ def base_url():
 def mcp_servers():
     """Test MCP servers"""
     return {
-        "everything": "http://localhost:8001/everything/mcp",
-        "allfeature": "http://localhost:8001/allfeature/mcp",
-        "context7": "https://mcp.context7.com/mcp"
+        "everything": { "name": "everything", "url": "http://localhost:8001/everything/mcp", "transport": "http"},
+        "allfeature": { "name": "allfeature", "url": "http://localhost:8001/allfeature/mcp", "transport": "http"},
+        "context7": { "name": "context7", "url": "https://mcp.context7.com/mcp", "transport": "http"},
+        "everything_stdio": { "name": "everything_stdio", "command": "python", "args": ["/Users/amitbhor/projects/1xn/1xn-vmcp/daamitt/backend/tests/mcp_server/everything_server.py", "--transport", "stdio"], "transport": "stdio"},
+        "allfeature_stdio": { "name": "allfeature_stdio", "command": "python", "args": ["/Users/amitbhor/projects/1xn/1xn-vmcp/daamitt/backend/tests/mcp_server/all_feature_server.py", "--transport", "stdio"], "transport": "stdio"}
+
     }
 
 
@@ -111,21 +114,21 @@ def vmcp_name():
 
 
 @pytest.fixture
-async def create_vmcp(base_url, vmcp_name, auth_headers, request):
+def create_vmcp(base_url, vmcp_name, auth_headers, request):
     """Create a vMCP with proper authentication"""
     import requests
-    
+
     print(f"\n📦 [conftest] Creating vMCP: {vmcp_name}")
     response = requests.post(
         base_url + "api/vmcps/create",
         json={"name": vmcp_name, "description": "Test vMCP"},
         headers=auth_headers
     )
-    
+
     if response.status_code != 200:
         print(f"❌ [conftest] Failed to create vMCP: {response.status_code}")
         print(f"   Response: {response.text}")
-        
+
     assert response.status_code == 200, f"Failed to create vMCP: {response.text}"
     vmcp_data = response.json()["vMCP"]
     print(f"✅ [conftest] Created vMCP: {vmcp_data['id']}")
@@ -187,18 +190,16 @@ def update_vmcp(base_url, vmcp_id, vmcp_data, auth_headers):
     return response.json()
 
 
-def add_mcp_server(base_url, vmcp_id, server_url, server_name, auth_headers, transport="http"):
+def add_mcp_server(base_url, vmcp_id, server_config: dict, name: str, auth_headers: dict):
     """Add MCP server to vMCP with authentication"""
     import requests
-    print(f"   [conftest] Adding server: {server_name} ({server_url})")
+    server_name = server_config.get("name")
+    transport = server_config.get("transport", "http")
+    server_config["name"] = name
+    print(f"   [conftest] Adding {transport} server: {server_name} : {server_config}")
     response = requests.post(
         base_url + f"api/vmcps/{vmcp_id}/add-server",
-        json={"server_data": {
-            "name": server_name,
-            "url": server_url,
-            "transport": transport,
-            "description": f"Test {server_name} MCP Server"
-        }},
+        json={"server_data": server_config},
         headers=auth_headers
     )
     
@@ -241,9 +242,9 @@ def delete_vmcp(base_url, vmcp_id, auth_headers):
 @pytest.fixture
 def helpers(base_url, auth_headers):
     """Helper functions with authentication built-in"""
-    def add_server_wrapper(vmcp_id, url, name, transport="http"):
-        return add_mcp_server(base_url, vmcp_id, url, name, auth_headers, transport)
-
+    def add_server_wrapper(vmcp_id, mcp_server_info: dict, name: str):
+            return add_mcp_server(base_url, vmcp_id, mcp_server_info, name=name, auth_headers=auth_headers)
+    
     return {
         "get_vmcp": lambda vmcp_id: get_vmcp_details(base_url, vmcp_id, auth_headers),
         "update_vmcp": lambda vmcp_id, data: update_vmcp(base_url, vmcp_id, data, auth_headers),

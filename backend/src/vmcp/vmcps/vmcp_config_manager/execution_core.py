@@ -82,7 +82,8 @@ async def call_tool(
     call_custom_tool_func,
     log_vmcp_operation_func,
     connect_if_needed: bool = True,
-    return_metadata: bool = False
+    return_metadata: bool = False,
+    progress_token: Optional[Any] = None
 ) -> Dict[str, Any]:
     """
     Execute a tool call within a vMCP context.
@@ -103,6 +104,7 @@ async def call_tool(
         log_vmcp_operation_func: Function to log operations in background
         connect_if_needed: Whether to connect to server if not connected
         return_metadata: Whether to return metadata along with result
+        progress_token: Optional progress token from downstream client for forwarding progress notifications
 
     Returns:
         CallToolResult with optional metadata dict
@@ -197,7 +199,8 @@ async def call_tool(
             result = await mcp_client_manager.call_tool(
                 server_id,
                 tool_original_name,
-                vmcp_tool_call_request.arguments
+                vmcp_tool_call_request.arguments,
+                progress_token=progress_token
             )
 
             logger.info(f"✅ VMCP Config Manager: Tool call successful, result type: {type(result)}")

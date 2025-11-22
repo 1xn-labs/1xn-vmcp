@@ -1038,7 +1038,7 @@ export default function MCPServersTab({
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-border">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-xl bg-linear-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
                   <Plus className="h-5 w-5 text-primary" />
                 </div>
                 <div>
@@ -1084,12 +1084,13 @@ export default function MCPServersTab({
                       <SelectValue/>
                     </SelectTrigger>
                     <SelectContent>
-                      {/* <SelectItem value="stdio">
+                      {/* Enable stdio only for OSS builds */}
+                      {import.meta.env.VITE_VMCP_OSS_BUILD && <SelectItem value="stdio">
                         <div className="flex items-center gap-2">
                           <Terminal className="h-4 w-4" />
                           stdio
                         </div>
-                      </SelectItem> */}
+                      </SelectItem>}
                       <SelectItem value="http">
                         <div className="flex items-center gap-2">
                           <Globe className="h-4 w-4" />
@@ -1120,7 +1121,7 @@ export default function MCPServersTab({
               </div>
 
               {/* Transport-specific fields */}
-              {/* {customServerForm.transport === 'stdio' && (
+              {customServerForm.transport === 'stdio' && (
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="command">Command *</Label>
@@ -1143,7 +1144,7 @@ export default function MCPServersTab({
                     />
                   </div>
                 </div>
-              )} */}
+              )}
 
               {(customServerForm.transport === 'http' || customServerForm.transport === 'sse') && (
                 <div className="space-y-2">
