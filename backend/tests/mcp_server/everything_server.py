@@ -120,6 +120,17 @@ async def test_tool_with_logging(ctx: Context[ServerSession, None]) -> str:
     await ctx.info("Tool execution completed")
     return "Tool with logging executed successfully"
 
+@mcp.tool()
+async def test_tools_change_notification(ctx: Context[ServerSession, None]) -> str:
+    """Tests tool that emits log messages during execution"""
+    await ctx.info("Addding new tool to MCP Server")
+    await asyncio.sleep(0.05)
+    
+    await ctx.session.send_tool_list_changed()
+    await asyncio.sleep(0.05)
+
+    return "Tool with change notification executed successfully"
+
 
 @mcp.tool()
 async def test_tool_with_progress(ctx: Context[ServerSession, None]) -> str:
@@ -130,7 +141,11 @@ async def test_tool_with_progress(ctx: Context[ServerSession, None]) -> str:
     await ctx.report_progress(progress=50, total=100, message="Completed step 50 of 100")
     await asyncio.sleep(0.05)
 
-    await ctx.report_progress(progress=100, total=100, message="Completed step 100 of 100")
+    await ctx.report_progress(progress=75, total=100, message="Completed step 75 of 100")
+    await asyncio.sleep(0.05)
+    
+    await ctx.report_progress(progress=100, total=100, message="Completed step 100 of 100 :)")
+
 
     # Return progress token as string
     progress_token = ctx.request_context.meta.progressToken if ctx.request_context and ctx.request_context.meta else 0

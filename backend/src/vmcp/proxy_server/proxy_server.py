@@ -218,6 +218,16 @@ class VMCPServer(FastMCP):
                     self._vmcp_managers[session_id] = user_context.vmcp_config_manager
                     logger.info(f"🙌🙌🙌🙌 Created new VMCPConfigManagaer for user_id: {user_id}, username: {user_name}, vmcp_name: {vmcp_name} (no agent)")
 
+                # Set downstream session for notification forwarding
+                # This allows upstream MCP notifications to be forwarded to the downstream client
+                try:
+                    server_session = self._mcp_server.request_context.session
+                    if user_context.vmcp_config_manager and user_context.vmcp_config_manager.mcp_client_manager:
+                        user_context.vmcp_config_manager.mcp_client_manager.set_downstream_session(server_session)
+                        logger.debug(f"[NOTIFICATION] Set downstream session for notification forwarding")
+                except Exception as e:
+                    logger.debug(f"[NOTIFICATION] Could not set downstream session: {e}")
+
                 if agent_name:
                     logger.info(f"🔍 Found agent name for session {session_id[:20]}...: {agent_name}")
                 else:
@@ -592,12 +602,16 @@ class VMCPServer(FastMCP):
     async def root_proxy_call_tool(self, req: CallToolRequest):
         tool_name = req.params.name
         arguments = req.params.arguments or {}
-        logger.info(f"🔧 DEBUG root_proxy_call_tool: tool={tool_name}, arguments={arguments}, types={[(k, type(v).__name__) for k, v in arguments.items()]}")
-        result = await self.proxy_call_tool(tool_name, arguments)
+        # Extract progress token from downstream client's request
+        progress_token = None
+        if req.params.meta and hasattr(req.params.meta, 'progressToken'):
+            progress_token = req.params.meta.progressToken
+        logger.info(f"🔧 DEBUG root_proxy_call_tool: tool={tool_name}, arguments={arguments}, progress_token={progress_token}, types={[(k, type(v).__name__) for k, v in arguments.items()]}")
+        result = await self.proxy_call_tool(tool_name, arguments, progress_token=progress_token)
         return result
 
     @trace_method("[PROXY_SERVER]: Tool Call", operation="call_tool")
-    async def proxy_call_tool(self, name: str, arguments: Dict[str, Any]) -> Any:
+    async def proxy_call_tool(self, name: str, arguments: Dict[str, Any], progress_token: Optional[Any] = None) -> Any:
         """Route tool calls to appropriate server"""
         logger.info("=" * 60)
         logger.info("🛠️  MCP: Tool call requested")
@@ -605,6 +619,7 @@ class VMCPServer(FastMCP):
         logger.info("📋 Tool Details:")
         logger.info(f"   Name: {name}")
         logger.info(f"   Arguments: {arguments}")
+        logger.info(f"   Progress Token: {progress_token}")
 
         # Build dependencies from current request
         deps = await self.get_user_context_proxy_server()
@@ -656,7 +671,7 @@ class VMCPServer(FastMCP):
                 logger.info(f"🔧 MCP: Executing vMCP tool '{name}'")
                 if deps.vmcp_config_manager:
                     result = await deps.vmcp_config_manager.call_tool(
-                        vmcp_tool_call_request=VMCPToolCallRequest(tool_name=name, arguments=arguments)
+                        vmcp_tool_call_request=VMCPToolCallRequest(tool_name=name, arguments=arguments, progress_token=progress_token)
                     )
                 else:
                     raise Exception("No vMCP manager available for tool execution")

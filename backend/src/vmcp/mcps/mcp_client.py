@@ -1,18 +1,29 @@
 import asyncio
 from contextlib import AsyncExitStack
 import traceback
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 import anyio
 import httpx
+import mcp
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.session_group import (
     ClientSessionGroup,
     SseServerParameters,
     StreamableHttpParameters,
 )
+from mcp.client.sse import sse_client
+from mcp.client.streamable_http import streamablehttp_client
+from mcp.server.session import ServerSession
+from mcp.shared.session import RequestResponder
 # Note: sse_client, stdio_client, streamablehttp_client are now handled by ClientSessionGroup
-from mcp.types import Prompt, Resource, ResourceTemplate, Tool
+from mcp.types import (
+    Prompt, Resource, ResourceTemplate, Tool,
+    ServerNotification, ServerRequest, ClientResult,
+    ToolListChangedNotification, ResourceListChangedNotification,
+    PromptListChangedNotification, ResourceUpdatedNotification,
+    LoggingMessageNotification, ProgressNotification,
+)
 from pydantic import AnyUrl
 
 from vmcp.config import settings as AuthSettings
@@ -233,11 +244,102 @@ class MCPClientManager:
         self._shutdown_event: asyncio.Event | None = None
         self._request_queue: asyncio.Queue | None = None
 
+        # Notification forwarding: downstream session to forward notifications to
+        self._downstream_session: ServerSession | None = None
+
+    def set_downstream_session(self, session: ServerSession) -> None:
+        """Set the downstream ServerSession to forward notifications to.
+
+        This should be called by VMCPServer once the ServerSession is available.
+        """
+        logger.info("[MCPClientManager NOTIFICATION] Setting downstream session for notification forwarding")
+        self._downstream_session = session
+
+    def _create_notification_handler(self, server_name: str) -> Callable:
+        """Create a message_handler callback for ClientSession that forwards notifications.
+
+        Args:
+            server_name: The name of the upstream MCP server (for logging)
+
+        Returns:
+            A callback function that handles messages from the upstream server
+        """
+        async def message_handler(
+            message: RequestResponder[ServerRequest, ClientResult] | ServerNotification | Exception
+        ) -> None:
+            # Debug: log all incoming messages to see what we're receiving
+            logger.debug(f"[MCPClientManager NOTIFICATION] message_handler received from {server_name}: {type(message).__name__}")
+
+            # Only handle notifications, not requests or exceptions
+            if isinstance(message, ServerNotification):
+                logger.debug(f"[MCPClientManager NOTIFICATION] ServerNotification.root type: {type(message.root).__name__}")
+                await self._forward_notification(server_name, message)
+            else:
+                logger.debug(f"[MCPClientManager NOTIFICATION] Not a ServerNotification, skipping: {type(message).__name__}")
+            # Let other messages pass through (handled by default behavior)
+            await anyio.lowlevel.checkpoint()
+
+        return message_handler
+
+    async def _forward_notification(self, server_name: str, notification: ServerNotification) -> None:
+        """Forward a notification from upstream MCP server to downstream client.
+
+        Maps upstream notification types to downstream ServerSession methods.
+        """
+        if not self._downstream_session:
+            logger.warning(f"[MCPClientManager NOTIFICATION] No downstream session to forward notification from {server_name}")
+            return
+
+        try:
+            # Extract the actual notification from the root model
+            inner = notification.root
+
+            if isinstance(inner, ToolListChangedNotification):
+                logger.info(f"[MCPClientManager NOTIFICATION] Forwarding ToolListChanged from {server_name}")
+                await self._downstream_session.send_tool_list_changed()
+            elif isinstance(inner, ResourceListChangedNotification):
+                logger.info(f"[MCPClientManager NOTIFICATION] Forwarding ResourceListChanged from {server_name}")
+                await self._downstream_session.send_resource_list_changed()
+            elif isinstance(inner, PromptListChangedNotification):
+                logger.info(f"[MCPClientManager NOTIFICATION] Forwarding PromptListChanged from {server_name}")
+                await self._downstream_session.send_prompt_list_changed()
+            elif isinstance(inner, ResourceUpdatedNotification):
+                logger.info(f"[MCPClientManager NOTIFICATION] Forwarding ResourceUpdated from {server_name}")
+                if inner.params and inner.params.uri:
+                    await self._downstream_session.send_resource_updated(inner.params.uri)
+            elif isinstance(inner, LoggingMessageNotification):
+                # Forward logging messages from upstream servers
+                if inner.params:
+                    logger.info(f"[MCPClientManager NOTIFICATION] Forwarding LoggingMessage from {server_name}: {inner.params.level}")
+                    await self._downstream_session.send_log_message(
+                        level=inner.params.level,
+                        data=inner.params.data,
+                        logger=inner.params.logger or server_name,
+                    )
+            elif isinstance(inner, ProgressNotification):
+                # Forward progress notifications from upstream servers
+                if inner.params:
+                    logger.debug(f"[MCPClientManager NOTIFICATION] Forwarding Progress from {server_name}: {inner.params.progress}/{inner.params.total or '?'}")
+                    await self._downstream_session.send_progress_notification(
+                        progress_token=inner.params.progressToken,
+                        progress=inner.params.progress,
+                        total=inner.params.total,
+                        message=inner.params.message,
+                    )
+            else:
+                # Log other notification types but don't forward
+                logger.debug(f"[MCPClientManager NOTIFICATION] Ignoring notification type from {server_name}: {type(inner).__name__}")
+        except Exception as e:
+            logger.error(f"[MCPClientManager NOTIFICATION] Error forwarding notification from {server_name}: {e}")
+
     async def _session_group_task(self) -> None:
         """Background task that owns the ClientSessionGroup context.
 
         All session group operations run in this task to avoid AsyncExitStack
         task context issues.
+
+        Uses custom connection logic to pass message_handler to ClientSession
+        for notification forwarding support.
         """
         logger.info("[MCPClientManager] Background task starting...")
 
@@ -265,7 +367,12 @@ class MCPClientManager:
                             server_params = args["server_params"]
                             server_name = args.get("server_name", "unknown")
                             logger.info(f"[MCPClientManager] Background task connecting to: {server_name}")
-                            session = await session_group.connect_to_server(server_params)
+
+                            # Custom connection with message_handler for notifications
+                            session = await self._establish_session_with_handler(
+                                session_group, server_params, server_name
+                            )
+
                             logger.info(f"[MCPClientManager] Background task connected to: {server_name}")
                             result_future.set_result(session)
                         elif operation == "disconnect":
@@ -295,6 +402,70 @@ class MCPClientManager:
             logger.info(f"[MCPClientManager] Exiting context with {len(session_group.sessions)} sessions to clean up...")
 
         logger.info("[MCPClientManager] Background task exiting, session group cleaned up")
+
+    async def _establish_session_with_handler(
+        self,
+        session_group: ClientSessionGroup,
+        server_params: "StdioServerParameters | SseServerParameters | StreamableHttpParameters",
+        server_name: str,
+    ) -> ClientSession:
+        """Establish a session with custom message_handler for notification forwarding.
+
+        This replicates ClientSessionGroup._establish_session() but adds message_handler
+        to the ClientSession constructor for notification support.
+        """
+        import contextlib
+
+        session_stack = contextlib.AsyncExitStack()
+        try:
+            # Create read and write streams based on transport type
+            if isinstance(server_params, StdioServerParameters):
+                client = mcp.stdio_client(server_params)
+                read, write = await session_stack.enter_async_context(client)
+            elif isinstance(server_params, SseServerParameters):
+                client = sse_client(
+                    url=server_params.url,
+                    headers=server_params.headers,
+                    timeout=server_params.timeout,
+                    sse_read_timeout=server_params.sse_read_timeout,
+                )
+                read, write = await session_stack.enter_async_context(client)
+            else:
+                # StreamableHttpParameters
+                client = streamablehttp_client(
+                    url=server_params.url,
+                    headers=server_params.headers,
+                    timeout=server_params.timeout,
+                    sse_read_timeout=server_params.sse_read_timeout,
+                    terminate_on_close=server_params.terminate_on_close,
+                )
+                read, write, _ = await session_stack.enter_async_context(client)
+
+            # Create ClientSession WITH message_handler for notification forwarding
+            message_handler = self._create_notification_handler(server_name)
+            session = await session_stack.enter_async_context(
+                mcp.ClientSession(read, write, message_handler=message_handler)
+            )
+            logger.info(f"[MCPClientManager] Created ClientSession with notification handler for {server_name}")
+
+            # Initialize the session
+            result = await session.initialize()
+            logger.info(f"[MCPClientManager] Session initialized for {server_name}: {result.serverInfo.name}")
+
+            # Register with session group using connect_with_session
+            # This tracks the session and aggregates its tools/resources/prompts
+            await session_group.connect_with_session(result.serverInfo, session)
+
+            # Store the exit stack in session_group's tracking
+            # Note: This relies on internal implementation but is necessary for cleanup
+            session_group._session_exit_stacks[session] = session_stack
+            await session_group._exit_stack.enter_async_context(session_stack)
+
+            return session
+        except Exception:
+            # If anything fails, clean up the session-specific stack
+            await session_stack.aclose()
+            raise
 
     async def start(self) -> None:
         """Initialize the session group in a background task. Call once per vMCP session."""
@@ -580,12 +751,66 @@ class MCPClientManager:
         logger.info(f"✅ Retrieved capabilities from server [ERRORS_IF_ANY: {errors_if_any}]")
         return capabilities
 
+    def _create_progress_callback(self, server_name: str, tool_name: str, progress_token: Any = None):
+        """Create a progress callback that forwards progress to downstream session.
+
+        Progress notifications from upstream servers are handled internally by the MCP SDK's
+        BaseSession._receive_loop, which calls registered progress_callbacks directly.
+        They don't reach the message_handler, so we need to pass this callback to call_tool.
+
+        Args:
+            server_name: Name of the upstream MCP server (for logging)
+            tool_name: Name of the tool being called (for logging)
+            progress_token: Optional progress token from downstream client. If provided, this token
+                          will be used when forwarding progress notifications to the downstream client.
+                          If not provided, a unique token will be generated (though this may not be
+                          recognized by the downstream client).
+        """
+        # Use downstream client's progress token if provided, otherwise generate a unique one
+        if progress_token is not None:
+            downstream_token = progress_token
+            logger.debug(f"[MCPClientManager PROGRESS] Using downstream client's progress token: {downstream_token}")
+        else:
+            import uuid
+            downstream_token = f"{server_name}_{tool_name}_{uuid.uuid4().hex[:8]}"
+            logger.debug(f"[MCPClientManager PROGRESS] Generated progress token (no downstream token provided): {downstream_token}")
+
+        async def progress_callback(progress: float, total: float | None, message: str | None) -> None:
+            if self._downstream_session:
+                logger.debug(f"[MCPClientManager PROGRESS] Forwarding progress from {server_name}/{tool_name}: {progress}/{total or '?'} - {message} (token: {downstream_token})")
+                try:
+                    await self._downstream_session.send_progress_notification(
+                        progress_token=downstream_token,
+                        progress=progress,
+                        total=total,
+                        message=message,
+                    )
+                except Exception as e:
+                    logger.warning(f"[MCPClientManager PROGRESS] Failed to forward progress: {e}")
+            else:
+                logger.debug(f"[MCPClientManager PROGRESS] No downstream session for progress from {server_name}/{tool_name}")
+
+        return progress_callback
+
     @mcp_operation
     @trace_method("[MCPClientManager]: Call Tool", operation="call_tool")
-    async def call_tool(self, server_config: MCPServerConfig, session: ClientSession, tool_name: str, arguments: dict, *args, **kwargs):
-        """Call a tool on the MCP server"""
+    async def call_tool(self, server_config: MCPServerConfig, session: ClientSession, tool_name: str, arguments: dict, *args, progress_token: Any = None, **kwargs):
+        """Call a tool on the MCP server.
+
+        Args:
+            server_config: Server configuration
+            session: MCP client session
+            tool_name: Name of the tool to call
+            arguments: Tool arguments
+            progress_token: Optional progress token from downstream client. When provided,
+                          progress notifications from the upstream server will be forwarded
+                          to the downstream client using this token.
+        """
         try:
-            result = await session.call_tool(tool_name, arguments)
+            # Create progress callback to forward progress notifications to downstream client
+            # Use the downstream client's progress token if provided
+            progress_callback = self._create_progress_callback(server_config.name, tool_name, progress_token)
+            result = await session.call_tool(tool_name, arguments, progress_callback=progress_callback)
             logger.info(f"✅ Called tool {tool_name} on server")
             return result
         except Exception as e:

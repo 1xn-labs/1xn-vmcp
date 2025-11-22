@@ -87,12 +87,12 @@ class UserContext:
         self.vmcp_username_header = None
         
         # Initialize managers for OSS compatibility
-        self._init_managers()
+        # self._init_managers()
 
     def _init_managers(self):
         """Initialize vmcp_config_manager for OSS compatibility"""
         try:
-            from vmcp.vmcps.vmcp_config_manger import VMCPConfigManager
+            from vmcp.vmcps.vmcp_config_manager import VMCPConfigManager
             from vmcp.storage.base import StorageBase
             
             # Initialize vmcp_config_manager based on vmcp_name (similar to main application)

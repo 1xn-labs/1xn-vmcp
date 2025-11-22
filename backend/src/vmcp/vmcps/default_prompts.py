@@ -42,9 +42,9 @@ def get_feedback_prompt() -> Prompt:
     )
 
 
-def get_all_default_prompts(vmcp_id: Optional[str]) -> List[Prompt]:
+def get_all_default_prompts(vmcp_name: str) -> List[Prompt]:
     """Get all default system prompts"""
-    if vmcp_id.startswith("@"):
+    if vmcp_name.startswith("@"):
         return [
             get_feedback_prompt()
         ]

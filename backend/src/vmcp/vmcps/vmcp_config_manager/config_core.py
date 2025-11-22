@@ -935,7 +935,7 @@ class VMCPConfigManager:
         - Background logging of tool calls
 
         Args:
-            vmcp_tool_call_request: VMCPToolCallRequest object containing tool name and arguments
+            vmcp_tool_call_request: VMCPToolCallRequest object containing tool name, arguments, and progress_token
             connect_if_needed: Whether to connect to MCP servers if needed
             return_metadata: Whether to return metadata along with result
 
@@ -951,7 +951,8 @@ class VMCPConfigManager:
             call_custom_tool_func=self.call_custom_tool,
             log_vmcp_operation_func=self.log_vmcp_operation,
             connect_if_needed=connect_if_needed,
-            return_metadata=return_metadata
+            return_metadata=return_metadata,
+            progress_token=vmcp_tool_call_request.progress_token
         )
 
     @trace_method("[VMCPConfigManager]: Get Prompt")
