@@ -83,12 +83,17 @@ def base_url():
 @pytest.fixture(scope="session")
 def mcp_servers():
     """Test MCP servers"""
+    # Get the tests directory path
+    tests_dir = os.path.dirname(os.path.abspath(__file__))
+    everything_server_path = os.path.join(tests_dir, "mcp_server", "everything_server.py")
+    allfeature_server_path = os.path.join(tests_dir, "mcp_server", "all_feature_server.py")
+    
     return {
         "everything": { "name": "everything", "url": "http://localhost:8001/everything/mcp", "transport": "http"},
         "allfeature": { "name": "allfeature", "url": "http://localhost:8001/allfeature/mcp", "transport": "http"},
         "context7": { "name": "context7", "url": "https://mcp.context7.com/mcp", "transport": "http"},
-        "everything_stdio": { "name": "everything_stdio", "command": "python", "args": ["/Users/amitbhor/projects/1xn/1xn-vmcp/daamitt/backend/tests/mcp_server/everything_server.py", "--transport", "stdio"], "transport": "stdio"},
-        "allfeature_stdio": { "name": "allfeature_stdio", "command": "python", "args": ["/Users/amitbhor/projects/1xn/1xn-vmcp/daamitt/backend/tests/mcp_server/all_feature_server.py", "--transport", "stdio"], "transport": "stdio"}
+        "everything_stdio": { "name": "everything_stdio", "command": "python", "args": [everything_server_path, "--transport", "stdio"], "transport": "stdio"},
+        "allfeature_stdio": { "name": "allfeature_stdio", "command": "python", "args": [allfeature_server_path, "--transport", "stdio"], "transport": "stdio"}
 
     }
 
