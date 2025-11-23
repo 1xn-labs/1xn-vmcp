@@ -122,11 +122,34 @@ const isIconUrl = (icon: string) => {
 // Helper function to get icon source
 const getIconSource = (vmcp: any) => {
   if (vmcp.metadata?.icon) {
-    return isIconUrl(vmcp.metadata.icon) 
-      ? vmcp.metadata.icon 
+    return isIconUrl(vmcp.metadata.icon)
+      ? vmcp.metadata.icon
       : `data:image/png;base64,${vmcp.metadata.icon}`;
   }
   return null;
+};
+
+// Helper function to get server info based on transport type
+const getServerInfo = (server: MCPServer): string => {
+  const transportType = server.transport_type?.toLowerCase();
+
+  if (transportType === 'stdio') {
+    const command = server.command || '';
+    const args = (server as any).args;
+    if (args && Array.isArray(args) && args.length > 0) {
+      return `${command} ${args.join(' ')}`;
+    }
+    return command;
+  } else if (transportType === 'http' || transportType === 'sse') {
+    return server.url || '';
+  }
+  return '';
+};
+
+// Helper function to truncate text with ellipsis
+const truncateText = (text: string, maxLength: number): string => {
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
 };
 
 // Component to display vMCPs using this server
@@ -155,9 +178,6 @@ const VMCPUsageDisplay = ({ serverId, vmcps, server }: { serverId: string; vmcps
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground">vMCPs ({usingVMCPS.length})</span>
-      </div>
       
       <div className="flex flex-wrap gap-1.5">
         {usingVMCPS.length === 0 ? (
@@ -168,7 +188,10 @@ const VMCPUsageDisplay = ({ serverId, vmcps, server }: { serverId: string; vmcps
             <span className="text-xs font-medium text-muted-foreground">No vMCPs using this server</span>
           </div>
         ) : (
-          <>
+          <div className="flex items-center justify-between">
+
+          <span className="text-xs font-medium text-muted-foreground">vMCPs ({usingVMCPS.length}) : </span>
+
             {visibleVMCPS.map((vmcp) => (
               <div
                 key={vmcp.id}
@@ -228,7 +251,7 @@ const VMCPUsageDisplay = ({ serverId, vmcps, server }: { serverId: string; vmcps
                 </TooltipContent>
               </Tooltip>
             )}
-          </>
+          </div>
         )}
       </div>
     </div>
@@ -824,6 +847,25 @@ export default function ServersPage() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Server Info Section - command/args for stdio, url for http/sse */}
+                      {getServerInfo(server) && (
+                        <div className="h-6">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <TransportIcon className="h-3 w-3 shrink-0" />
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="font-mono truncate cursor-help">
+                                  {truncateText(getServerInfo(server), 50)}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-md">
+                                <p className="font-mono text-xs break-all">{getServerInfo(server)}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </div>
+                      )}
 
                       {/* vMCP Usage Section - Fixed height */}
                       <div className="h-16">
