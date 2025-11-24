@@ -29,7 +29,12 @@ class DummyJWTService:
 
 @dataclass
 class DummyUserContext:
-    """Dummy user context for OSS."""
+    """
+    Dummy user context for OSS.
+
+    This is a pure identity container - it does NOT create VMCPConfigManager.
+    The VMCPConfigManager is created by VMCPSessionManager and attached externally.
+    """
 
     user_id: str
     username: str
@@ -57,7 +62,7 @@ class DummyUserContext:
         self.token = token or settings.dummy_user_token
         self.vmcp_name = vmcp_name or "default"
 
-        # Initialize attributes that will be set later
+        # Initialize attributes that will be set externally by VMCPServer/VMCPSessionManager
         self.vmcp_config_manager = None
         self.vmcp_name_header = None
         self.vmcp_username_header = None
@@ -65,31 +70,9 @@ class DummyUserContext:
         self.client_name = None
         self.agent_name = None
 
-        # Initialize vmcp_config_manager
-        try:
-            from vmcp.storage.base import StorageBase
-            from vmcp.vmcps.vmcp_config_manager.config_core import VMCPConfigManager
-
-            # Convert user_id to integer for storage operations (OSS uses integer IDs)
-            user_id_int = int(user_id) if isinstance(user_id, str) else user_id
-
-            # If vmcp_name is provided, resolve it to UUID
-            vmcp_id = None
-            if self.vmcp_name:
-                logger.info(f"🔍 DummyUserContext: Resolving vmcp_name '{self.vmcp_name}' to UUID for user '{user_id_int}'")
-                storage = StorageBase(user_id=user_id_int)
-                vmcp_id = storage.find_vmcp_name(self.vmcp_name)
-                if vmcp_id:
-                    logger.info(f"✅ DummyUserContext: Resolved '{self.vmcp_name}' -> '{vmcp_id}'")
-                else:
-                    logger.warning(f"❌ DummyUserContext: Could not find vMCP UUID for name: {self.vmcp_name}")
-
-            self.vmcp_config_manager = VMCPConfigManager(
-                user_id=str(user_id),  # VMCPConfigManager expects string user_id
-                vmcp_id=vmcp_id  # Pass resolved UUID
-            )
-        except Exception as e:
-            logger.warning(f"Failed to initialize VMCPConfigManager: {e}")
+        # Note: VMCPConfigManager is NOT created here.
+        # It is created by VMCPSessionManager.create_manager() and attached by VMCPServer.
+        logger.debug(f"[DummyUserContext] Created identity for user_id={user_id}, vmcp_name={vmcp_name}")
 
 
 def ensure_dummy_user():

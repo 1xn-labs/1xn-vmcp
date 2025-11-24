@@ -133,14 +133,14 @@ def run(
 
         upload_main()
 
-        # Upload demo VMcPs
-        console.print("\n[yellow]4. Loading demo VMcPs...[/yellow]")
+        # Upload demo vMCPs
+        console.print("\n[yellow]4. Loading demo vMCPs...[/yellow]")
         try:
             from vmcp.scripts.upload_all_demo_vmcps import main as upload_demo_main
             upload_demo_main()
         except Exception as e:
-            console.print(f"[yellow]⚠[/yellow] Warning: Could not upload demo VMcPs: {e}")
-            console.print("    Continuing anyway (demo VMcPs may already exist)")
+            console.print(f"[yellow]⚠[/yellow] Warning: Could not upload demo vMCPs: {e}")
+            console.print("    Continuing anyway (demo vMCPs may already exist)")
 
         # Upload and import 1xndemo (to public registry, then import to private)
         # console.print("\n[yellow]5. Loading and importing 1xndemo vMCP...[/yellow]")
@@ -194,7 +194,7 @@ def run(
     import uvicorn
 
     from vmcp.core.services import register_oss_services
-    from vmcp.proxy_server import create_app
+    from vmcp.server import create_app
 
     # Register OSS services before creating app
     register_oss_services()
@@ -261,11 +261,11 @@ def serve(
     """
     import uvicorn
 
-    # Register OSS services before importing proxy_server
+    # Register OSS services before importing vmcp_server
     from vmcp.core.services import register_oss_services
     register_oss_services()
 
-    from vmcp.proxy_server import create_app
+    from vmcp.server import create_app
 
     fastapi_app = create_app()
 

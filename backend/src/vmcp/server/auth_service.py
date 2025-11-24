@@ -1,15 +1,15 @@
 """
-Authentication service abstraction for proxy server.
+Authentication service abstraction for vmcp server.
 
 This module provides a default JWT service (DummyJWTService for OSS).
-Enterprise implementations should configure the JWT service before importing proxy_server.
+Enterprise implementations should configure the JWT service before importing vmcp_server.
 """
 
-from vmcp.proxy_server.token_info import TokenInfo, normalize_token_info
+from vmcp.server.token_info import TokenInfo, normalize_token_info
 from vmcp.storage.dummy_jwt import DummyJWTService
 
 # Default to dummy JWT service (OSS mode)
-# Enterprise should configure this before importing proxy_server
+# Enterprise should configure this before importing vmcp_server
 JWTService = DummyJWTService
 
 # Export for isinstance checks if needed
@@ -19,7 +19,7 @@ def configure_jwt_service(service_class):
     """
     Configure the JWT service to use.
     
-    This should be called by enterprise entry points before importing proxy_server.
+    This should be called by enterprise entry points before importing vmcp_server.
     
     Args:
         service_class: The JWT service class to use (must have extract_token_info method)

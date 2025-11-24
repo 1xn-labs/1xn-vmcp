@@ -16,11 +16,11 @@ logger = get_logger(__name__)
 
 
 def main():
-    """Run the vMCP server."""
+    """Run the vMCP App server."""
     # CRITICAL: Register OSS services BEFORE creating app
     # Only register when running as main, not when imported by enterprise
     from vmcp.core.services import register_oss_services
-    from vmcp.proxy_server import create_app
+    from vmcp.server import create_app
 
     register_oss_services()
     logger.info("✅ OSS services registered")
@@ -28,8 +28,7 @@ def main():
     # Create the FastAPI application with MCP server
     app = create_app()
 
-    logger.info(f"🚀 Starting vMCP server on {settings.host}:{settings.port}")
-
+    logger.info(f"🚀 Starting vMCP App server on {settings.host}:{settings.port}")
     uvicorn.run(
         app,  # Pass app instance directly
         host=settings.host,

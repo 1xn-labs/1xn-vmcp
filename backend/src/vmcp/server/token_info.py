@@ -1,5 +1,5 @@
 """
-Token information normalization for proxy server.
+Token information normalization for vmcp server.
 
 Provides a standardized TokenInfo structure that works with both OSS and enterprise tokens.
 """
@@ -14,7 +14,7 @@ class TokenInfo:
     Normalized token information structure.
 
     This standardizes token info from both OSS (dummy) and enterprise JWT services,
-    so proxy_server code can work with a consistent interface.
+    so vmcp_server code can work with a consistent interface.
     """
     user_id: int
     username: str

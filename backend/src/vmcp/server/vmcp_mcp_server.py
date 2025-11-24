@@ -1,16 +1,16 @@
-import asyncio
-import os
+"""
+VMCPServer - MCP Protocol Server Implementation
+================================================
+
+This module contains the VMCPServer class which handles MCP protocol operations.
+It extends FastMCP and provides protocol handlers for tools, resources, prompts, etc.
+"""
+
 import re
 import traceback
-from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional
 
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
 from mcp.server.fastmcp import FastMCP
 from mcp.server.lowlevel import NotificationOptions
 from mcp.types import (
@@ -30,38 +30,36 @@ from mcp.types import (
 from vmcp.vmcps.vmcp_config_manager import VMCPConfigManager
 from vmcp.config import settings
 from vmcp.core.services import TokenInfo, get_jwt_service, get_user_context_class
-from vmcp.mcps.oauth_handler import router as oauth_handler_router
-from vmcp.mcps.router_typesafe import router as mcp_router
-from vmcp.proxy_server.mcp_dependencies import get_http_request
-from vmcp.proxy_server.middleware import register_middleware
-from vmcp.proxy_server.tool_descriptions import CREATE_PROMPT_HELPER_TEXT, UPLOAD_PROMPT_DESCRIPTION
-from vmcp.storage.blob_router import router as blob_router
+from vmcp.server.mcp_dependencies import get_http_request
+from vmcp.server.tool_descriptions import CREATE_PROMPT_HELPER_TEXT, UPLOAD_PROMPT_DESCRIPTION
 from vmcp.utilities.logging import get_logger
-from vmcp.utilities.tracing import add_tracing_middleware, trace_method
+from vmcp.utilities.tracing import trace_method
 from vmcp.vmcps.models import VMCPToolCallRequest
-from vmcp.vmcps.router_typesafe import router as vmcp_router
-from vmcp.vmcps.stats_router import router as stats_router
 
 
-@dataclass
-class ReadResourceContents:
-    """Contents returned from a read_resource call."""
 
-    content: str | bytes
-    mime_type: str | None = None
-    meta: dict | None = None
-
-# Setup centralized logging for proxy agent server with span correlation
-logger = get_logger("vMCP Server")
+# Setup centralized logging for MCP server with span correlation
+logger = get_logger("VMCPServer")
 
 
-from vmcp.proxy_server.vmcp_session_manager import VMCPSessionManager
+from vmcp.server.vmcp_session_manager import VMCPSessionManager
 
 
 class VMCPServer(FastMCP):
+    """
+    MCP Protocol Server for vMCP.
+
+    Handles MCP protocol operations including:
+    - Tool listing and execution
+    - Resource listing and reading
+    - Prompt listing and retrieval
+    - Resource template listing
+    - Session management via VMCPSessionManager
+    """
+
     def __init__(self, name: str):
-        logger.info(f"🚀 Initializing VMCPServer: {name}")
-        self._vmcp_managers: dict[str, VMCPConfigManager] = {}
+        logger.info(f"[VMCPServer] Initializing: {name}")
+        self._vmcp_session_manager: VMCPSessionManager
 
         # Configure streamable HTTP path to be root so it works when mounted
         log_level_str = settings.log_level.upper()
@@ -73,9 +71,9 @@ class VMCPServer(FastMCP):
             notification_options=NotificationOptions(prompts_changed=True, resources_changed=True, tools_changed=True),
             experimental_capabilities={"1xn": {"vmcp": True}})
 
-        # Proxy server is completely stateless
+        # vmcp server is completely stateless
         # All managers will be created per user request
-        logger.info("✅ ProxyServer initialization complete (stateless)")
+        logger.info("[VMCPServer] Initialization complete (stateless)")
 
     def streamable_http_app(self):
         """
@@ -85,85 +83,34 @@ class VMCPServer(FastMCP):
          # Create our custom session manager (lazy initialization)
         if self._session_manager is None:
             self._session_manager = VMCPSessionManager(
-                vmcp_managers_ref=self._vmcp_managers,  # Pass reference for session-aware cleanup
                 app=self._mcp_server,
                 event_store=self._event_store,
                 json_response=self.settings.json_response,
                 stateless=False,
             )
-            logger.info("✅ Created custom VMCPSessionManager with session-aware stdio cleanup")
+            logger.info("[VMCPServer] Created custom VMCPSessionManager with session-aware stdio cleanup")
 
 
         return super().streamable_http_app()
 
-        from starlette.applications import Starlette
-        from starlette.routing import Mount, Route
-        from starlette.middleware import Middleware
-        from starlette.middleware.base import BaseHTTPMiddleware
-        from mcp.server.fastmcp.server import StreamableHTTPASGIApp
-        from vmcp.proxy_server.middleware import vmcp_routing_middleware
-
-        # Create our custom session manager (lazy initialization)
-        if self._session_manager is None:
-            self._session_manager = VMCPSessionManager(
-                vmcp_managers_ref=self._vmcp_managers,  # Pass reference for session-aware cleanup
-                app=self._mcp_server,
-                event_store=self._event_store,
-                json_response=self.settings.json_response,
-                stateless=False,
-            )
-            logger.info("✅ Created custom VMCPSessionManager with session-aware stdio cleanup")
-
-        # Create the ASGI handler
-        streamable_http_app = StreamableHTTPASGIApp(self._session_manager)
-
-        # Create routes
-        routes: list[Route | Mount] = []
-
-        # Add the main MCP endpoint
-        path = self.settings.streamable_http_path
-        routes.append(Mount(path, app=streamable_http_app))
-
-        # Add custom routes if any
-        routes.extend(self._custom_starlette_routes)
-
-        # Create middleware list - wrap function-based middleware with BaseHTTPMiddleware
-        class RoutingMiddleware(BaseHTTPMiddleware):
-            async def dispatch(self, request, call_next):
-                return await vmcp_routing_middleware(request, call_next)
-
-        middleware: list[Middleware] = [
-            Middleware(RoutingMiddleware),
-        ]
-
-        return Starlette(
-            debug=self.settings.debug,
-            routes=routes,
-            middleware=middleware,
-            lifespan=lambda app: self.session_manager.run(),
-        )
-
     async def get_configured_manager(self, session_id: str) -> Optional[VMCPConfigManager]:
         """Get the VMCPConfigManager for the given session ID, if it exists."""
         return self._vmcp_managers.get(session_id)
-    
-    async def get_user_context_proxy_server(self):
+
+    async def get_user_context_vmcp_server(self):
         """Build dependencies for the current request with user context"""
         try:
-            # Get the current request context
-            from vmcp.storage.base import StorageBase
-
             # Get services from registry
             jwt_service = get_jwt_service()
             UserContext = get_user_context_class()
 
             # Debug: Log all headers to see what's available
             request = get_http_request()
-            logger.info(f"🔍 DEBUG: All headers during tool call: {dict(request.headers)}")
+            logger.info(f"[VMCPServer] DEBUG: All headers during tool call: {dict(request.headers)}")
             auth_header = request.headers.get('Authorization', '')
-            logger.info(f"🔍 DEBUG: Authorization header: '{auth_header}'")
+            logger.info(f"[VMCPServer] DEBUG: Authorization header: '{auth_header}'")
             token = auth_header.replace('Bearer ', '').strip()
-            logger.info(f"🔍 DEBUG: Extracted token: '{token[:20] if token else 'EMPTY'}...')")
+            logger.info(f"[VMCPServer] DEBUG: Extracted token: '{token[:20] if token else 'EMPTY'}...')")
 
             # Extract and normalize token info
             try:
@@ -177,7 +124,7 @@ class VMCPServer(FastMCP):
                     token=token
                 )
             except (ValueError, KeyError) as e:
-                logger.warning(f"🔍 Invalid token info: {e}")
+                logger.warning(f"[VMCPServer] Invalid token info: {e}")
                 return None
 
             vmcp_name = get_http_request().headers.get('vmcp-name', 'unknown')
@@ -195,14 +142,12 @@ class VMCPServer(FastMCP):
 
             # Get agent name from session mapping (session-based, not token-based)
             agent_name = self._mcp_server.request_context.session.client_params.clientInfo.name
-            logger.debug(f"🔍 Client ctx: {agent_name}")
+            logger.debug(f"[VMCPServer] Client ctx: {agent_name}")
 
             session_id = get_http_request().headers.get('mcp-session-id')
 
             if session_id:
-
-                # user_storage = StorageBase(user_id=int(user_id))
-                # agent_name = user_storage.get_agent_name_from_session(session_id)
+                # Create lightweight UserContext (pure identity, no manager)
                 user_context = UserContext(
                     user_id=user_id,
                     user_email=user_email,
@@ -211,12 +156,19 @@ class VMCPServer(FastMCP):
                     vmcp_name=vmcp_name,
                 )
 
-                if session_id in self._vmcp_managers:
-                    user_context.vmcp_config_manager = self._vmcp_managers[session_id]
-                    logger.info(f"✅✅✅✅ Re-using VMCPConfigManagaer for user_id: {user_id}, username: {user_name}, vmcp_name: {vmcp_name} (no agent)")
+                # Delegate VMCPConfigManager creation/retrieval to session manager
+                manager = self._session_manager.get_manager(session_id)
+                if manager:
+                    user_context.vmcp_config_manager = manager
+                    logger.info(f"[VMCPServer] Re-using VMCPConfigManager for user_id: {user_id}, vmcp_name: {vmcp_name}")
                 else:
-                    self._vmcp_managers[session_id] = user_context.vmcp_config_manager
-                    logger.info(f"🙌🙌🙌🙌 Created new VMCPConfigManagaer for user_id: {user_id}, username: {user_name}, vmcp_name: {vmcp_name} (no agent)")
+                    # Create new manager via session manager
+                    user_context.vmcp_config_manager = self._session_manager.create_manager(
+                        session_id=session_id,
+                        user_id=user_id,
+                        vmcp_name=vmcp_name
+                    )
+                    logger.info(f"[VMCPServer] Created new VMCPConfigManager for user_id: {user_id}, vmcp_name: {vmcp_name}")
 
                 # Set downstream session for notification forwarding
                 # This allows upstream MCP notifications to be forwarded to the downstream client
@@ -224,25 +176,17 @@ class VMCPServer(FastMCP):
                     server_session = self._mcp_server.request_context.session
                     if user_context.vmcp_config_manager and user_context.vmcp_config_manager.mcp_client_manager:
                         user_context.vmcp_config_manager.mcp_client_manager.set_downstream_session(server_session)
-                        logger.debug(f"[NOTIFICATION] Set downstream session for notification forwarding")
+                        logger.debug(f"[VMCPServer] [NOTIFICATION] Set downstream session for notification forwarding")
                 except Exception as e:
-                    logger.debug(f"[NOTIFICATION] Could not set downstream session: {e}")
+                    logger.debug(f"[VMCPServer] [NOTIFICATION] Could not set downstream session: {e}")
 
                 if agent_name:
-                    logger.info(f"🔍 Found agent name for session {session_id[:20]}...: {agent_name}")
+                    logger.info(f"[VMCPServer] Found agent name for session {session_id[:20]}...: {agent_name}")
                 else:
-                    logger.debug(f"🔍 No agent mapping found for session {session_id[:20]}...")
+                    logger.debug(f"[VMCPServer] No agent mapping found for session {session_id[:20]}...")
             else:
-                logger.debug(" ❌❌❌❌❌❌❌❌❌ No mcp-session-id in headers - agent name unavailable")
+                logger.debug("[VMCPServer] No mcp-session-id in headers - agent name unavailable")
                 raise ValueError("No session ID provided in headers")
-                # user_context = UserContext(
-                #     user_id=user_id,
-                #     user_email=user_email,
-                #     username=user_name,
-                #     token=token,
-                #     vmcp_name=vmcp_name
-                # )
-                # logger.info(f"✅ Built UserContext for user_id: {user_id}, username: {user_name}, vmcp_name: {vmcp_name} (no agent)")
 
             # Add vMCP-specific attributes to the user context
             user_context.vmcp_name_header = vmcp_name
@@ -259,13 +203,13 @@ class VMCPServer(FastMCP):
                     "agent_id": agent_name,
                     "client_id": client_id or "unknown"
                 }
-                logger.info(f"✅ Updated vmcp_config_manager logging_config with agent_name: {agent_name}")
+                logger.info(f"[VMCPServer] Updated vmcp_config_manager logging_config with agent_name: {agent_name}")
 
             # The UserContext now has vmcp_config_manager initialized
             return user_context
         except Exception as e:
-            logger.error(f"❌ Traceback: {traceback.format_exc()}")
-            logger.error(f"❌ Error building dependencies: {e}")
+            logger.error(f"[VMCPServer] Traceback: {traceback.format_exc()}")
+            logger.error(f"[VMCPServer] Error building dependencies: {e}")
             return None
 
     async def _execute_upload_prompt(self, arguments: dict) -> dict:
@@ -301,7 +245,7 @@ class VMCPServer(FastMCP):
                     return {"status": "error", "message": "Variable 'required' field must be a boolean"}
 
             # Get user context
-            deps = await self.get_user_context_proxy_server()
+            deps = await self.get_user_context_vmcp_server()
             if deps is None:
                 return {"status": "error", "message": "No user context available"}
 
@@ -349,7 +293,7 @@ class VMCPServer(FastMCP):
             )
 
             if success:
-                logger.info(f"✅ Created custom prompt '{final_name}' in vMCP {active_vmcp_id}")
+                logger.info(f"[VMCPServer] Created custom prompt '{final_name}' in vMCP {active_vmcp_id}")
                 return {
                     "status": "success",
                     "prompt_name": final_name,
@@ -359,67 +303,67 @@ class VMCPServer(FastMCP):
                 return {"status": "error", "message": "Failed to save vMCP configuration"}
 
         except Exception as e:
-            logger.error(f"❌ Error creating custom prompt: {e}")
-            logger.error(f"Full traceback: {traceback.format_exc()}")
+            logger.error(f"[VMCPServer] Error creating custom prompt: {e}")
+            logger.error(f"[VMCPServer] Full traceback: {traceback.format_exc()}")
             return {"status": "error", "message": f"Failed to create prompt: {str(e)}"}
 
     def _setup_handlers(self) -> None:
         """Set up core MCP protocol handlers."""
-        logger.info("🔌 Setting up MCP protocol handlers...")
+        logger.info("[VMCPServer] Setting up MCP protocol handlers...")
 
         self._mcp_server.list_tools()(self.proxy_list_tools)
-        logger.debug("   ✅ list_tools handler registered")
+        logger.debug("[VMCPServer] list_tools handler registered")
 
         # Note: we disable the lowlevel server's input validation.
         # FastMCP does ad hoc conversion of incoming data before validating -
         # for now we preserve this for backwards compatibility.
         #self._mcp_server.call_tool(validate_input=True)(self.proxy_call_tool)
         self._mcp_server.request_handlers[CallToolRequest] = self.root_proxy_call_tool
-        logger.debug("   ✅ call_tool handler registered")
+        logger.debug("[VMCPServer] call_tool handler registered")
 
         self._mcp_server.list_resources()(self.proxy_list_resources)
-        logger.debug("   ✅ list_resources handler registered")
+        logger.debug("[VMCPServer] list_resources handler registered")
 
         self._mcp_server.request_handlers[ReadResourceRequest] = self.proxy_read_resource
         # self._mcp_server.read_resource()(self.proxy_read_resource)
-        logger.debug("   ✅ read_resource handler registered")
+        logger.debug("[VMCPServer] read_resource handler registered")
 
         self._mcp_server.list_prompts()(self.proxy_list_prompts)
-        logger.debug("   ✅ list_prompts handler registered")
+        logger.debug("[VMCPServer] list_prompts handler registered")
 
         self._mcp_server.get_prompt()(self.proxy_get_prompt)
-        logger.debug("   ✅ get_prompt handler registered") 
+        logger.debug("[VMCPServer] get_prompt handler registered")
 
         self._mcp_server.list_resource_templates()(self.proxy_list_resource_templates)
-        logger.debug("   ✅ list_resource_templates handler registered")
+        logger.debug("[VMCPServer] list_resource_templates handler registered")
 
-        logger.info("🎉 All MCP protocol handlers registered successfully")
+        logger.info("[VMCPServer] All MCP protocol handlers registered successfully")
 
-    @trace_method("[PROXY_SERVER]: List Tools")
+    @trace_method("[VMCPServer]: List Tools")
     async def proxy_list_tools(self) -> List[Tool]:
         """Aggregate tools from all connected servers filtered by active agent or vMCP"""
         logger.info("=" * 60)
-        logger.info("🔍 MCP: proxy_list_tools called")
+        logger.info("[VMCPServer] proxy_list_tools called")
         logger.info("=" * 60)
 
         # Build dependencies from current request
-        deps = await self.get_user_context_proxy_server()
+        deps = await self.get_user_context_vmcp_server()
         if deps is None:
-            logger.warning("🔍 No dependencies available (no valid token) - returning empty tools list")
+            logger.warning("[VMCPServer] No dependencies available (no valid token) - returning empty tools list")
             return []
 
         # Log user context
         user_id = getattr(deps, 'user_id', 'unknown')
         client_id = getattr(deps, 'client_id', 'unknown')
         agent_name = getattr(deps, 'agent_name', 'unknown')
-        logger.info(f"🔍 MCP: Listing tools for user {user_id}, client {client_id}, agent {agent_name}")
+        logger.info(f"[VMCPServer] Listing tools for user {user_id}, client {client_id}, agent {agent_name}")
 
         # Get vMCP tools
         if deps.vmcp_config_manager:
             tools = await deps.vmcp_config_manager.tools_list()
         else:
             tools = []
-        logger.info(f"🔍 MCP: Found {len(tools)} vMCP tools")
+        logger.info(f"[VMCPServer] Found {len(tools)} vMCP tools")
 
         # Create preset tools manually
         if not(deps.vmcp_username_header and deps.vmcp_username_header.startswith("@")):
@@ -478,39 +422,39 @@ class VMCPServer(FastMCP):
             ]
         else:
             preset_tools = []
-        logger.info(f"🔍 MCP: Found {len(preset_tools)} preset tools")
+        logger.info(f"[VMCPServer] Found {len(preset_tools)} preset tools")
 
         # Combine preset tools with vMCP tools
         all_tools = preset_tools + tools
 
-        logger.info(f"🔍 MCP: Returning {len(all_tools)} total tools ({len(preset_tools)} preset + {len(tools)} vMCP)")
+        logger.info(f"[VMCPServer] Returning {len(all_tools)} total tools ({len(preset_tools)} preset + {len(tools)} vMCP)")
         # Tools are already Tool objects, no conversion needed
-        logger.info(f"🔍 MCP: Returning {len(tools)} tools")
+        logger.info(f"[VMCPServer] Returning {len(tools)} tools")
         logger.info("=" * 60)
 
         # Log tool details
         for i, tool in enumerate(all_tools):
             tool_type = "PRESET" if i < len(preset_tools) else "vMCP"
-            logger.info(f"🔍 MCP: Tool {i+1} [{tool_type}]: {tool.name} - {tool.description[:50] if tool.description else 'No description'}...")
+            logger.info(f"[VMCPServer] Tool {i+1} [{tool_type}]: {tool.name} - {tool.description[:50] if tool.description else 'No description'}...")
 
         return all_tools
 
-    @trace_method("[PROXY_SERVER]: List Resources")
+    @trace_method("[VMCPServer]: List Resources")
     async def proxy_list_resources(self) -> List[Resource]:
         """Aggregate resources from all connected servers filtered by active agent or vMCP"""
-        logger.info("🔍 Listing resources from all connected servers...")
+        logger.info("[VMCPServer] Listing resources from all connected servers...")
 
         # Build dependencies from current request
-        deps = await self.get_user_context_proxy_server()
+        deps = await self.get_user_context_vmcp_server()
         if deps is None:
-            logger.warning("🔍 No dependencies available - returning empty resources list")
+            logger.warning("[VMCPServer] No dependencies available - returning empty resources list")
             return []
 
         # Log user context
         user_id = getattr(deps, 'user_id', 'unknown')
         client_id = getattr(deps, 'client_id', 'unknown')
         agent_name = getattr(deps, 'agent_name', 'unknown')
-        logger.info(f"🔍 MCP: Listing resources for user {user_id}, client {client_id}, agent {agent_name}")
+        logger.info(f"[VMCPServer] Listing resources for user {user_id}, client {client_id}, agent {agent_name}")
 
         if deps.vmcp_config_manager:
             resources = await deps.vmcp_config_manager.resources_list()
@@ -519,22 +463,22 @@ class VMCPServer(FastMCP):
 
         return resources
 
-    @trace_method("[PROXY_SERVER]: List Resource Templates")
+    @trace_method("[VMCPServer]: List Resource Templates")
     async def proxy_list_resource_templates(self) -> List[ResourceTemplate]:
         """Aggregate resource templates from all connected servers filtered by active agent or vMCP"""
-        logger.info("🔍 Listing resource templates from all connected servers...")
+        logger.info("[VMCPServer] Listing resource templates from all connected servers...")
 
         # Build dependencies from current request
-        deps = await self.get_user_context_proxy_server()
+        deps = await self.get_user_context_vmcp_server()
         if deps is None:
-            logger.warning("🔍 No dependencies available - returning empty resource templates list")
+            logger.warning("[VMCPServer] No dependencies available - returning empty resource templates list")
             return []
 
         # Log user context
         user_id = getattr(deps, 'user_id', 'unknown')
         client_id = getattr(deps, 'client_id', 'unknown')
         agent_name = getattr(deps, 'agent_name', 'unknown')
-        logger.info(f"🔍 MCP: Listing resource templates for user {user_id}, client {client_id}, agent {agent_name}")
+        logger.info(f"[VMCPServer] Listing resource templates for user {user_id}, client {client_id}, agent {agent_name}")
 
         if deps.vmcp_config_manager:
             resource_templates = await deps.vmcp_config_manager.resource_templates_list()
@@ -543,29 +487,29 @@ class VMCPServer(FastMCP):
 
         # Log resource template details
         for i, template in enumerate(resource_templates):
-            logger.info(f"🔍 MCP: Resource Template {i+1}: {template.name} - {template.description[:50] if template.description else 'No description'}...")
+            logger.info(f"[VMCPServer] Resource Template {i+1}: {template.name} - {template.description[:50] if template.description else 'No description'}...")
 
         return resource_templates
 
-    @trace_method("[PROXY_SERVER]: List Prompts")
+    @trace_method("[VMCPServer]: List Prompts")
     async def proxy_list_prompts(self) -> List[Prompt]:
         """Aggregate prompts from all connected servers filtered by active agent or vMCP"""
         logger.info("=" * 60)
-        logger.info("🔍 MCP: proxy_list_prompts called")
+        logger.info("[VMCPServer] proxy_list_prompts called")
         logger.info("=" * 60)
-        logger.info("🔍 Listing prompts from all connected servers...")
+        logger.info("[VMCPServer] Listing prompts from all connected servers...")
 
         # Build dependencies from current request
-        deps = await self.get_user_context_proxy_server()
+        deps = await self.get_user_context_vmcp_server()
         if deps is None:
-            logger.warning("🔍 No dependencies available - returning empty prompts list")
+            logger.warning("[VMCPServer] No dependencies available - returning empty prompts list")
             return []
 
         # Log user context
         user_id = getattr(deps, 'user_id', 'unknown')
         client_id = getattr(deps, 'client_id', 'unknown')
         agent_name = getattr(deps, 'agent_name', 'unknown')
-        logger.info(f"🔍 MCP: Listing prompts for user {user_id}, client {client_id}, agent {agent_name}")
+        logger.info(f"[VMCPServer] Listing prompts for user {user_id}, client {client_id}, agent {agent_name}")
 
         if deps.vmcp_config_manager:
             prompts = await deps.vmcp_config_manager.prompts_list()
@@ -594,11 +538,11 @@ class VMCPServer(FastMCP):
 
         # Log prompt details
         for i, prompt in enumerate(prompts):
-            logger.info(f"🔍 MCP: Prompt {i+1}: {prompt.name} - {prompt.description[:50] if prompt.description else 'No description'}...")
+            logger.info(f"[VMCPServer] Prompt {i+1}: {prompt.name} - {prompt.description[:50] if prompt.description else 'No description'}...")
 
         return prompts
 
-    @trace_method("[PROXY_SERVER]: Root Tool Call")
+    @trace_method("[VMCPServer]: Root Tool Call")
     async def root_proxy_call_tool(self, req: CallToolRequest):
         tool_name = req.params.name
         arguments = req.params.arguments or {}
@@ -606,60 +550,48 @@ class VMCPServer(FastMCP):
         progress_token = None
         if req.params.meta and hasattr(req.params.meta, 'progressToken'):
             progress_token = req.params.meta.progressToken
-        logger.info(f"🔧 DEBUG root_proxy_call_tool: tool={tool_name}, arguments={arguments}, progress_token={progress_token}, types={[(k, type(v).__name__) for k, v in arguments.items()]}")
+        logger.info(f"[VMCPServer] DEBUG root_proxy_call_tool: tool={tool_name}, arguments={arguments}, progress_token={progress_token}, types={[(k, type(v).__name__) for k, v in arguments.items()]}")
         result = await self.proxy_call_tool(tool_name, arguments, progress_token=progress_token)
         return result
 
-    @trace_method("[PROXY_SERVER]: Tool Call", operation="call_tool")
+    @trace_method("[VMCPServer]: Tool Call", operation="call_tool")
     async def proxy_call_tool(self, name: str, arguments: Dict[str, Any], progress_token: Optional[Any] = None) -> Any:
         """Route tool calls to appropriate server"""
         logger.info("=" * 60)
-        logger.info("🛠️  MCP: Tool call requested")
+        logger.info("[VMCPServer] Tool call requested")
         logger.info("=" * 60)
-        logger.info("📋 Tool Details:")
-        logger.info(f"   Name: {name}")
-        logger.info(f"   Arguments: {arguments}")
-        logger.info(f"   Progress Token: {progress_token}")
+        logger.info("[VMCPServer] Tool Details:")
+        logger.info(f"[VMCPServer]    Name: {name}")
+        logger.info(f"[VMCPServer]    Arguments: {arguments}")
+        logger.info(f"[VMCPServer]    Progress Token: {progress_token}")
 
         # Build dependencies from current request
-        deps = await self.get_user_context_proxy_server()
+        deps = await self.get_user_context_vmcp_server()
         if deps is None:
-            logger.error("🔍 No dependencies available - cannot call tool without user context")
+            logger.error("[VMCPServer] No dependencies available - cannot call tool without user context")
             raise Exception("Tool calls require user context")
 
         # Log user context
         user_id = getattr(deps, 'user_id', 'unknown')
         client_id = getattr(deps, 'client_id', 'unknown')
         agent_name = getattr(deps, 'agent_name', 'unknown')
-        logger.info("📋 User Context:")
-        logger.info(f"   User ID: {user_id}")
-        logger.info(f"   Client ID: {client_id}")
-        logger.info(f"   Agent Name: {agent_name}")
+        logger.info("[VMCPServer] User Context:")
+        logger.info(f"[VMCPServer]    User ID: {user_id}")
+        logger.info(f"[VMCPServer]    Client ID: {client_id}")
+        logger.info(f"[VMCPServer]    Agent Name: {agent_name}")
 
-        logger.info(f"🛠️  MCP: Executing tool '{name}' for user {user_id}, client {client_id}, agent {agent_name}")
-
-        # Track tool execution start (OSS - analytics disabled)
-        # analytics.track_mcp_tool_call(
-        #     user_id=user_id,
-        #     tool_name=name,
-        #     mcp_server="proxy_server",
-        #     success=False,
-        #     properties={"client_id": client_id, "agent_name": agent_name}
-        # )
+        logger.info(f"[VMCPServer] Executing tool '{name}' for user {user_id}, client {client_id}, agent {agent_name}")
 
         try:
             # For now, check if this is the vmcp_create_prompt tool
             if name == "upload_prompt":
-                logger.info(f"🔧 MCP: Executing PRESET tool '{name}'")
+                logger.info(f"[VMCPServer] Executing PRESET tool '{name}'")
                 # Execute the preset tool directly (manually for now)
                 result = await self._execute_upload_prompt(arguments)
-                logger.info(f"✅ MCP: Preset tool '{name}' executed successfully")
-                logger.info(f"📋 Result type: {type(result)}")
-                logger.info(f"📋 Result: {result}")
+                logger.info(f"[VMCPServer] Preset tool '{name}' executed successfully")
+                logger.info(f"[VMCPServer] Result type: {type(result)}")
+                logger.info(f"[VMCPServer] Result: {result}")
                 logger.info("=" * 60)
-
-                # Track successful tool execution
-                # analytics.track_mcp_tool_call()  # OSS - analytics disabled
 
                 # Return MCP-compatible CallToolResult format
                 from mcp.types import CallToolResult
@@ -668,52 +600,46 @@ class VMCPServer(FastMCP):
                     isError=False
                 )
             else:
-                logger.info(f"🔧 MCP: Executing vMCP tool '{name}'")
+                logger.info(f"[VMCPServer] Executing vMCP tool '{name}'")
                 if deps.vmcp_config_manager:
                     result = await deps.vmcp_config_manager.call_tool(
                         vmcp_tool_call_request=VMCPToolCallRequest(tool_name=name, arguments=arguments, progress_token=progress_token)
                     )
                 else:
                     raise Exception("No vMCP manager available for tool execution")
-                logger.info(f"✅ MCP: vMCP tool '{name}' executed successfully")
-                logger.info(f"📋 Result type: {type(result)}")
-                logger.info(f"📋 Result: {result}")
+                logger.info(f"[VMCPServer] vMCP tool '{name}' executed successfully")
+                logger.info(f"[VMCPServer] Result type: {type(result)}")
+                logger.info(f"[VMCPServer] Result: {result}")
                 if isinstance(result, list):
-                    logger.info(f"📋 Result count: {len(result)}")
+                    logger.info(f"[VMCPServer] Result count: {len(result)}")
                 logger.info("=" * 60)
-
-                # Track successful vMCP tool execution
-                # analytics.track_mcp_tool_call()  # OSS - analytics disabled
 
                 return result
         except Exception as e:
-            logger.error(f"❌ MCP: Tool '{name}' failed with error: {e}")
+            logger.error(f"[VMCPServer] Tool '{name}' failed with error: {e}")
             # Add traceback to logger
-            logger.error(f"Full traceback: {traceback.format_exc()}")
+            logger.error(f"[VMCPServer] Full traceback: {traceback.format_exc()}")
             logger.info("=" * 60)
-
-            # Track failed tool execution
-            # analytics.track_mcp_tool_call()  # OSS - analytics disabled
 
             raise
 
-    @trace_method("[PROXY_SERVER]: Get Prompt")
+    @trace_method("[VMCPServer]: Get Prompt")
     async def proxy_get_prompt(self, name: str, arguments: Optional[Dict[str, Any]] = None) -> Any:
         """Get prompt content from appropriate server or agent"""
-        logger.info(f"📝 Prompt request: {name}")
-        logger.debug(f"   📋 Arguments: {arguments}")
+        logger.info(f"[VMCPServer] Prompt request: {name}")
+        logger.debug(f"[VMCPServer] Arguments: {arguments}")
 
         # Build dependencies from current request
-        deps = await self.get_user_context_proxy_server()
+        deps = await self.get_user_context_vmcp_server()
         if deps is None:
-            logger.error("🔍 No dependencies available - cannot get prompt without user context")
+            logger.error("[VMCPServer] No dependencies available - cannot get prompt without user context")
             raise Exception("Prompt requests require user context")
 
         # Log user context
         user_id = getattr(deps, 'user_id', 'unknown')
         client_id = getattr(deps, 'client_id', 'unknown')
         agent_name = getattr(deps, 'agent_name', 'unknown')
-        logger.info(f"📝 MCP: Getting prompt '{name}' for user {user_id}, client {client_id}, agent {agent_name}")
+        logger.info(f"[VMCPServer] Getting prompt '{name}' for user {user_id}, client {client_id}, agent {agent_name}")
 
         # Handle built-in prompts
         if name == "upload_prompt_helper":
@@ -741,29 +667,29 @@ class VMCPServer(FastMCP):
         # if name.startswith("vMCP_"):
         # check name against the regex [A-Z0-9_]+
         if re.match(r"[A-Z0-9_]+", name):
-            logger.info(f"🔍 MCP: Prompt '{name}' is all uppercase, sending list changed notifications")
+            logger.info(f"[VMCPServer] Prompt '{name}' is all uppercase, sending list changed notifications")
             await self.get_context().session.send_tool_list_changed()
             await self.get_context().session.send_resource_list_changed()
             await self.get_context().session.send_prompt_list_changed()
         return prompt
 
-    @trace_method("[PROXY_SERVER]: Read Resource")
+    @trace_method("[VMCPServer]: Read Resource")
     async def proxy_read_resource(self, req: ReadResourceRequest) -> ServerResult:
         """Route resource reads to appropriate server"""
         uri = req.params.uri
-        logger.info(f"📦 Resource read requested: {uri}")
+        logger.info(f"[VMCPServer] Resource read requested: {uri}")
 
         # Build dependencies from current request
-        deps = await self.get_user_context_proxy_server()
+        deps = await self.get_user_context_vmcp_server()
         if deps is None:
-            logger.error("🔍 No dependencies available - cannot read resource without user context")
+            logger.error("[VMCPServer] No dependencies available - cannot read resource without user context")
             raise Exception("Resource read requests require user context")
 
         # Log user context
         user_id = getattr(deps, 'user_id', 'unknown')
         client_id = getattr(deps, 'client_id', 'unknown')
         agent_name = getattr(deps, 'agent_name', 'unknown')
-        logger.info(f"📦 MCP: Reading resource '{uri}' for user {user_id}, client {client_id}, agent {agent_name}")
+        logger.info(f"[VMCPServer] Reading resource '{uri}' for user {user_id}, client {client_id}, agent {agent_name}")
 
 
         # For other resources, use the vmcp_config_manager to handle them
@@ -773,292 +699,14 @@ class VMCPServer(FastMCP):
             else:
                 raise Exception("No vMCP manager available for resource retrieval")
             if resource_result:
-                logger.info(f"✅ Resource read successful: {uri}")
-                logger.info(f"🔍 Proxy Server: Resource result type: {type(resource_result)}")
-                logger.debug(f"🔍 Proxy Server: Resource result structure: {resource_result}")
-                # if isinstance(resource_result, ReadResourceResult):
-                    # return ServerResult(resource_result) #[ReadResourceContents(content=c.text, mime_type=c.mimeType, meta=c.meta) if hasattr(c, 'text') else ReadResourceContents(content=c.blob, mime_type=c.mimeType, meta=c.meta) for c in resource_result.contents]
-                # else:
-                    # return resource_result
+                logger.info(f"[VMCPServer] Resource read successful: {uri}")
+                logger.info(f"[VMCPServer] Resource result type: {type(resource_result)}")
+                logger.debug(f"[VMCPServer] Resource result structure: {resource_result}")
                 return ServerResult(resource_result)
             else:
-                logger.warning(f"⚠️  Resource '{uri}' returned None or invalid result")
+                logger.warning(f"[VMCPServer] Resource '{uri}' returned None or invalid result")
                 raise ValueError(f"Resource '{uri}' not found")
         except Exception as e:
-            logger.error(f"❌ Resource read failed for '{uri}': {e}")
-            logger.error(f"   🔍 Exception type: {type(e).__name__}")
+            logger.error(f"[VMCPServer] Resource read failed for '{uri}': {e}")
+            logger.error(f"[VMCPServer] Exception type: {type(e).__name__}")
             raise
-
-# Create an MCP server
-logger.info("🎬 Creating VMCPServer instance...")
-vmcp = VMCPServer("1xN MCP Proxy")
-
-# Create unified FastAPI server
-# Create the FastMCP HTTP app first to get its lifespan
-logger.info("🔧 Creating FastMCP streamable HTTP app...")
-vmcp_http_app = vmcp.streamable_http_app()
-
-# logger.info(f"🔍 MCP HTTP app routes: {mcp_http_app.routes}")
-
-# Lifespan context manager for MCP session management
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Manage the MCP session manager lifecycle and database initialization"""
-    logger.info("🚀 Starting application startup...")
-
-    # Initialize database tables (creates missing tables, preserves existing data)
-    try:
-        from vmcp.storage.database import init_db
-
-        logger.info("📊 Initializing database tables...")
-        init_db()
-
-        logger.info("👤 Ensuring user exists...")
-        # User creation is handled by oss_providers.ensure_dummy_user() during registration
-        from vmcp.core.services.oss_providers import ensure_dummy_user
-        ensure_dummy_user()
-
-        logger.info("✅ Database initialization complete")
-    except Exception as e:
-        logger.warning(f"⚠️ Database initialization warning: {e}")
-        logger.info("    Continuing anyway (database may already be initialized)")
-
-    logger.info("🚀 Starting MCP session manager...")
-
-    # Create shutdown event
-    shutdown_event = asyncio.Event()
-    session_task = None
-
-    async def run_session_manager():
-        try:
-            async with vmcp.session_manager.run():
-                # Wait for shutdown signal instead of blocking indefinitely
-                await shutdown_event.wait()
-        except asyncio.CancelledError:
-            logger.info("🛑 MCP session manager cancelled")
-        except Exception as e:
-            logger.error(f"❌ MCP session manager error: {e}")
-
-    # Start the session manager task
-    session_task = asyncio.create_task(run_session_manager())
-
-    try:
-        logger.info("✅ MCP session manager started")
-        yield
-    finally:
-        logger.info("🛑 Shutting down MCP session manager...")
-        # Note: stdio cleanup is now handled by VMCPSessionManager.run()
-
-        # Signal shutdown
-        shutdown_event.set()
-
-        if session_task:
-            try:
-                await asyncio.wait_for(session_task, timeout=3.0)
-            except asyncio.TimeoutError:
-                logger.warning("⚠️ MCP session manager shutdown timeout, forcing cancellation")
-                session_task.cancel()
-                try:
-                    await asyncio.wait_for(session_task, timeout=1.0)
-                except asyncio.CancelledError:
-                    pass  # Expected
-            except asyncio.CancelledError:
-                pass  # Expected
-        logger.info("✅ MCP session manager shutdown complete")
-
-# Use custom lifespan management for MCP session
-app = FastAPI(
-    title="1xN MCP Proxy Server",
-    description="MCP proxy server with management API",
-    lifespan=lifespan,
-    redirect_slashes=False  # Prevent automatic redirects that lose Authorization headers
-)
-
-app.state.vmcp_server = vmcp
-
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# OSS version - no analytics middleware
-logger.info("📊 Analytics disabled in OSS version")
-
-# Add tracing middleware with exclusions to reduce noise (if enabled)
-if settings.enable_tracing:
-    add_tracing_middleware(
-        app,
-        "vmcp-server",
-        excluded_paths={
-            "/health",
-            "/api/health",
-            "/docs",
-            "/openapi.json",
-            "/redoc",
-            "/favicon.ico"
-        },
-        excluded_prefixes={
-            "/static/",
-            "/assets/",
-            "/app/",
-            "/api/docs",
-            "/api/traces"
-        }
-    )
-    # Add traces API router if available
-    try:
-        from vmcp.utilities.tracing import traces_api_router  # type: ignore
-        app.include_router(traces_api_router, prefix="/api")
-    except (ImportError, AttributeError):
-        logger.info("📊 Traces API router not available")
-
-# Mount static files
-static_dir = Path(__file__).parent / "static"
-if static_dir.exists():
-    app.mount("/api/proxystatic", StaticFiles(directory=str(static_dir)), name="static")
-
-# Register middleware (routing first, then authentication)
-register_middleware(app)
-
-# OSS: Root redirects directly to vMCP list page
-@app.get("/")
-async def root():
-    """Redirect to vMCP page - OSS has no separate landing page"""
-    return RedirectResponse(url="/app/vmcp")
-
-@app.get("/health")
-async def health():
-    """Health check endpoint"""
-    return {"status": "ok"}
-
-@app.get("/api/config")
-async def get_config():
-    """Get server configuration including base URL"""
-    return {
-        "base_url": settings.base_url,
-        "host": settings.host,
-        "port": settings.port,
-        "app_name": settings.app_name,
-        "version": settings.app_version
-    }
-
-
-# Mount the API routes (OSS version - minimal routers)
-logger.info("📌 Mounting API routes...")
-app.include_router(mcp_router, prefix="/api")
-app.include_router(vmcp_router, prefix="/api")
-app.include_router(oauth_handler_router, prefix="/api")
-app.include_router(blob_router, prefix="/api")
-app.include_router(stats_router, prefix="/api")
-
-# Mount the MCP server (now with shared lifespan)
-logger.info("📌 Mounting MCP server with shared lifespan...")
-app.mount("/vmcp/", vmcp_http_app, name="1xn_mcp_server")
-logger.debug(f"🔍 MCP HTTP app routes: {app.routes}")
-logger.info("✅ MCP server mounted at /vmcp/mcp")
-
-# ================================================
-# Serve frontend with SPA routing support
-# Try to find frontend in public/frontend (for packaged version or development)
-# First try: environment variable (for enterprise override)
-# ================================================
-
-frontend_path_env = os.getenv("VMCP_FRONTEND_PATH")
-if frontend_path_env:
-    frontend_dist = Path(frontend_path_env)
-    # If relative path, resolve from project root
-    if not frontend_dist.is_absolute():
-        project_root = os.getenv("VMCP_PROJECT_ROOT")
-        if project_root:
-            frontend_dist = Path(project_root) / frontend_dist
-else:
-    # Second try: packaged version (vmcp/public/frontend inside site-packages)
-    frontend_dist = Path(__file__).parent.parent / "public" / "frontend"
-    # Third try: development version (backend/public/frontend)
-    if not frontend_dist.exists():
-        frontend_dist = Path(__file__).parent.parent.parent.parent / "public" / "frontend"
-
-if frontend_dist.exists():
-    logger.info(f"📁 Serving frontend from {frontend_dist}")
-
-    # Serve static assets (CSS, JS, etc.)
-    @app.get("/app/assets/{file_path:path}")
-    async def serve_assets(file_path: str):
-        """Serve static assets"""
-        asset_file = frontend_dist / "assets" / file_path
-        if asset_file.is_file():
-            # Determine media type based on file extension
-            media_type = None
-            headers = {}
-
-            if file_path.endswith('.css'):
-                media_type = 'text/css; charset=utf-8'
-                headers['Cache-Control'] = 'public, max-age=31536000'
-            elif file_path.endswith('.js'):
-                media_type = 'application/javascript; charset=utf-8'
-                headers['Cache-Control'] = 'public, max-age=31536000'
-            elif file_path.endswith('.ico'):
-                media_type = 'image/x-icon'
-                headers['Cache-Control'] = 'public, max-age=31536000'
-
-            return FileResponse(asset_file, media_type=media_type, headers=headers)
-        raise HTTPException(status_code=404, detail="Asset not found")
-
-    # Catch-all for SPA routes - serve index.html for all other /app/* routes
-    @app.get("/app/{full_path:path}")
-    async def serve_spa(full_path: str):
-        """Serve SPA - index.html for all routes, or specific files if they exist"""
-        # Check if it's a specific file request (has extension)
-        if "." in full_path:
-            file_path = frontend_dist / full_path
-            if file_path.is_file():
-                return FileResponse(file_path)
-        # For routes without extension, serve index.html (SPA routing)
-        return FileResponse(frontend_dist / "index.html")
-
-    # Serve index.html for /app/ (root of app)
-    @app.get("/app/")
-    async def serve_app_root():
-        """Serve index.html for app root"""
-        return FileResponse(frontend_dist / "index.html")
-
-    logger.info("✅ Frontend served at /app with SPA routing")
-else:
-    logger.warning(f"⚠️ Frontend build directory not found at {frontend_dist}")
-
-# ================================================
-# Serve documentation from public/documentation
-# First try: environment variable (for enterprise override)
-# ================================================
-
-docs_path_env = os.getenv("VMCP_DOCS_PATH")
-if docs_path_env:
-    documentation_dist = Path(docs_path_env)
-    # If relative path, resolve from project root
-    if not documentation_dist.is_absolute():
-        project_root = os.getenv("VMCP_PROJECT_ROOT")
-        if project_root:
-            documentation_dist = Path(project_root) / documentation_dist
-else:
-    # Second try: packaged version
-    documentation_dist = Path(__file__).parent.parent / "public" / "documentation"
-    # Third try: development version
-    if not documentation_dist.exists():
-        documentation_dist = Path(__file__).parent.parent.parent.parent / "public" / "documentation"
-
-if documentation_dist.exists():
-    logger.info(f"📁 Serving documentation from {documentation_dist}")
-
-    # Mount documentation as static files
-    app.mount("/documentation", StaticFiles(directory=str(documentation_dist), html=True), name="documentation")
-    logger.info("✅ Documentation served at /documentation")
-else:
-    logger.debug(f"⚠️ Documentation build directory not found at {documentation_dist}")
-
-def create_app():
-    """Factory function to create FastAPI app instance."""
-    return app

@@ -1,5 +1,5 @@
 """
-Tool descriptions for preset tools in the proxy server.
+Tool descriptions for preset tools in the vmcp server.
 Keeping descriptions separate for better readability and maintenance.
 """
 

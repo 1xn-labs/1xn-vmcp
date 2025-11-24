@@ -77,6 +77,10 @@ class Settings(BaseSettings):
     serve_frontend: bool = Field(default=True, description="Serve frontend static files")
     frontend_path: Optional[Path] = Field(default=None, description="Path to frontend build directory")
 
+    # Session Management
+    ttl_seconds: int = Field(default=1800, description="Session TTL in seconds (default: 30 mins)")
+    cleanup_every_seconds: int = Field(default=600, description="Interval between session cleanup checks (default: 10 minutes)")
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # Create storage directory if it doesn't exist

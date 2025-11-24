@@ -1,15 +1,15 @@
 """
-User context service abstraction for proxy server.
+User context service abstraction for vmcp server.
 
 This module provides a default UserContext (DummyUserContext for OSS).
-Enterprise implementations should configure the UserContext before importing proxy_server.
+Enterprise implementations should configure the UserContext before importing vmcp_server.
 """
 
 from vmcp.storage.dummy_user import UserContext as DummyUserContext
 from vmcp.storage.dummy_user import ensure_dummy_user as dummy_ensure_dummy_user
 
 # Default to dummy UserContext (OSS mode)
-# Enterprise should configure this before importing proxy_server
+# Enterprise should configure this before importing vmcp_server
 UserContext = DummyUserContext
 ensure_dummy_user = dummy_ensure_dummy_user
 
@@ -20,7 +20,7 @@ def configure_user_context(user_context_class, ensure_user_func=None):
     """
     Configure the UserContext class and ensure_user function to use.
 
-    This should be called by enterprise entry points before importing proxy_server.
+    This should be called by enterprise entry points before importing vmcp_server.
 
     Args:
         user_context_class: The UserContext class to use (must be compatible with DummyUserContext interface)

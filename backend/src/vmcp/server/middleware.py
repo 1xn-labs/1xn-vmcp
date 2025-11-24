@@ -1,5 +1,5 @@
 """
-Middleware for the vMCP proxy server.
+Middleware for the vMCP vmcp server.
 
 Handles URL routing and authentication for MCP requests.
 """
@@ -22,6 +22,7 @@ from vmcp.utilities.logging import get_logger
 
 # Setup centralized logging for middleware
 logger = get_logger("vMCP Server Middleware")
+logger.setLevel('WARNING')  # Set default level to WARNING to reduce noise
 
 # Setup Jinja2 templates
 templates_dir = Path(__file__).parent / "templates"

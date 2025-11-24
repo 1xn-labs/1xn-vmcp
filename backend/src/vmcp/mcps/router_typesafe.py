@@ -1506,7 +1506,7 @@ async def initiate_auth(
         if not server_config.url:
             raise HTTPException(status_code=400, detail=f"Server '{server_id}' does not have a URL")
 
-        # Initiate OAuth flow with callback URL to MCP proxy server
+        # Initiate OAuth flow with callback URL to MCP vmcp server
         # The callback should go to the OSS server where tokens are saved
         from vmcp.config import settings
         callback_url = f"{settings.base_url}/api/otherservers/oauth/callback"
