@@ -1,8 +1,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode, useRef, useMemo } from 'react';
-// import { newApi, MCPServer, MCPRegistryServer } from '@/lib/new-api';
-import { apiClient } from '@/api/client';
-import type { MCPServer, MCPRegistryServer } from '@/lib/new-api';
+import { apiClient} from '@/api/client';
+import type { McpServerInfo as MCPServer, RegistryServerInfo as MCPRegistryServer } from '@/api/generated/types.gen';
 import { useAuth } from './auth-context';
 import { parseEnvVars } from '@/lib/app-utils';
 
@@ -127,7 +126,7 @@ export function ServersProvider({ children }: ServersProviderProps) {
         // Update the specific server with new capabilities
         setState(prevState => {
           const updatedServers = prevState.servers.map(server => {
-            if (server.server_id === serverId) {
+            if (server.id === serverId) {
               const updatedServer = {
                 ...server,
                 capabilities: capabilities.capabilities || {},
@@ -192,7 +191,7 @@ export function ServersProvider({ children }: ServersProviderProps) {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      const promises = state.servers.map(server => refreshServerCapabilities(server.server_id));
+      const promises = state.servers.map(server => refreshServerCapabilities(server.id));
       await Promise.allSettled(promises);
       
       setState(prev => ({ ...prev, loading: false, lastUpdated: Date.now() }));
@@ -231,7 +230,7 @@ export function ServersProvider({ children }: ServersProviderProps) {
         // Update the specific server with new status
         setState(prevState => {
           const updatedServers = prevState.servers.map(server => {
-            if (server.server_id === serverId) {
+            if (server.id === serverId) {
               return {
                 ...server,
                 status: validStatus,
@@ -262,7 +261,7 @@ export function ServersProvider({ children }: ServersProviderProps) {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      const promises = state.servers.map(server => refreshServerStatus(server.server_id));
+      const promises = state.servers.map(server => refreshServerStatus(server.id));
       await Promise.allSettled(promises);
       
       setState(prev => ({ ...prev, loading: false, lastUpdated: Date.now() }));
@@ -291,7 +290,7 @@ export function ServersProvider({ children }: ServersProviderProps) {
         const status = result.data?.status || 'connected';
         setState(prevState => {
           const updatedServers = prevState.servers.map(server => {
-            if (server.server_id === serverId) {
+            if (server.id === serverId) {
               return {
                 ...server,
                 status: status as 'connected' | 'disconnected' | 'auth_required' | 'error',
@@ -339,7 +338,7 @@ export function ServersProvider({ children }: ServersProviderProps) {
         // Update server status to disconnected
         setState(prevState => {
           const updatedServers = prevState.servers.map(server => {
-            if (server.server_id === serverId) {
+            if (server.id === serverId) {
               return {
                 ...server,
                 status: 'disconnected' as const,
@@ -389,7 +388,7 @@ export function ServersProvider({ children }: ServersProviderProps) {
         const status = result.data?.status || 'disconnected';
         setState(prevState => {
           const updatedServers = prevState.servers.map(server => {
-            if (server.server_id === serverId) {
+            if (server.id === serverId) {
               return {
                 ...server,
                 status: status as 'connected' | 'disconnected' | 'auth_required' | 'error',
@@ -456,7 +455,7 @@ export function ServersProvider({ children }: ServersProviderProps) {
   const addServer = useCallback(async (serverData: any) => {
     try {
       // Validate that serverData is actually a server object
-      if (typeof serverData !== 'object' || !serverData.server_id) {
+      if (typeof serverData !== 'object' || !serverData.id) {
         console.error('Invalid server object received:', serverData);
         setState(prevState => ({
           ...prevState,
@@ -467,31 +466,7 @@ export function ServersProvider({ children }: ServersProviderProps) {
       }
       
       // Transform the server object to match the MCPServer interface
-      const newServer: MCPServer = {
-        server_id: serverData.server_id,
-        name: serverData.name,
-        description: serverData.description || '',
-        status: serverData.status || 'disconnected',
-        transport_type: serverData.transport_type || 'stdio',
-        url: serverData.url || '',
-        command: serverData.command || '',
-        last_connected: serverData.last_connected || null,
-        last_error: serverData.last_error || null,
-        capabilities: serverData.capabilities || {},
-        auto_connect: serverData.auto_connect || false,
-        enabled: serverData.enabled !== undefined ? serverData.enabled : true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        // Use the provided data or initialize empty arrays
-        tools_list: serverData.tools || serverData.tools_list || [],
-        resources_list: serverData.resources || serverData.resources_list || [],
-        prompts_list: serverData.prompts || serverData.prompts_list || [],
-        resource_templates_list: serverData.resource_templates_list || serverData.resource_template_details || [],
-        tool_details: serverData.tool_details || [],
-        resource_details: serverData.resource_details || [],
-        resource_template_details: serverData.resource_template_details || [],
-        prompt_details: serverData.prompt_details || []
-      };
+      const newServer: MCPServer = serverData
       
       console.log('🔧 Adding new server to state:', newServer);
       
@@ -499,11 +474,11 @@ export function ServersProvider({ children }: ServersProviderProps) {
         console.log('🔧 Current servers state:', prevState.servers);
         
         // Check if server already exists to prevent duplicates
-        const serverExists = prevState.servers.some(s => s.server_id === newServer.server_id);
+        const serverExists = prevState.servers.some(s => s.id === newServer.id);
         if (serverExists) {
-          console.log('🔧 Server already exists, updating instead of adding:', newServer.server_id);
+          console.log('🔧 Server already exists, updating instead of adding:', newServer.id);
           const updatedServers = prevState.servers.map(s => 
-            s.server_id === newServer.server_id ? newServer : s
+            s.id === newServer.id ? newServer : s
           );
           return {
             ...prevState,
@@ -539,7 +514,7 @@ export function ServersProvider({ children }: ServersProviderProps) {
   const updateServer = useCallback(async (serverData: any) => {
     try {
       // Validate that serverData is actually a server object
-      if (typeof serverData !== 'object' || !serverData.server_id) {
+      if (typeof serverData !== 'object' || !serverData.id) {
         console.error('Invalid server object received for update:', serverData);
         setState(prevState => ({
           ...prevState,
@@ -550,31 +525,7 @@ export function ServersProvider({ children }: ServersProviderProps) {
       }
       
       // Transform the server object to match the MCPServer interface
-      const updatedServer: MCPServer = {
-        server_id: serverData.server_id,
-        name: serverData.name,
-        description: serverData.description || '',
-        status: serverData.status || 'disconnected',
-        transport_type: serverData.transport_type || 'stdio',
-        url: serverData.url || '',
-        command: serverData.command || '',
-        last_connected: serverData.last_connected || null,
-        last_error: serverData.last_error || null,
-        capabilities: serverData.capabilities || {},
-        auto_connect: serverData.auto_connect || false,
-        enabled: serverData.enabled !== undefined ? serverData.enabled : true,
-        created_at: serverData.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        // Use the provided data or initialize empty arrays
-        tools_list: serverData.tools || serverData.tools_list || [],
-        resources_list: serverData.resources || serverData.resources_list || [],
-        prompts_list: serverData.prompts || serverData.prompts_list || [],
-        resource_templates_list: serverData.resource_templates_list || serverData.resource_template_details || [],
-        tool_details: serverData.tool_details || [],
-        resource_details: serverData.resource_details || [],
-        resource_template_details: serverData.resource_template_details || [],
-        prompt_details: serverData.prompt_details || []
-      };
+      const updatedServer: MCPServer = serverData
       
       console.log('🔧 Updating server in state:', updatedServer);
       
@@ -582,9 +533,9 @@ export function ServersProvider({ children }: ServersProviderProps) {
         console.log('🔧 Current servers state:', prevState.servers);
         
         // Check if server exists to update
-        const serverExists = prevState.servers.some(s => s.server_id === updatedServer.server_id);
+        const serverExists = prevState.servers.some(s => s.id === updatedServer.id);
         if (!serverExists) {
-          console.log('🔧 Server not found for update, adding instead:', updatedServer.server_id);
+          console.log('🔧 Server not found for update, adding instead:', updatedServer.id);
           const updatedServers = [...prevState.servers, updatedServer];
           return {
             ...prevState,
@@ -597,7 +548,7 @@ export function ServersProvider({ children }: ServersProviderProps) {
         }
         
         const updatedServers = prevState.servers.map(s => 
-          s.server_id === updatedServer.server_id ? updatedServer : s
+          s.id === updatedServer.id ? updatedServer : s
         );
         console.log('🔧 Updated servers array:', updatedServers);
         return {
@@ -626,7 +577,7 @@ export function ServersProvider({ children }: ServersProviderProps) {
       setState(prevState => {
         console.log('🔧 Current servers state:', prevState.servers);
         
-        const updatedServers = prevState.servers.filter(s => s.server_id !== serverId);
+        const updatedServers = prevState.servers.filter(s => s.id !== serverId);
         console.log('🔧 Updated servers array after removal:', updatedServers);
         
         return {
@@ -674,7 +625,7 @@ export function ServersProvider({ children }: ServersProviderProps) {
         
         // Process servers to MCPRegistryServer format
         const processedServers: MCPRegistryServer[] = servers.map((server: any) => ({
-          id: server.id || server.server_id,
+          id: server.id || server.id,
           name: server.name,
           description: server.description || '',
           transport: server.transport || 'http',
@@ -881,7 +832,7 @@ export function ServersProvider({ children }: ServersProviderProps) {
         // Update server status to disconnected and clear auth info
         setState(prevState => {
           const updatedServers = prevState.servers.map(server => {
-            if (server.server_id === serverId) {
+            if (server.id === serverId) {
               return {
                 ...server,
                 status: 'disconnected' as const,
@@ -996,7 +947,7 @@ export function useServersList() {
 
 export function useServerByName(serverId: string) {
   const { servers } = useServersState();
-  return servers.find(server => server.server_id === serverId);
+  return servers.find(server => server.id === serverId);
 }
 
 // Individual action hooks for convenience

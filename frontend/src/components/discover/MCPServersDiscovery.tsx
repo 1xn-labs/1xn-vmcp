@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useMCPRegistryServersList, useMCPRegistryServersLoading, useInstallMCPRegistryServer } from '@/contexts/servers-context';
-import { MCPRegistryServer } from '@/lib/new-api';
+import { RegistryServerInfo as MCPRegistryServer } from '@/api/generated/types.gen';
 
 interface MCPServersDiscoveryProps {
   onAddServer?: (serverData: any) => Promise<void> | void;

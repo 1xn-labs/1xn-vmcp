@@ -91,15 +91,15 @@ export default function ToolOptimizationModal({ isOpen, onClose }: ToolOptimizat
     // Start with all servers from context
     servers.forEach(server => {
       const serverInfo: ServerInfo = {
-        server_id: server.server_id,
+        server_id: server.id,
         name: server.name,
-        description: server.description || `Server with ${server.tools_list?.length || 0} tools`,
+        description: server.description || `Server with ${server.tools?.length || 0} tools`,
         tools: []
       };
       
       // Add all tools from server context
-      if (server.tools_list && Array.isArray(server.tools_list)) {
-        server.tools_list.forEach(toolName => {
+      if (server.tools && Array.isArray(server.tools)) {
+        server.tools.forEach(toolName => {
           const toolKey = `${toolName}:${server.name}`;
           const usageStat = usageStats[toolKey];
           

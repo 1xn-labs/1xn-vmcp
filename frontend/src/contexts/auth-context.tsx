@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, Rea
 import { useSearchParams } from 'react-router-dom';
 import { useRouter } from '@/hooks/useRouter';
 import { apiClient } from '@/api/client';
-import type { User, LoginRequest } from '@/lib/new-api';
+import type { User, LoginRequest } from '@/api/client';
 
 const authDisabled = import.meta.env.VITE_VMCP_OSS_BUILD === 'true'
 

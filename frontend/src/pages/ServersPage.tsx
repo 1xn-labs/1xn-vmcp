@@ -48,7 +48,7 @@ import {
 } from '@/contexts/servers-context';
 import { useVMCPActions, useVMCPState } from '@/contexts/vmcp-context';
 import { useToast } from '@/hooks/use-toast';
-import { type MCPServer } from '@/lib/new-api';
+import { type McpServerInfo as MCPServer } from '@/api/generated/types.gen';
 import apiClient from '@/api/client';
 
 // Validation functions for MCP server names
@@ -93,27 +93,27 @@ const validateServerName = (name: string): { isValid: boolean; errors: string[] 
 };
 
 // Helper function to get capability names
-const getCapabilityNames = (server: MCPServer, type: 'tools' | 'resources' | 'prompts') => {
-  switch (type) {
-    case 'tools':
-      if (server.tools_list && Array.isArray(server.tools_list)) {
-        return server.tools_list.map((tool: any) => tool.name || tool).join(', ');
-      }
-      return 'No tools available';
-    case 'resources':
-      if (server.resources_list && Array.isArray(server.resources_list)) {
-        return server.resources_list.map((resource: any) => resource.name || resource.uri || resource).join(', ');
-      }
-      return 'No resources available';
-    case 'prompts':
-      if (server.prompts_list && Array.isArray(server.prompts_list)) {
-        return server.prompts_list.map((prompt: any) => prompt.name || prompt).join(', ');
-      }
-      return 'No prompts available';
-    default:
-      return '';
-  }
-};
+// const getCapabilityNames = (server: MCPServer, type: 'tools' | 'resources' | 'prompts') => {
+//   switch (type) {
+//     case 'tools':
+//       if (server.tools_list && Array.isArray(server.tools_list)) {
+//         return server.tools_list.map((tool: any) => tool.name || tool).join(', ');
+//       }
+//       return 'No tools available';
+//     case 'resources':
+//       if (server.resources_list && Array.isArray(server.resources_list)) {
+//         return server.resources_list.map((resource: any) => resource.name || resource.uri || resource).join(', ');
+//       }
+//       return 'No resources available';
+//     case 'prompts':
+//       if (server.prompts_list && Array.isArray(server.prompts_list)) {
+//         return server.prompts_list.map((prompt: any) => prompt.name || prompt).join(', ');
+//       }
+//       return 'No prompts available';
+//     default:
+//       return '';
+//   }
+// };
 
 // Helper function to detect if icon is URL or base64
 const isIconUrl = (icon: string) => {
@@ -166,7 +166,7 @@ const VMCPUsageDisplay = ({ serverId, vmcps, server }: { serverId: string; vmcps
     // Fallback to checking selected_servers array
     return vmcps.filter(vmcp => {
       return vmcp.config?.vmcp_config?.selected_servers?.some((srv: any) => 
-        srv.id === serverId || srv.server_id === serverId
+        srv.id === serverId || srv.id === serverId
       );
     });
   }, []);
@@ -313,7 +313,7 @@ export default function ServersPage() {
     if (servers && servers.length > 0) {
       const initialStatuses: Record<string, { status: string; loading: boolean; lastUpdated?: string }> = {};
       servers.forEach(server => {
-        initialStatuses[server.server_id] = {
+        initialStatuses[server.id] = {
           status: server.status,
           loading: false, // Start with not loading state
           lastUpdated: undefined
@@ -436,7 +436,7 @@ export default function ServersPage() {
         enabled: serverForHeaders.enabled !== false
       };
 
-      const response = await fetch(`/api/mcps/${serverForHeaders.server_id}/update`, {
+      const response = await fetch(`/api/mcps/${serverForHeaders.id}/update`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -719,7 +719,7 @@ export default function ServersPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
           {servers && Array.isArray(servers) && servers.map((server) => {
             // Skip rendering if server is invalid or missing required properties
-            const serverId = server.server_id || (server as any).id || (server as any).server_id;
+            const serverId = server.id || (server as any).id || (server as any).id;
             if (!server || typeof server !== 'object' || !serverId) {
               console.warn('Skipping invalid server object:', server);
               return null;
@@ -742,7 +742,7 @@ export default function ServersPage() {
                 }
                 return vmcps.filter(vmcp => {
                   return vmcp.config?.vmcp_config?.selected_servers?.some((srv: any) => 
-                    srv.id === serverId || srv.server_id === serverId
+                    srv.id === serverId || srv.id === serverId
                   );
                 });
               };
@@ -794,7 +794,7 @@ export default function ServersPage() {
                         <div className="flex items-start gap-2">
                           {(server as any).favicon_url ? (
                             <FaviconIcon
-                              url={server.url}
+                              url={server.url ? server.url : undefined}
                               faviconUrl={(server as any).favicon_url}
                               className="h-8 w-8"
                               size={32}
@@ -933,7 +933,7 @@ export default function ServersPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => { console.log('server.name', server.name); console.log('server.server_id', serverId); router.push(`/servers/${server.name}/${serverId}/test`)}}
+                          onClick={() => { console.log('server.name', server.name); console.log('server.id', serverId); router.push(`/servers/${server.name}/${serverId}/test`)}}
                           disabled={isLoading}
                           className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                         >
@@ -953,7 +953,7 @@ export default function ServersPage() {
                 </div>
               );
             } catch (error) {
-              console.error('Error rendering server:', server.server_id, error);
+              console.error('Error rendering server:', server.id, error);
               return null;
             }
           })}

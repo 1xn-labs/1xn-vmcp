@@ -801,19 +801,20 @@ class ApiClient {
   }
 
   async shareVMCP(vmcpId: string, request: { state: 'private' | 'public' | 'shared'; tags: string[] }, token?: string): Promise<ApiResponse<any>> {
-    try {
-      const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
-      const response = await sdk.shareVmcpApiVmcpsSharePost({
-        body: { vmcp_id: vmcpId, state: request.state as 'private' | 'public' | 'shared', tags: request.tags },
-        ...(headers && { headers }),
-      });
-      return { success: true, data: response.data };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to share vMCP',
-      };
-    }
+    // try {
+    //   const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+    //   const response = await sdk.shareVmcpApiVmcpsSharePost({
+    //     body: { vmcp_id: vmcpId, state: request.state as 'private' | 'public' | 'shared', tags: request.tags },
+    //     ...(headers && { headers }),
+    //   });
+    //   return { success: true, data: response.data };
+    // } catch (error) {
+    //   return {
+    //     success: false,
+    //     error: error instanceof Error ? error.message : 'Failed to share vMCP',
+    //   };
+    // }
+    return { success: false, error: 'shareVMCP is not available in OSS' };
   }
 
   async installVMCP(vmcpId: string, token?: string): Promise<ApiResponse<any>> {
