@@ -22,10 +22,10 @@ sys.path.insert(0, str(project_root))
 from vmcp.vmcps.models import VMCPConfig
 from vmcp.storage.base import StorageBase
 from vmcp.storage.database import init_db
-from vmcp.utilities.logging import setup_logging
+from vmcp.utilities.logging import get_logger
 
 # Setup logging
-logger = setup_logging("upload_demo_vmcp")
+logger = get_logger("upload_demo_vmcp")
 
 def load_json_file(file_path: Path) -> Optional[Dict[str, Any]]:
     """Load and parse a JSON file"""

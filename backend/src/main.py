@@ -8,10 +8,10 @@ Creates and configures the FastAPI application with MCP server.
 
 import uvicorn
 from vmcp.config import settings
-from vmcp.utilities.logging import setup_logging, get_logger
+from vmcp.utilities.logging import get_logger
 
 # Setup logging
-setup_logging()
+# get_logger()
 logger = get_logger(__name__)
 
 

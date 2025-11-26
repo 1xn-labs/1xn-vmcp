@@ -23,14 +23,14 @@ from vmcp.vmcps.models import VMCPConfig
 from vmcp.storage.database import init_db, SessionLocal
 from vmcp.storage.models import GlobalPublicVMCPRegistry, Blob
 from vmcp.vmcps.vmcp_config_manager.config_core import VMCPConfigManager
-from vmcp.utilities.logging import setup_logging
+from vmcp.utilities.logging import get_logger
 from rich.console import Console
 import uuid
 import base64
 from datetime import datetime
 
 # Setup logging
-logger = setup_logging("upload_and_import_1xndemo")
+logger = get_logger("upload_and_import_1xndemo")
 
 # Get the package root directory
 PACKAGE_ROOT = Path(__file__).parent.parent

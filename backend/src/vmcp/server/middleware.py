@@ -138,10 +138,10 @@ async def handle_agent_initialize(request: Request, json_body: dict, bearer_toke
     # Sanitize agent name by replacing "/" with "_" to avoid file path issues
     agent_name = agent_name.replace("/", "_")
 
-    logger.info("📋 Agent Info:")
-    logger.info(f"   Agent Name: {agent_name}")
-    logger.info(f"   Agent Version: {agent_version}")
-    logger.info(f"   Bearer Token: {bearer_token[:10]}...")
+    logger.debug("📋 Agent Info:")
+    logger.debug(f"   Agent Name: {agent_name}")
+    logger.debug(f"   Agent Version: {agent_version}")
+    logger.debug(f"   Bearer Token: {bearer_token[:10]}...")
 
     # Validate token and get user info
     jwt_service = get_jwt_service()
@@ -165,11 +165,11 @@ async def handle_agent_initialize(request: Request, json_body: dict, bearer_toke
     client_id = token_info.client_id or ""
     client_name = token_info.client_name or ""
 
-    logger.info("📋 User Info:")
-    logger.info(f"   User ID: {user_id}")
-    logger.info(f"   Client ID: {client_id}")
-    logger.info(f"   User Name: {user_name}")
-    logger.info(f"   Client Name: {client_name}")
+    logger.debug("📋 User Info:")
+    logger.debug(f"   User ID: {user_id}")
+    logger.debug(f"   Client ID: {client_id}")
+    logger.debug(f"   User Name: {user_name}")
+    logger.debug(f"   Client Name: {client_name}")
 
     # Store agent_name and user_id in request.state for response handler
     # Session ID will be available in response headers, not request headers
@@ -198,14 +198,14 @@ async def handle_agent_initialize(request: Request, json_body: dict, bearer_toke
 
         info_success = user_storage.save_agent_info(agent_name, agent_info)  # type: ignore
         if info_success:
-            logger.info(f"✅ Saved agent info for {agent_name}")
+            logger.debug(f"✅ Saved agent info for {agent_name}")
         else:
             logger.error(f"❌ Failed to save agent info for {agent_name}")
 
         # Save agent tokens
         tokens_success = user_storage.save_agent_tokens(agent_name, bearer_token)  # type: ignore
         if tokens_success:
-            logger.info(f"✅ Saved agent tokens for {agent_name}")
+            logger.debug(f"✅ Saved agent tokens for {agent_name}")
         else:
             logger.error(f"❌ Failed to save agent tokens for {agent_name}")
 
@@ -225,7 +225,7 @@ async def handle_agent_initialize(request: Request, json_body: dict, bearer_toke
 
         logs_success = user_storage.save_agent_logs(agent_name, log_entry)  # type: ignore
         if logs_success:
-            logger.info(f"✅ Logged initialize call for {agent_name}")
+            logger.debug(f"✅ Logged initialize call for {agent_name}")
         else:
             logger.error(f"❌ Failed to log initialize call for {agent_name}")
 
@@ -414,34 +414,34 @@ async def mcp_auth_middleware(request: Request, call_next):
                 if header_name.lower() not in ["host", "content-length"]:
                     redirect_response.headers[header_name] = header_value
 
-            logger.info(f"📋 Preserved headers in redirect: {list(request.headers.keys())}")
+            logger.debug(f"📋 Preserved headers in redirect: {list(request.headers.keys())}")
             return redirect_response
 
         # Comprehensive MCP request logging
-        logger.info("=" * 80)
-        logger.info("🔄 MCP REQUEST RECEIVED")
-        logger.info("=" * 80)
-        logger.info("📋 Request Details:")
-        logger.info(f"   Method: {request.method}")
-        logger.info(f"   Full URL: {request.url}")
-        logger.info(f"   Client Host: {request.client.host if request.client else 'Unknown'}")
-        logger.info(f"   User Agent: {request.headers.get('user-agent', 'Unknown')}")
+        logger.debug("=" * 80)
+        logger.debug("🔄 MCP REQUEST RECEIVED")
+        logger.debug("=" * 80)
+        logger.debug("📋 Request Details:")
+        logger.debug(f"   Method: {request.method}")
+        logger.debug(f"   Full URL: {request.url}")
+        logger.debug(f"   Client Host: {request.client.host if request.client else 'Unknown'}")
+        logger.debug(f"   User Agent: {request.headers.get('user-agent', 'Unknown')}")
 
         # Log all headers
-        logger.info("📋 Request Headers:")
+        logger.debug("📋 Request Headers:")
         for header_name, header_value in request.headers.items():
             # Mask sensitive headers
             if header_name.lower() in ["authorization", "cookie"]:
                 masked_value = f"{header_value[:10]}..." if len(header_value) > 10 else "***"
-                logger.info(f"   {header_name}: {masked_value}")
+                logger.debug(f"   {header_name}: {masked_value}")
             else:
-                logger.info(f"   {header_name}: {header_value}")
+                logger.debug(f"   {header_name}: {header_value}")
 
         # Log query parameters if any
         if request.query_params:
-            logger.info("📋 Query Parameters:")
+            logger.debug("📋 Query Parameters:")
             for key, value in request.query_params.items():
-                logger.info(f"   {key}: {value}")
+                logger.debug(f"   {key}: {value}")
 
         # Log request body for POST/PUT requests
         if request.method in ["POST", "PUT", "PATCH"]:
@@ -449,13 +449,13 @@ async def mcp_auth_middleware(request: Request, call_next):
                 body = await request.body()
                 if body:
                     body_str = body.decode("utf-8", errors="replace") if isinstance(body, bytes) else str(body)
-                    logger.info(f"📋 Request Body: {body_str}")
+                    logger.debug(f"📋 Request Body: {body_str}")
                     # Try to parse as JSON for better readability
                     try:
                         json_body = json.loads(body)
-                        logger.info("📋 Parsed JSON Body:")
+                        logger.debug("📋 Parsed JSON Body:")
                         for key, value in json_body.items():
-                            logger.info(f"   {key}: {value}")
+                            logger.debug(f"   {key}: {value}")
 
                         # ==================== Check if this is an initialize request and handle agent management
                         if json_body.get("method") == "initialize":
@@ -474,15 +474,15 @@ async def mcp_auth_middleware(request: Request, call_next):
                                 await log_mcp_call_for_agent(request, json_body, bearer_token)
                         # ==================== End of agent management check
                     except json.JSONDecodeError:
-                        logger.info(f"📋 Body is not JSON: {body_str}")
+                        logger.debug(f"📋 Body is not JSON: {body_str}")
                 else:
-                    logger.info("📋 Request Body: Empty")
+                    logger.debug("📋 Request Body: Empty")
             except Exception as e:
-                logger.info(f"📋 Could not read request body: {e}")
+                logger.debug(f"📋 Could not read request body: {e}")
 
         # Handle CORS preflight
         if request.method == "OPTIONS":
-            logger.info("📋 Handling CORS preflight for MCP")
+            logger.debug("📋 Handling CORS preflight for MCP")
             return Response(
                 status_code=204,
                 headers={
@@ -496,7 +496,7 @@ async def mcp_auth_middleware(request: Request, call_next):
         # MCP Authorization specification: "When authorization is required and not yet proven by the client,
         # servers MUST respond with HTTP 401 Unauthorized"
         auth_header = request.headers.get("Authorization")
-        logger.info(f"🔄 MCP AUTH: Authorization header: {auth_header}")
+        logger.debug(f"🔄 MCP AUTH: Authorization header: {auth_header}")
         vmcp_name = request.headers.get("vmcp-name")
         vmcp_username = request.headers.get("vmcp-username")
         share_vMCP_str = request.headers.get("share-vMCP", "false")
@@ -505,7 +505,7 @@ async def mcp_auth_middleware(request: Request, call_next):
         # Check if this is an SSE request (GET with text/event-stream Accept header)
         is_sse_request = request.method == "GET" and "text/event-stream" in request.headers.get("Accept", "")
         if not auth_header:
-            logger.info("❌ MCP AUTH: No Authorization header - returning HTTP 401")
+            logger.debug("❌ MCP AUTH: No Authorization header - returning HTTP 401")
             if vmcp_username:
                 resource_metadata = (
                     f"{BASE_URL}/.well-known/oauth-protected-resource/{vmcp_username}/{vmcp_name}/vmcp"
@@ -513,7 +513,7 @@ async def mcp_auth_middleware(request: Request, call_next):
             else:
                 resource_metadata = f"{BASE_URL}/.well-known/oauth-protected-resource/{vmcp_name}/vmcp"
 
-            logger.info(f"🔄 MCP AUTH: Resource metadata URL: {resource_metadata}")
+            logger.debug(f"🔄 MCP AUTH: Resource metadata URL: {resource_metadata}")
             return render_unauthorized_template(
                 resource_metadata=resource_metadata,
                 vmcp_username=vmcp_username,
@@ -525,7 +525,7 @@ async def mcp_auth_middleware(request: Request, call_next):
             )
 
         if not auth_header.startswith("Bearer "):
-            logger.info("❌ MCP AUTH: Invalid Authorization header format - returning HTTP 401")
+            logger.debug("❌ MCP AUTH: Invalid Authorization header format - returning HTTP 401")
             if vmcp_username:
                 resource_metadata = (
                     f"{BASE_URL}/.well-known/oauth-protected-resource/{vmcp_username}/{vmcp_name}/vmcp"
@@ -546,10 +546,10 @@ async def mcp_auth_middleware(request: Request, call_next):
         token = auth_header.replace("Bearer", "").strip()
 
         # Add detailed token logging
-        logger.info(
+        logger.debug(
             f"🔍 MCP AUTH: Extracted token: {token[:20]}...{token[-10:] if len(token) > 30 else token}"
         )
-        logger.info(f"🔍 MCP AUTH: Token length: {len(token)}")
+        logger.debug(f"🔍 MCP AUTH: Token length: {len(token)}")
 
         # Validate access token directly using JWT service
         try:
@@ -566,12 +566,12 @@ async def mcp_auth_middleware(request: Request, call_next):
                     client_name=raw_info.get("client_name"),
                     token=token,
                 )
-                logger.info(
+                logger.debug(
                     f"🔍 MCP AUTH: JWT Token payload: user_id={token_info.user_id}, "
                     f"username={token_info.username}"
                 )
             except (ValueError, KeyError) as e:
-                logger.info(f"❌ MCP AUTH: Invalid access token - returning HTTP 401: {e}")
+                logger.debug(f"❌ MCP AUTH: Invalid access token - returning HTTP 401: {e}")
                 if vmcp_username:
                     resource_metadata = (
                         f"{BASE_URL}/.well-known/oauth-protected-resource/{vmcp_username}/{vmcp_name}/vmcp"
@@ -646,8 +646,8 @@ async def mcp_auth_middleware(request: Request, call_next):
                     user_storage = StorageBase(user_id=int(user_id))
                     mapping_success = user_storage.save_session_mapping(session_id, agent_name, int(user_id))
                     if mapping_success:
-                        logger.info(f"✅ Saved session mapping: {session_id[:20]}... -> {agent_name}")
-                        
+                        logger.debug(f"✅ Saved session mapping: {session_id[:20]}... -> {agent_name}")
+
                         # Update agent_info to include session_id
                         agent_info = user_storage.get_agent_info(agent_name)
                         if agent_info:
@@ -659,24 +659,24 @@ async def mcp_auth_middleware(request: Request, call_next):
                 except Exception as e:
                     logger.error(f"❌ Error saving session mapping: {e}")
             else:
-                logger.warning("⚠️ Missing agent_name or user_id for session mapping")
+                logger.debug("⚠️ Missing agent_name or user_id for session mapping")
         else:
             logger.debug("⚠️ No mcp-session-id in response headers for initialize request")
 
     # Log response for MCP requests
     if is_mcp_request:
-        logger.info("=" * 80)
+        logger.debug("=" * 80)
         logger.info("✅ MCP RESPONSE SENT")
-        logger.info("=" * 80)
-        logger.info("📋 Response Details:")
-        logger.info(f"   Status Code: {response.status_code}")
-        logger.info(f"   Method: {request.method}")
-        logger.info(f"   Path: {request.url.path}")
+        logger.debug("=" * 80)
+        logger.debug("📋 Response Details:")
+        logger.debug(f"   Status Code: {response.status_code}")
+        logger.debug(f"   Method: {request.method}")
+        logger.debug(f"   Path: {request.url.path}")
 
         # Log response headers
-        logger.info("📋 Response Headers:")
+        logger.debug("📋 Response Headers:")
         for header_name, header_value in response.headers.items():
-            logger.info(f"   {header_name}: {header_value}")
+            logger.debug(f"   {header_name}: {header_value}")
 
         # Log response body for error responses
         if response.status_code >= 400:

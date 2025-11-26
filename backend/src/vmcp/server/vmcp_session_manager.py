@@ -102,11 +102,11 @@ class VMCPSessionManager(StreamableHTTPSessionManager):
         # Resolve vmcp_name to UUID
         vmcp_id = None
         if vmcp_name:
-            logger.info(f"[VMCPSessionManager] Resolving vmcp_name '{vmcp_name}' to UUID for user '{user_id_int}'")
+            logger.debug(f"[VMCPSessionManager] Resolving vmcp_name '{vmcp_name}' to UUID for user '{user_id_int}'")
             storage = StorageBase(user_id=user_id_int)
             vmcp_id = storage.find_vmcp_name(vmcp_name)
             if vmcp_id:
-                logger.info(f"[VMCPSessionManager] Resolved '{vmcp_name}' -> '{vmcp_id}'")
+                logger.debug(f"[VMCPSessionManager] Resolved '{vmcp_name}' -> '{vmcp_id}'")
             else:
                 logger.warning(f"[VMCPSessionManager] Could not find vMCP UUID for name: {vmcp_name}")
 

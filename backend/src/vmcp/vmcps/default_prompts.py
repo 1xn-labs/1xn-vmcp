@@ -9,11 +9,11 @@ regardless of vMCP configuration.
 
 from typing import List, Dict, Any, Optional
 from mcp.types import Prompt, PromptArgument, PromptMessage, TextContent, GetPromptResult
-from vmcp.utilities.logging.config import setup_logging
+from vmcp.utilities.logging.config import get_logger
 from vmcp.storage.base import StorageBase
 from datetime import datetime
 
-logger = setup_logging("DEFAULT_PROMPTS")
+logger = get_logger("DEFAULT_PROMPTS")
 
 
 def get_feedback_prompt() -> Prompt:

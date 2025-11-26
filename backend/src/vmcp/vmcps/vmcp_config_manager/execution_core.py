@@ -38,9 +38,9 @@ from vmcp.vmcps.models import VMCPToolCallRequest, VMCPResourceTemplateRequest
 from vmcp.vmcps.default_prompts import handle_default_prompt
 from vmcp.utilities.tracing import trace_method, add_event
 
-from vmcp.utilities.logging import setup_logging
+from vmcp.utilities.logging import get_logger
 
-logger = setup_logging("1xN_vMCP_EXECUTION_CORE")
+logger = get_logger("1xN_vMCP_EXECUTION_CORE")
 
 
 # Widget support classes and utilities

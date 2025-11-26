@@ -14,9 +14,9 @@ from vmcp.storage.base import StorageBase
 from vmcp.utilities.tracing import trace_method
 
 # Setup centralized logging for config module with span correlation
-from vmcp.utilities.logging import setup_logging
+from vmcp.utilities.logging import get_logger
 
-logger = setup_logging("1xN_MCP_CONFIG")
+logger = get_logger("1xN_MCP_CONFIG")
 
 class MCPConfigManager:
     """Manages MCP server configurations"""

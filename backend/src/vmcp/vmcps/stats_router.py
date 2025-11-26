@@ -8,7 +8,7 @@ from vmcp.storage.database import SessionLocal
 from vmcp.storage.dummy_user import UserContext, get_user_context
 
 from vmcp.storage.models import VMCP, VMCPStats
-from vmcp.utilities.logging import setup_logging
+from vmcp.utilities.logging import get_logger
 
 # Import type-safe models
 from vmcp.vmcps.models import (
@@ -19,7 +19,7 @@ from vmcp.vmcps.models import (
     StatsSummary,
 )
 
-logger = setup_logging(__name__)
+logger = get_logger(__name__)
 
 router = APIRouter(tags=["Stats"])
 

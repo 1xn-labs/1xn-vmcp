@@ -11,9 +11,9 @@ from typing import Dict, Any, Optional
 
 from vmcp.mcps.models import MCPServerConfig, MCPTransportType, MCPConnectionStatus
 
-from vmcp.utilities.logging import setup_logging
+from vmcp.utilities.logging import get_logger
 
-logger = setup_logging("1xN_vMCP_SERVER_MANAGER")
+logger = get_logger("1xN_vMCP_SERVER_MANAGER")
 
 
 def install_public_vmcp(

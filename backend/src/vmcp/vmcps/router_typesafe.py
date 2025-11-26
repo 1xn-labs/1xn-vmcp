@@ -78,11 +78,11 @@ from vmcp.vmcps.models import (
     VMCPUpdateResponse,
 )
 from vmcp.vmcps.vmcp_config_manager import VMCPConfigManager
-from vmcp.utilities.logging import setup_logging
+from vmcp.utilities.logging import get_logger
 
 router = APIRouter(prefix="/vmcps", tags=["vMCPs"])
 
-logger = setup_logging(__name__)
+logger = get_logger(__name__)
 
 # ============================================================================
 # PYTHON TOOL GENERATION MODELS (Keep existing functionality)
@@ -2617,7 +2617,7 @@ async def add_server_to_vmcp(
                 logger.warning(f"   ⚠️ Server {mcp_server.server_id}: no capabilities discovered")
         except Exception as e:
             logger.debug(f"   ❌ Traceback: {traceback.format_exc()}")
-            logger.error(f"   ❌ Error connecting to server {server_id}: {e}")
+            logger.error(f"   ❌ Error connecting to server {mcp_server.server_id}: {e}")
             # Continue without failing - server might be offline
 
         # Add server to vMCP configuration (matching original router logic exactly)

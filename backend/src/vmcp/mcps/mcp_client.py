@@ -40,7 +40,7 @@ from vmcp.mcps.models import (
     OperationCancelledError,
     OperationTimedOutError,
 )
-from vmcp.utilities.logging.config import setup_logging
+from vmcp.utilities.logging.config import get_logger
 from vmcp.utilities.tracing import trace_method
 
 BACKEND_URL = AuthSettings.base_url
@@ -55,7 +55,7 @@ except NameError:
             super().__init__(message)
             self.exceptions = exceptions
 
-logger = setup_logging("1xN_MCP_CLIENT")
+logger = get_logger("1xN_MCP_CLIENT")
 
 def safe_extract_response_info(response):
     """Safely extract status code and text from an HTTP response, handling streaming responses"""

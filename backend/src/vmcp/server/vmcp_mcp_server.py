@@ -66,7 +66,9 @@ class VMCPServer(FastMCP):
         # Validate log level is one of the allowed values
         valid_log_levels: tuple[Literal['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], ...] = ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
         log_level: Literal['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'] = log_level_str if log_level_str in valid_log_levels else 'INFO'  # type: ignore
-        super().__init__(name, streamable_http_path="/mcp", instructions="1xn v(irtual)MCP server", log_level=log_level, debug=settings.debug)
+        #super().__init__(name, streamable_http_path="/mcp", instructions="1xn v(irtual)MCP server", log_level=log_level, debug=settings.debug)
+        super().__init__(name, streamable_http_path="/mcp", instructions="1xn v(irtual)MCP server")
+
         self._mcp_server.create_initialization_options(
             notification_options=NotificationOptions(prompts_changed=True, resources_changed=True, tools_changed=True),
             experimental_capabilities={"1xn": {"vmcp": True}})
@@ -93,9 +95,6 @@ class VMCPServer(FastMCP):
 
         return super().streamable_http_app()
 
-    async def get_configured_manager(self, session_id: str) -> Optional[VMCPConfigManager]:
-        """Get the VMCPConfigManager for the given session ID, if it exists."""
-        return self._vmcp_managers.get(session_id)
 
     async def get_user_context_vmcp_server(self):
         """Build dependencies for the current request with user context"""
@@ -106,11 +105,11 @@ class VMCPServer(FastMCP):
 
             # Debug: Log all headers to see what's available
             request = get_http_request()
-            logger.info(f"[VMCPServer] DEBUG: All headers during tool call: {dict(request.headers)}")
+            logger.debug(f"[VMCPServer] DEBUG: All headers during tool call: {dict(request.headers)}")
             auth_header = request.headers.get('Authorization', '')
-            logger.info(f"[VMCPServer] DEBUG: Authorization header: '{auth_header}'")
+            logger.debug(f"[VMCPServer] DEBUG: Authorization header: '{auth_header}'")
             token = auth_header.replace('Bearer ', '').strip()
-            logger.info(f"[VMCPServer] DEBUG: Extracted token: '{token[:20] if token else 'EMPTY'}...')")
+            logger.debug(f"[VMCPServer] DEBUG: Extracted token: '{token[:20] if token else 'EMPTY'}...')")
 
             # Extract and normalize token info
             try:
@@ -181,7 +180,7 @@ class VMCPServer(FastMCP):
                     logger.debug(f"[VMCPServer] [NOTIFICATION] Could not set downstream session: {e}")
 
                 if agent_name:
-                    logger.info(f"[VMCPServer] Found agent name for session {session_id[:20]}...: {agent_name}")
+                    logger.debug(f"[VMCPServer] Found agent name for session {session_id[:20]}...: {agent_name}")
                 else:
                     logger.debug(f"[VMCPServer] No agent mapping found for session {session_id[:20]}...")
             else:
@@ -203,7 +202,7 @@ class VMCPServer(FastMCP):
                     "agent_id": agent_name,
                     "client_id": client_id or "unknown"
                 }
-                logger.info(f"[VMCPServer] Updated vmcp_config_manager logging_config with agent_name: {agent_name}")
+                logger.debug(f"[VMCPServer] Updated vmcp_config_manager logging_config with agent_name: {agent_name}")
 
             # The UserContext now has vmcp_config_manager initialized
             return user_context
@@ -309,7 +308,7 @@ class VMCPServer(FastMCP):
 
     def _setup_handlers(self) -> None:
         """Set up core MCP protocol handlers."""
-        logger.info("[VMCPServer] Setting up MCP protocol handlers...")
+        logger.debug("[VMCPServer] Setting up MCP protocol handlers...")
 
         self._mcp_server.list_tools()(self.proxy_list_tools)
         logger.debug("[VMCPServer] list_tools handler registered")
@@ -337,14 +336,14 @@ class VMCPServer(FastMCP):
         self._mcp_server.list_resource_templates()(self.proxy_list_resource_templates)
         logger.debug("[VMCPServer] list_resource_templates handler registered")
 
-        logger.info("[VMCPServer] All MCP protocol handlers registered successfully")
+        logger.debug("[VMCPServer] All MCP protocol handlers registered successfully")
 
     @trace_method("[VMCPServer]: List Tools")
     async def proxy_list_tools(self) -> List[Tool]:
         """Aggregate tools from all connected servers filtered by active agent or vMCP"""
-        logger.info("=" * 60)
-        logger.info("[VMCPServer] proxy_list_tools called")
-        logger.info("=" * 60)
+        logger.debug("=" * 60)
+        logger.debug("[VMCPServer] proxy_list_tools called")
+        logger.debug("=" * 60)
 
         # Build dependencies from current request
         deps = await self.get_user_context_vmcp_server()
@@ -429,13 +428,13 @@ class VMCPServer(FastMCP):
 
         logger.info(f"[VMCPServer] Returning {len(all_tools)} total tools ({len(preset_tools)} preset + {len(tools)} vMCP)")
         # Tools are already Tool objects, no conversion needed
-        logger.info(f"[VMCPServer] Returning {len(tools)} tools")
-        logger.info("=" * 60)
+        logger.debug(f"[VMCPServer] Returning {len(tools)} tools")
+        logger.debug("=" * 60)
 
         # Log tool details
         for i, tool in enumerate(all_tools):
             tool_type = "PRESET" if i < len(preset_tools) else "vMCP"
-            logger.info(f"[VMCPServer] Tool {i+1} [{tool_type}]: {tool.name} - {tool.description[:50] if tool.description else 'No description'}...")
+            logger.debug(f"[VMCPServer] Tool {i+1} [{tool_type}]: {tool.name} - {tool.description[:50] if tool.description else 'No description'}...")
 
         return all_tools
 
@@ -494,10 +493,10 @@ class VMCPServer(FastMCP):
     @trace_method("[VMCPServer]: List Prompts")
     async def proxy_list_prompts(self) -> List[Prompt]:
         """Aggregate prompts from all connected servers filtered by active agent or vMCP"""
-        logger.info("=" * 60)
-        logger.info("[VMCPServer] proxy_list_prompts called")
-        logger.info("=" * 60)
-        logger.info("[VMCPServer] Listing prompts from all connected servers...")
+        logger.debug("=" * 60)
+        logger.debug("[VMCPServer] proxy_list_prompts called")
+        logger.debug("=" * 60)
+        logger.debug("[VMCPServer] Listing prompts from all connected servers...")
 
         # Build dependencies from current request
         deps = await self.get_user_context_vmcp_server()
@@ -538,7 +537,7 @@ class VMCPServer(FastMCP):
 
         # Log prompt details
         for i, prompt in enumerate(prompts):
-            logger.info(f"[VMCPServer] Prompt {i+1}: {prompt.name} - {prompt.description[:50] if prompt.description else 'No description'}...")
+            logger.debug(f"[VMCPServer] Prompt {i+1}: {prompt.name} - {prompt.description[:50] if prompt.description else 'No description'}...")
 
         return prompts
 
@@ -550,20 +549,20 @@ class VMCPServer(FastMCP):
         progress_token = None
         if req.params.meta and hasattr(req.params.meta, 'progressToken'):
             progress_token = req.params.meta.progressToken
-        logger.info(f"[VMCPServer] DEBUG root_proxy_call_tool: tool={tool_name}, arguments={arguments}, progress_token={progress_token}, types={[(k, type(v).__name__) for k, v in arguments.items()]}")
+        logger.debug(f"[VMCPServer] DEBUG root_proxy_call_tool: tool={tool_name}, arguments={arguments}, progress_token={progress_token}, types={[(k, type(v).__name__) for k, v in arguments.items()]}")
         result = await self.proxy_call_tool(tool_name, arguments, progress_token=progress_token)
         return result
 
     @trace_method("[VMCPServer]: Tool Call", operation="call_tool")
     async def proxy_call_tool(self, name: str, arguments: Dict[str, Any], progress_token: Optional[Any] = None) -> Any:
         """Route tool calls to appropriate server"""
-        logger.info("=" * 60)
-        logger.info("[VMCPServer] Tool call requested")
-        logger.info("=" * 60)
-        logger.info("[VMCPServer] Tool Details:")
-        logger.info(f"[VMCPServer]    Name: {name}")
-        logger.info(f"[VMCPServer]    Arguments: {arguments}")
-        logger.info(f"[VMCPServer]    Progress Token: {progress_token}")
+        logger.debug("=" * 60)
+        logger.debug("[VMCPServer] Tool call requested")
+        logger.debug("=" * 60)
+        logger.debug("[VMCPServer] Tool Details:")
+        logger.debug(f"[VMCPServer]    Name: {name}")
+        logger.debug(f"[VMCPServer]    Arguments: {arguments}")
+        logger.debug(f"[VMCPServer]    Progress Token: {progress_token}")
 
         # Build dependencies from current request
         deps = await self.get_user_context_vmcp_server()
@@ -575,23 +574,23 @@ class VMCPServer(FastMCP):
         user_id = getattr(deps, 'user_id', 'unknown')
         client_id = getattr(deps, 'client_id', 'unknown')
         agent_name = getattr(deps, 'agent_name', 'unknown')
-        logger.info("[VMCPServer] User Context:")
-        logger.info(f"[VMCPServer]    User ID: {user_id}")
-        logger.info(f"[VMCPServer]    Client ID: {client_id}")
-        logger.info(f"[VMCPServer]    Agent Name: {agent_name}")
+        logger.debug("[VMCPServer] User Context:")
+        logger.debug(f"[VMCPServer]    User ID: {user_id}")
+        logger.debug(f"[VMCPServer]    Client ID: {client_id}")
+        logger.debug(f"[VMCPServer]    Agent Name: {agent_name}")
 
         logger.info(f"[VMCPServer] Executing tool '{name}' for user {user_id}, client {client_id}, agent {agent_name}")
 
         try:
             # For now, check if this is the vmcp_create_prompt tool
             if name == "upload_prompt":
-                logger.info(f"[VMCPServer] Executing PRESET tool '{name}'")
+                logger.debug(f"[VMCPServer] Executing PRESET tool '{name}'")
                 # Execute the preset tool directly (manually for now)
                 result = await self._execute_upload_prompt(arguments)
                 logger.info(f"[VMCPServer] Preset tool '{name}' executed successfully")
-                logger.info(f"[VMCPServer] Result type: {type(result)}")
-                logger.info(f"[VMCPServer] Result: {result}")
-                logger.info("=" * 60)
+                logger.debug(f"[VMCPServer] Result type: {type(result)}")
+                logger.debug(f"[VMCPServer] Result: {result}")
+                logger.debug("=" * 60)
 
                 # Return MCP-compatible CallToolResult format
                 from mcp.types import CallToolResult
@@ -600,7 +599,7 @@ class VMCPServer(FastMCP):
                     isError=False
                 )
             else:
-                logger.info(f"[VMCPServer] Executing vMCP tool '{name}'")
+                logger.debug(f"[VMCPServer] Executing vMCP tool '{name}'")
                 if deps.vmcp_config_manager:
                     result = await deps.vmcp_config_manager.call_tool(
                         vmcp_tool_call_request=VMCPToolCallRequest(tool_name=name, arguments=arguments, progress_token=progress_token)
@@ -608,18 +607,18 @@ class VMCPServer(FastMCP):
                 else:
                     raise Exception("No vMCP manager available for tool execution")
                 logger.info(f"[VMCPServer] vMCP tool '{name}' executed successfully")
-                logger.info(f"[VMCPServer] Result type: {type(result)}")
-                logger.info(f"[VMCPServer] Result: {result}")
+                logger.debug(f"[VMCPServer] Result type: {type(result)}")
+                logger.debug(f"[VMCPServer] Result: {result}")
                 if isinstance(result, list):
-                    logger.info(f"[VMCPServer] Result count: {len(result)}")
-                logger.info("=" * 60)
+                    logger.debug(f"[VMCPServer] Result count: {len(result)}")
+                logger.debug("=" * 60)
 
                 return result
         except Exception as e:
             logger.error(f"[VMCPServer] Tool '{name}' failed with error: {e}")
             # Add traceback to logger
             logger.error(f"[VMCPServer] Full traceback: {traceback.format_exc()}")
-            logger.info("=" * 60)
+            logger.debug("=" * 60)
 
             raise
 
@@ -700,7 +699,7 @@ class VMCPServer(FastMCP):
                 raise Exception("No vMCP manager available for resource retrieval")
             if resource_result:
                 logger.info(f"[VMCPServer] Resource read successful: {uri}")
-                logger.info(f"[VMCPServer] Resource result type: {type(resource_result)}")
+                logger.debug(f"[VMCPServer] Resource result type: {type(resource_result)}")
                 logger.debug(f"[VMCPServer] Resource result structure: {resource_result}")
                 return ServerResult(resource_result)
             else:

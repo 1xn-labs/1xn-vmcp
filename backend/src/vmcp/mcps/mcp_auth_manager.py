@@ -17,9 +17,9 @@ import httpx
 
 # Local imports
 from vmcp.mcps.models import MCPAuthConfig
-from vmcp.utilities.logging.config import setup_logging
+from vmcp.utilities.logging import get_logger
 
-logger = setup_logging("1xN_MCP_AUTH_MANAGER")
+logger = get_logger("1xN_MCP_AUTH_MANAGER")
 
 class MCPAuthManager:
     """Handles OAuth and other authentication flows for MCP servers"""

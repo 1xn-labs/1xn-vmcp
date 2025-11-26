@@ -63,10 +63,10 @@ from vmcp.shared.mcp_content_models import (
 )
 from vmcp.shared.models import BaseResponse
 from vmcp.storage.dummy_user import UserContext, get_user_context
-from vmcp.utilities.logging.config import setup_logging
+from vmcp.utilities.logging.config import get_logger
 from vmcp.vmcps.vmcp_config_manager import VMCPConfigManager
 
-logger = setup_logging("1xN_MCP_ROUTER_TYPESAFE")
+logger = get_logger("1xN_MCP_ROUTER_TYPESAFE")
 
 def get_server_not_found_error(server_name: str, config_manager: MCPConfigManager) -> HTTPException:
     """Helper function to create a helpful server not found error"""

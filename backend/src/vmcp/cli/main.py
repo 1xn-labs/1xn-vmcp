@@ -14,7 +14,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from vmcp.config import settings
-from vmcp.utilities.logging import get_logger
+from vmcp.utilities.logging import get_logger, get_uvicorn_logging_config
 
 app = typer.Typer(
     name="vmcp",
@@ -212,6 +212,7 @@ def run(
             host=settings.host,
             port=settings.port,
             log_level=settings.log_level.lower(),
+            log_config=get_uvicorn_logging_config()
             #reload=hot_reload
         )
     except KeyboardInterrupt:
@@ -280,7 +281,8 @@ def serve(
         host=settings.host,
         port=settings.port,
         reload=reload,
-        log_level=log_level
+        log_level=log_level,
+        #log_config=get_uvicorn_logging_config()
     )
 
 

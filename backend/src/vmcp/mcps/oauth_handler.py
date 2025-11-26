@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Request, Depends
 from vmcp.storage.dummy_user import get_user_context
-from vmcp.utilities.logging.config import setup_logging
+from vmcp.utilities.logging.config import get_logger
 from fastapi import Query
 
-logger = setup_logging("OAUTH_HANDLER")
+logger = get_logger("OAUTH_HANDLER")
 
 router = APIRouter()
 

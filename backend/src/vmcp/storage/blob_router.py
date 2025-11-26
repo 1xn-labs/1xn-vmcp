@@ -15,9 +15,9 @@ from .models import Blob
 from ..vmcps.vmcp_config_manager.config_core import VMCPConfigManager
 
 import logging
-from vmcp.utilities.logging import setup_logging
+from vmcp.utilities.logging import get_logger
 
-logger = setup_logging("BLOB_ROUTER")
+logger = get_logger("BLOB_ROUTER")
 
 # Try to import GlobalBlob for Enterprise (public vMCPs)
 GlobalBlob = None
