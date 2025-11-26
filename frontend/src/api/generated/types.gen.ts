@@ -586,7 +586,7 @@ export type ImageContent = {
 /**
  * LogEntry
  *
- * Model for log entry.
+ * Model for log entry - supports both vMCP stats and application logs.
  */
 export type LogEntry = {
     /**
@@ -596,41 +596,47 @@ export type LogEntry = {
      */
     timestamp: string;
     /**
+     * Log Type
+     *
+     * Log type: 'stats' or 'application'
+     */
+    log_type: string;
+    /**
      * Method
      *
      * Method name
      */
-    method: string;
+    method?: string | null;
     /**
      * Agent Name
      *
      * Agent name
      */
-    agent_name: string;
+    agent_name?: string | null;
     /**
      * Agent Id
      *
      * Agent ID
      */
-    agent_id: string;
+    agent_id?: string | null;
     /**
      * User Id
      *
      * User ID
      */
-    user_id: number;
+    user_id?: number | null;
     /**
      * Client Id
      *
      * Client ID
      */
-    client_id: string;
+    client_id?: string | null;
     /**
      * Operation Id
      *
      * Operation ID
      */
-    operation_id: string;
+    operation_id?: string | null;
     /**
      * Mcp Server
      *
@@ -697,6 +703,56 @@ export type LogEntry = {
      * Total prompts count
      */
     total_prompts?: number | null;
+    /**
+     * Success
+     *
+     * Operation success status
+     */
+    success?: boolean | null;
+    /**
+     * Error Message
+     *
+     * Error message if failed
+     */
+    error_message?: string | null;
+    /**
+     * Duration Ms
+     *
+     * Operation duration in milliseconds
+     */
+    duration_ms?: number | null;
+    /**
+     * Level
+     *
+     * Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+     */
+    level?: string | null;
+    /**
+     * Logger Name
+     *
+     * Logger name
+     */
+    logger_name?: string | null;
+    /**
+     * Message
+     *
+     * Log message
+     */
+    message?: string | null;
+    /**
+     * Traceback
+     *
+     * Traceback if error
+     */
+    traceback?: string | null;
+    /**
+     * Log Metadata
+     *
+     * Additional log metadata
+     */
+    log_metadata?: {
+        [key: string]: unknown;
+    } | null;
 };
 
 /**
@@ -3047,6 +3103,12 @@ export type StatsSummary = {
      */
     total_prompt_calls: number;
     /**
+     * Avg Tools Per Call
+     *
+     * Average tools per call: Sum(total_tools where method=='tool_call') / Count(rows where method=='tool_call')
+     */
+    avg_tools_per_call: number;
+    /**
      * Unique Methods
      *
      * List of unique methods
@@ -4446,6 +4508,38 @@ export type VmcpListSummary = {
      * Total number of prompts
      */
     total_prompts?: number | null;
+    /**
+     * Is Public
+     *
+     * Whether vMCP is public
+     */
+    is_public?: boolean;
+    /**
+     * Public At
+     *
+     * When vMCP was made public
+     */
+    public_at?: string | null;
+    /**
+     * Public Tags
+     *
+     * Public tags
+     */
+    public_tags?: Array<string>;
+    /**
+     * Server Count
+     *
+     * Number of MCP servers
+     */
+    server_count?: number | null;
+    /**
+     * Vmcp Config
+     *
+     * vMCP configuration including selected_servers
+     */
+    vmcp_config?: {
+        [key: string]: unknown;
+    } | null;
 };
 
 /**
@@ -4785,91 +4879,6 @@ export type VmcpResourceResponse = {
 };
 
 /**
- * VMCPShareData
- *
- * Data model for vMCP share response.
- */
-export type VmcpShareData = {
-    /**
-     * Vmcp Id
-     *
-     * vMCP ID
-     */
-    vmcp_id: string;
-    /**
-     * Sharing state
-     */
-    state: VmcpShareState;
-    /**
-     * Tags
-     *
-     * Public tags
-     */
-    tags?: Array<string>;
-    /**
-     * Public Url
-     *
-     * Public URL if shared
-     */
-    public_url?: string | null;
-};
-
-/**
- * VMCPShareRequest
- *
- * Request model for sharing a vMCP.
- */
-export type VmcpShareRequest = {
-    /**
-     * Vmcp Id
-     *
-     * vMCP ID to share
-     */
-    vmcp_id: string;
-    /**
-     * Sharing state
-     */
-    state: VmcpShareState;
-    /**
-     * Tags
-     *
-     * Tags for the shared vMCP
-     */
-    tags?: Array<string> | null;
-};
-
-/**
- * VMCPShareResponse
- *
- * Response model for vMCP sharing operations.
- */
-export type VmcpShareResponse = {
-    /**
-     * Success
-     *
-     * Whether the operation was successful
-     */
-    success: boolean;
-    /**
-     * Message
-     *
-     * Human-readable message about the operation
-     */
-    message: string;
-    /**
-     * Sharing operation details
-     */
-    data: VmcpShareData;
-};
-
-/**
- * VMCPShareState
- *
- * Enum for vMCP sharing states.
- */
-export type VmcpShareState = 'public' | 'shared' | 'private';
-
-/**
  * VMCPToolCallData
  *
  * Data model for vMCP tool call response.
@@ -4911,6 +4920,7 @@ export type VmcpToolCallData = {
  * Matches frontend interface: VMCPToolCallRequest
  * - tool_name: Name of the tool to execute
  * - arguments: Tool-specific parameters as key-value pairs
+ * - progress_token: Optional progress token from downstream client for progress notifications
  */
 export type VmcpToolCallRequest = {
     /**
@@ -4927,9 +4937,15 @@ export type VmcpToolCallRequest = {
     arguments?: {
         [key: string]: unknown;
     };
+    /**
+     * Progress Token
+     *
+     * Progress token from downstream client for forwarding progress notifications
+     */
+    progress_token?: string | number | null;
     [key: string]: unknown | string | {
         [key: string]: unknown;
-    } | undefined;
+    } | string | number | null | undefined;
 };
 
 /**
@@ -5991,31 +6007,6 @@ export type UpdateVmcpApiVmcpsVmcpIdPutResponses = {
 };
 
 export type UpdateVmcpApiVmcpsVmcpIdPutResponse = UpdateVmcpApiVmcpsVmcpIdPutResponses[keyof UpdateVmcpApiVmcpsVmcpIdPutResponses];
-
-export type ShareVmcpApiVmcpsSharePostData = {
-    body: VmcpShareRequest;
-    path?: never;
-    query?: never;
-    url: '/api/vmcps/share';
-};
-
-export type ShareVmcpApiVmcpsSharePostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ShareVmcpApiVmcpsSharePostError = ShareVmcpApiVmcpsSharePostErrors[keyof ShareVmcpApiVmcpsSharePostErrors];
-
-export type ShareVmcpApiVmcpsSharePostResponses = {
-    /**
-     * Successful Response
-     */
-    200: VmcpShareResponse;
-};
-
-export type ShareVmcpApiVmcpsSharePostResponse = ShareVmcpApiVmcpsSharePostResponses[keyof ShareVmcpApiVmcpsSharePostResponses];
 
 export type ListPublicVmcpsApiVmcpsPublicListGetData = {
     body?: never;

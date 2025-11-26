@@ -58,7 +58,7 @@ export interface MCPInstallRequest {
 }
 
 export interface MCPServer {
-  server_id: string;
+  id: string;
   name: string;
   description?: string;
   status: 'connected' | 'disconnected' | 'error' | 'auth_required';

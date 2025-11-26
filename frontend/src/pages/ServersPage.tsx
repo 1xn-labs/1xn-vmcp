@@ -49,6 +49,7 @@ import {
 import { useVMCPActions, useVMCPState } from '@/contexts/vmcp-context';
 import { useToast } from '@/hooks/use-toast';
 import { type MCPServer } from '@/lib/new-api';
+import apiClient from '@/api/client';
 
 // Validation functions for MCP server names
 const validateServerName = (name: string): { isValid: boolean; errors: string[] } => {
@@ -182,7 +183,7 @@ const VMCPUsageDisplay = ({ serverId, vmcps, server }: { serverId: string; vmcps
       <div className="flex flex-wrap gap-1.5">
         {usingVMCPS.length === 0 ? (
           <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/40">
-            <div className="h-3 w-3 rounded bg-gradient-to-br from-muted-foreground/20 to-muted-foreground/10 flex items-center justify-center">
+            <div className="h-3 w-3 rounded bg-linear-to-br from-muted-foreground/20 to-muted-foreground/10 flex items-center justify-center">
               <Container className="h-1.5 w-1.5 text-muted-foreground" />
             </div>
             <span className="text-xs font-medium text-muted-foreground">No vMCPs using this server</span>
@@ -197,7 +198,7 @@ const VMCPUsageDisplay = ({ serverId, vmcps, server }: { serverId: string; vmcps
                 key={vmcp.id}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/40 hover:bg-muted/60 transition-colors"
               >
-                <div className="h-3 w-3 rounded bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+                <div className="h-3 w-3 rounded bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center overflow-hidden shrink-0">
                   {getIconSource(vmcp) ? (
                     <img 
                       src={getIconSource(vmcp)} 
@@ -372,15 +373,9 @@ export default function ServersPage() {
         return;
       }
 
-      const response = await fetch(`/api/mcps/${serverToDelete.server_id}/uninstall`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await apiClient.uninstallMCPServer(serverToDelete.id);
 
-      if (response.ok) {
+      if (response.success) {
         success(`MCP server "${serverToDelete.name}" deleted successfully`);
         // Refresh both server and vMCP contexts
         await Promise.all([
@@ -388,8 +383,7 @@ export default function ServersPage() {
           refreshVMCPData()
         ]);
       } else {
-        const errorData = await response.json();
-        toastError(errorData.detail || 'Failed to delete server');
+        toastError(response.error || 'Failed to delete server');
       }
     } catch (error) {
       console.error('Error deleting server:', error);
@@ -807,7 +801,7 @@ export default function ServersPage() {
                             />
                           ) : (
                             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary/15 to-primary/25 flex items-center justify-center border border-primary/20 group-hover:border-primary/30 transition-colors flex-shrink-0">
-                              <TransportIcon className="h-4 w-4 text-primary" />
+                              <TransportIcon className="h-4 w-4 text-accent" />
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
