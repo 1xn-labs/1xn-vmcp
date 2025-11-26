@@ -34,9 +34,8 @@ def run(
     host: str = typer.Option(None, "--host", "-h", help="Host to bind to"),
     port: int = typer.Option(None, "--port", "-p", help="Port to bind to"),
     log_level: str = typer.Option("info", "--log-level", "-l", help="Log level (debug, info, warning, error)"),
-    skip_db_check: bool = typer.Option(False, "--skip-db-check", help="Skip database connectivity check"),
     open_browser: bool = typer.Option(True, "--open/--no-open", help="Open browser after starting"),
-    hot_reload: bool = typer.Option(False, "--hot-reload", help="Enable hot-reload for development")
+    dev_mode: bool = typer.Option(False, "--dev-mode", help="Enable development mode (implies hot-reload)"),
 ):
     """
     Run vMCP with automatic setup (single command start).
@@ -74,7 +73,7 @@ def run(
     config_show()
 
     # Step 1: Check database connectivity
-    if not skip_db_check:
+    if not dev_mode:
         console.print("\n[yellow]1. Checking database connectivity...[/yellow]")
         try:
             import os
@@ -113,47 +112,48 @@ def run(
             console.print("  export DATABASE_URL=postgresql://vmcp:vmcp@localhost:5432/vmcp")
             raise typer.Exit(code=1) from e
 
-    # Step 2: Initialize database tables
-    console.print("\n[yellow]2. Initializing database...[/yellow]")
-    try:
-        from vmcp.storage.database import init_db
-        from vmcp.storage.dummy_user import ensure_dummy_user
-
-        # Create tables if they don't exist
-        init_db()
-
-        # Ensure dummy user exists
-        ensure_dummy_user()
-
-        console.print("[green]✓[/green] Database initialized!")
-
-        # Always load/update the MCP registry
-        console.print("\n[yellow]3. Loading preconfigured MCP servers...[/yellow]")
-        from vmcp.scripts.upload_preconfigured_servers import main as upload_main
-
-        upload_main()
-
-        # Upload demo vMCPs
-        console.print("\n[yellow]4. Loading demo vMCPs...[/yellow]")
+        # Step 2: Initialize database tables
+        console.print("\n[yellow]2. Initializing database...[/yellow]")
         try:
-            from vmcp.scripts.upload_all_demo_vmcps import main as upload_demo_main
-            upload_demo_main()
+            from vmcp.storage.database import init_db
+            from vmcp.storage.dummy_user import ensure_dummy_user
+
+            # Create tables if they don't exist
+            init_db()
+
+            # Ensure dummy user exists
+            ensure_dummy_user()
+
+            console.print("[green]✓[/green] Database initialized!")
+
+            # Always load/update the MCP registry
+            console.print("\n[yellow]3. Loading preconfigured MCP servers...[/yellow]")
+            from vmcp.scripts.upload_preconfigured_servers import main as upload_main
+
+            upload_main()
+
+
+            # Upload demo vMCPs
+            console.print("\n[yellow]4. Loading demo vMCPs...[/yellow]")
+            try:
+                from vmcp.scripts.upload_all_demo_vmcps import main as upload_demo_main
+                upload_demo_main()
+            except Exception as e:
+                console.print(f"[yellow]⚠[/yellow] Warning: Could not upload demo vMCPs: {e}")
+                console.print("    Continuing anyway (demo vMCPs may already exist)")
+
+            # Upload and import 1xndemo (to public registry, then import to private)
+            console.print("\n[yellow]5. Loading and importing 1xndemo vMCP...[/yellow]")
+            try:
+                from vmcp.scripts.upload_and_import_1xndemo import main as upload_1xndemo_main
+                upload_1xndemo_main()
+            except Exception as e:
+                console.print(f"[yellow]⚠[/yellow] Warning: Could not upload/import 1xndemo: {e}")
+                console.print("    Continuing anyway (1xndemo may already exist)")
+
         except Exception as e:
-            console.print(f"[yellow]⚠[/yellow] Warning: Could not upload demo vMCPs: {e}")
-            console.print("    Continuing anyway (demo vMCPs may already exist)")
-
-        # Upload and import 1xndemo (to public registry, then import to private)
-        # console.print("\n[yellow]5. Loading and importing 1xndemo vMCP...[/yellow]")
-        # try:
-        #     from vmcp.scripts.upload_and_import_1xndemo import main as upload_1xndemo_main
-        #     upload_1xndemo_main()
-        # except Exception as e:
-        #     console.print(f"[yellow]⚠[/yellow] Warning: Could not upload/import 1xndemo: {e}")
-        #     console.print("    Continuing anyway (1xndemo may already exist)")
-
-    except Exception as e:
-        console.print(f"[yellow]⚠[/yellow] Database initialization warning: {e}")
-        console.print("    Continuing anyway (database may already be initialized)")
+            console.print(f"[yellow]⚠[/yellow] Database initialization warning: {e}")
+            console.print("    Continuing anyway (database may already be initialized)")
 
     # Step 6: Start the server
     console.print("\n[yellow]6. Starting vMCP server...[/yellow]")
@@ -224,9 +224,7 @@ def dev(
    host: str = typer.Option(None, "--host", "-h", help="Host to bind to"),
     port: int = typer.Option(None, "--port", "-p", help="Port to bind to"),
     log_level: str = typer.Option("debug", "--log-level", "-l", help="Log level (debug, info, warning, error)"),
-    skip_db_check: bool = typer.Option(True, "--skip-db-check", help="Skip database connectivity check"),
     open_browser: bool = typer.Option(False, "--open/--no-open", help="Open browser after starting"),
-    hot_reload: bool = typer.Option(True, "--hot-reload", help="Enable hot-reload for development")
 ):
     """
     Start vMCP in development mode with hot-reload.
@@ -239,10 +237,8 @@ def dev(
         host=host,
         port=port,
         log_level="debug",
-        skip_db_check=skip_db_check,
         open_browser=open_browser,
-        hot_reload=hot_reload 
-    )
+        dev_mode=True)
 
 
 @app.command("serve")
@@ -431,7 +427,7 @@ def mcp_list():
         vmcp mcp list
     """
     try:
-        from vmcp.mcps.mcp_configmanager import MCPConfigManager
+        from vmcp.mcps.mcp_config_manager import MCPConfigManager
 
         config_manager = MCPConfigManager(user_id="1")
         servers = config_manager.list_servers()
