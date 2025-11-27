@@ -52,6 +52,7 @@ from vmcp.shared.vmcp_content_models import (
     VMCPConfigData,
 )
 
+from vmcp.mcps.models import RegistryServerInfo
 # ============================================================================
 # BASE VMCP MODELS
 # ============================================================================
@@ -345,11 +346,11 @@ class VMCPAddServerData(BaseModel):
     """
     
     # Optional server_id for existing servers
-    server_id: Optional[str] = Field(None, description="Existing server ID (if adding existing server)")
+    server_id: Optional[str] = Field(None, alias='id', description="Existing server ID (if adding existing server)")
     
     # Required fields (name is required if server_id not provided)
     name: Optional[str] = Field(None, description="Server name (required if server_id not provided)")
-    mode: Optional[str] = Field(None, description="Transport mode: stdio, http, or sse (alternative to transport)")
+    #mode: Optional[str] = Field(None, description="Transport mode: stdio, http, or sse (alternative to transport)")
     transport: Optional[str] = Field(None, description="Transport type: stdio, http, or sse (alternative to mode)")
     description: Optional[str] = Field(None, description="Server description")
     
@@ -399,11 +400,11 @@ class VMCPAddServerData(BaseModel):
             raise ValueError("Either 'name' (for new server) or 'server_id' (for existing server) must be provided")
         return self
     
-    @validator('mode', 'transport')
-    def validate_transport_mode(cls, v):
-        if v:
-            return validate_transport_type(v)
-        return v
+    # @validator('mode', 'transport')
+    # def validate_transport_mode(cls, v):
+    #     if v:
+    #         return validate_transport_type(v)
+    #     return v
     
     @validator('description')
     def validate_description(cls, v):
@@ -444,88 +445,86 @@ class VMCPAddServerData(BaseModel):
 class VMCPAddServerRequest(VMCPBaseRequest):
     """Request model for adding a server to a vMCP.
     
-    Supports two formats:
-    1. Direct server config: { server_data: { name, mode, ... } }
-    2. Wrapped format: { server_data: { mcp_server_config: { name, mode, ... } } }
+    MCP Registry server config: { server_data: { id, name, ... } }
     """
     
-    server_data: Union[VMCPAddServerData, Dict[str, Any]] = Field(..., description="Server data or MCP server configuration")
+    server_data:RegistryServerInfo = Field(..., description="Server data or MCP server configuration")
     
-    @validator('server_data', pre=True)
-    def validate_and_normalize_server_data(cls, v):
-        """Normalize server_data to handle wrapped mcp_server_config format and registry server objects."""
-        if isinstance(v, dict):
-            # Check if this is a registry server object (has id, mcp_server_config, etc.)
-            # If mcp_server_config exists, we need to merge top-level fields with it
-            if "mcp_server_config" in v:
-                mcp_config = v.get("mcp_server_config", {})
-                # Create normalized dict with top-level fields taking precedence
-                normalized = {}
+    # @validator('server_data', pre=True)
+    # def validate_and_normalize_server_data(cls, v):
+    #     """Normalize server_data to handle wrapped mcp_server_config format and registry server objects."""
+    #     if isinstance(v, dict):
+    #         # Check if this is a registry server object (has id, mcp_server_config, etc.)
+    #         # If mcp_server_config exists, we need to merge top-level fields with it
+    #         if "mcp_server_config" in v:
+    #             mcp_config = v.get("mcp_server_config", {})
+    #             # Create normalized dict with top-level fields taking precedence
+    #             normalized = {}
                 
-                # Start with mcp_server_config fields (if they're not null/empty)
-                for key, value in mcp_config.items():
-                    if value is not None and value != "":
-                        normalized[key] = value
+    #             # Start with mcp_server_config fields (if they're not null/empty)
+    #             for key, value in mcp_config.items():
+    #                 if value is not None and value != "":
+    #                     normalized[key] = value
                 
-                # Override with top-level fields (these take precedence)
-                # Map common fields from registry server format to our format
-                if v.get("name"):
-                    normalized["name"] = v["name"]
-                if v.get("id") and not normalized.get("server_id"):
-                    # If there's an id, treat it as server_id for existing servers
-                    normalized["server_id"] = v["id"]
-                if v.get("transport"):
-                    normalized["mode"] = v["transport"]
-                    normalized["transport"] = v["transport"]
-                if v.get("description"):
-                    normalized["description"] = v["description"]
-                if v.get("url"):
-                    normalized["url"] = v["url"]
-                if v.get("favicon_url"):
-                    normalized["favicon_url"] = v["favicon_url"]
+    #             # Override with top-level fields (these take precedence)
+    #             # Map common fields from registry server format to our format
+    #             if v.get("name"):
+    #                 normalized["name"] = v["name"]+'12345678'
+    #             if v.get("id") and not normalized.get("server_id"):
+    #                 # If there's an id, treat it as server_id for existing servers
+    #                 normalized["server_id"] = v["id"]
+    #             if v.get("transport"):
+    #                 normalized["mode"] = v["transport"]
+    #                 normalized["transport"] = v["transport"]
+    #             if v.get("description"):
+    #                 normalized["description"] = v["description"]
+    #             if v.get("url"):
+    #                 normalized["url"] = v["url"]
+    #             if v.get("favicon_url"):
+    #                 normalized["favicon_url"] = v["favicon_url"]
                 
-                # Also check mcp_registry_config for additional fields
-                if "mcp_registry_config" in v:
-                    registry_config = v.get("mcp_registry_config", {})
-                    if registry_config.get("name") and not normalized.get("name"):
-                        normalized["name"] = registry_config["name"]
-                    if registry_config.get("transport_type") and not normalized.get("mode"):
-                        normalized["mode"] = registry_config["transport_type"]
-                        normalized["transport"] = registry_config["transport_type"]
-                    if registry_config.get("url") and not normalized.get("url"):
-                        normalized["url"] = registry_config["url"]
-                    if registry_config.get("description") and not normalized.get("description"):
-                        normalized["description"] = registry_config["description"]
+    #             # Also check mcp_registry_config for additional fields
+    #             if "mcp_registry_config" in v:
+    #                 registry_config = v.get("mcp_registry_config", {})
+    #                 if registry_config.get("name") and not normalized.get("name"):
+    #                     normalized["name"] = registry_config["name"]
+    #                 if registry_config.get("transport_type") and not normalized.get("mode"):
+    #                     normalized["mode"] = registry_config["transport_type"]
+    #                     normalized["transport"] = registry_config["transport_type"]
+    #                 if registry_config.get("url") and not normalized.get("url"):
+    #                     normalized["url"] = registry_config["url"]
+    #                 if registry_config.get("description") and not normalized.get("description"):
+    #                     normalized["description"] = registry_config["description"]
                 
-                # Map transport_type to mode/transport if present
-                if "transport_type" in normalized and not normalized.get("mode"):
-                    normalized["mode"] = normalized["transport_type"]
+    #             # Map transport_type to mode/transport if present
+    #             if "transport_type" in normalized and not normalized.get("mode"):
+    #                 normalized["mode"] = normalized["transport_type"]
                 
-                return normalized if normalized else v
-            # Otherwise return as-is for validation
-            return v
-        return v
+    #             return normalized if normalized else v
+    #         # Otherwise return as-is for validation
+    #         return v
+    #     return v
     
-    @validator('server_data')
-    def validate_server_data_structure(cls, v):
-        """Ensure server_data is properly structured."""
-        if isinstance(v, VMCPAddServerData):
-            return v
-        elif isinstance(v, dict):
-            # Validate that it has required fields
-            if not v.get('server_id') and not v.get('name'):
-                raise ValueError("server_data must contain either 'server_id' (for existing server) or 'name' (for new server)")
-            # Try to parse as VMCPAddServerData
-            try:
-                return VMCPAddServerData(**v)
-            except Exception as e:
-                # If parsing fails, allow as dict for backward compatibility
-                return v
-        else:
-            raise ValueError("server_data must be a dictionary or VMCPAddServerData instance")
+    # @validator('server_data')
+    # def validate_server_data_structure(cls, v):
+    #     """Ensure server_data is properly structured."""
+    #     if isinstance(v, VMCPAddServerData):
+    #         return v
+    #     elif isinstance(v, dict):
+    #         # Validate that it has required fields
+    #         if not v.get('server_id') and not v.get('name'):
+    #             raise ValueError("server_data must contain either 'server_id' (for existing server) or 'name' (for new server)")
+    #         # Try to parse as VMCPAddServerData
+    #         try:
+    #             return VMCPAddServerData(**v)
+    #         except Exception as e:
+    #             # If parsing fails, allow as dict for backward compatibility
+    #             return v
+    #     else:
+    #         raise ValueError("server_data must be a dictionary or VMCPAddServerData instance")
     
-    class Config:
-        pass
+    # class Config:
+    #     pass
 
 class VMCPRemoveServerRequest(VMCPBaseRequest):
     """Request model for removing a server from a vMCP."""

@@ -131,7 +131,7 @@ class VMCPConfigManager:
         self.user_id = user_id
         self.vmcp_id = vmcp_id
         self.mcp_config_manager = MCPConfigManager(user_id)
-        self.mcp_client_manager = MCPClientManager(self.mcp_config_manager)
+        self.mcp_client_manager = MCPClientManager(self.mcp_config_manager, mcp_keep_alive)
         self.logging_config = logging_config or {
             "agent_name": "1xn_web_client",
             "agent_id": "1xn_web_client",

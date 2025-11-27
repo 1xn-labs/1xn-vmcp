@@ -437,8 +437,8 @@ async def create_vmcp(
     
     try:
         # Get managers from global connection manager
-        config_manager = MCPConfigManager(user_context.user_id)
-        client_manager = MCPClientManager(config_manager)
+        # config_manager = MCPConfigManager(user_context.user_id)
+        # client_manager = MCPClientManager(config_manager)
         user_vmcp_manager = VMCPConfigManager(user_context.user_id)
         
         # Parse Python functions and update their variables
@@ -600,8 +600,8 @@ async def create_vmcp(
                     processed_servers = await _process_servers_for_vmcp_import(
                         vmcp_id=vmcp_id,
                         selected_servers=selected_servers,
-                        config_manager=config_manager,
-                        client_manager=client_manager
+                        config_manager=user_vmcp_manager.mcp_config_manager,
+                        client_manager=user_vmcp_manager.mcp_client_manager,
                     )
                     
                     # Update VMCP config with processed servers
@@ -1131,8 +1131,8 @@ async def install_vmcp_from_remote(
         processed_servers = await _process_servers_for_vmcp_import(
             vmcp_id=public_vmcp.id,
             selected_servers=selected_servers,
-            config_manager=config_manager,
-            client_manager=client_manager
+            config_manager=user_vmcp_manager.mcp_config_manager,
+            client_manager=user_vmcp_manager.mcp_client_manager
         )
         
         # Update the vMCP config with processed servers (with actual statuses)
@@ -2464,13 +2464,16 @@ async def add_server_to_vmcp(
     """Add a server to a vMCP configuration"""
     logger.info(f"📋 Add server to vMCP endpoint called for vmcp_id: {vmcp_id}")
     logger.info(f"   👤 User context: {user_context.user_id if user_context else 'None'}")
-    # logger.info(f"   📝 Request data: {request}")
+    logger.info(f"   📝 Request data: {request}")
     
     try:
         # Get managers
-        config_manager = MCPConfigManager(user_context.user_id)
-        client_manager = MCPClientManager(config_manager)
-        user_vmcp_manager = VMCPConfigManager(user_context.user_id, vmcp_id)
+        # config_manager = MCPConfigManager(user_context.user_id)
+        # client_manager = MCPClientManager(config_manager, keep_alive=True)
+        user_vmcp_manager = VMCPConfigManager(user_context.user_id, vmcp_id, mcp_keep_alive=True)
+        client_manager = user_vmcp_manager.mcp_client_manager
+        config_manager = user_vmcp_manager.mcp_config_manager
+
         
         # Load vMCP config
         vmcp_config = user_vmcp_manager.load_vmcp_config()
@@ -2479,56 +2482,56 @@ async def add_server_to_vmcp(
         
         server_data = request.server_data
         
-        # Convert server_data to dict if it's a VMCPAddServerData instance
-        if isinstance(server_data, VMCPAddServerData):
-            server_data_dict = server_data.model_dump(exclude_unset=True, exclude_none=False)
-        else:
-            # It's already a dict (backward compatibility)
-            server_data_dict = server_data
+        # # Convert server_data to dict if it's a VMCPAddServerData instance
+        # if isinstance(server_data, VMCPAddServerData):
+        #     server_data_dict = server_data.model_dump(exclude_unset=True, exclude_none=False)
+        # else:
+        #     # It's already a dict (backward compatibility)
+        #     server_data_dict = server_data
         
-        # Handle wrapped mcp_server_config format (shouldn't happen after normalization, but keep for safety)
-        if isinstance(server_data_dict, dict) and "mcp_server_config" in server_data_dict:
-            server_data_dict = server_data_dict.get("mcp_server_config")
+        # # Handle wrapped mcp_server_config format (shouldn't happen after normalization, but keep for safety)
+        # if isinstance(server_data_dict, dict) and "mcp_server_config" in server_data_dict:
+        #     server_data_dict = server_data_dict.get("mcp_server_config")
         
-        server_id = server_data_dict.get('server_id')
-        server_name = server_data_dict.get('name')
+        # server_id = server_data_dict.get('server_id')
+        # server_name = server_data_dict.get('name')
         
-        if not server_id and not server_name:
+        if not server_data.id and not server_data.name:
             raise HTTPException(status_code=400, detail="Either server id or server name is required")
         
         # Check if server already exists in server list
-        existing_server = config_manager.get_server_by_id(server_id) if server_id else None
+        existing_server = config_manager.get_server_by_id(server_data.id) if server_data.id else None
         
         server_to_add = None
         
         if existing_server:
             # Server exists, use it
-            logger.info(f"   ✅ Found existing server: {existing_server.name} ({existing_server.server_id})")
+            logger.info(f"   ✅ Found existing server for user: {existing_server.name} ({existing_server.server_id})")
             server_to_add = existing_server
             server_name  = server_to_add.name
             server_id = server_to_add.server_id
         else:
             # Server doesn't exist, create it from server_data
-            logger.info(f"   🔧 Creating new server from data: {server_name}")
+            logger.info(f"   🔧 Creating new server from data: {server_data.name}")
             
-            # Map transport type - use mode or transport field
-            transport_value = server_data_dict.get('mode') or server_data_dict.get('transport', 'http')
-            transport_type = MCPTransportType(transport_value)
+            # # Map transport type - use mode or transport field
+            # transport_value = server_data_dict.get('mode') or server_data_dict.get('transport', 'http')
+            # transport_type = MCPTransportType(transport_value)
             
             # Create server config
             server_config = MCPServerConfig(
-                name=server_data_dict.get('name', ''),
-                transport_type=transport_type,
-                description=server_data_dict.get('description', ''),
-                url=server_data_dict.get('url'),
-                command=server_data_dict.get('command'),
-                args=server_data_dict.get('args'),
-                env=server_data_dict.get('env'),
-                headers=server_data_dict.get('headers'),
-                auto_connect=server_data_dict.get('auto_connect', True),
-                enabled=server_data_dict.get('enabled', True),
+                name=server_data.name,
+                transport_type=MCPTransportType(server_data.transport),
+                description=server_data.description,
+                url=server_data.url,
+                command=server_data.command,
+                args=server_data.args,
+                env=server_data.env,
+                headers=server_data.headers,
+                auto_connect=True,
+                enabled=True,
                 status=MCPConnectionStatus.DISCONNECTED,
-                favicon_url=server_data_dict.get('favicon_url')
+                favicon_url=server_data.favicon_url,
             )
             
             # Generate server ID
@@ -2544,7 +2547,7 @@ async def add_server_to_vmcp(
             # Assign the created server config to server_to_add
             server_to_add = server_config
             
-            logger.info(f"   ✅ Created new server: {server_config.name} ({server_id})")
+            logger.info(f"   ✅ Created new server: {server_config.name} ({server_config})")
         
         # Try to connect and discover capabilities and upate server config
         try:
@@ -2608,11 +2611,13 @@ async def add_server_to_vmcp(
                     mcp_server.vmcps_using_server = list(set(vmcps_using_server))
                 else:
                     mcp_server.vmcps_using_server = [vmcp_id]
-                
-                logger.info(f"   ✅ Successfully tried to discover capabilities for server '{mcp_server.server_id} Current status {mcp_server.status.value}'")
-                
                 # Save updated server config
                 config_manager.update_server_config(mcp_server.server_id, mcp_server)
+                
+                logger.info(f"   ✅ Discovered capabilities for server '{mcp_server.server_id} Current status {mcp_server.status.value}'")
+                await client_manager.stop()
+                
+                
             else:
                 logger.warning(f"   ⚠️ Server {mcp_server.server_id}: no capabilities discovered")
         except Exception as e:

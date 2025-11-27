@@ -468,10 +468,10 @@ async def uninstall_mcp_server(
     if not server_config:
         raise get_server_not_found_error(server_id, config_manager)
 
-    # If it's a stdio server, disconnect it first before uninstalling
-    if server_config.transport_type == TransportType.STDIO:
-        logger.info(f"   🔌 Disconnecting stdio server before uninstall: {server_id}")
-        await MCPClientManager.disconnect_stdio_server(server_id)
+    # # If it's a stdio server, disconnect it first before uninstalling
+    # if server_config.transport_type == MCPTransportType.STDIO:
+    #     logger.info(f"   🔌 Disconnecting stdio server before uninstall: {server_id}")
+    #     await MCPClientManager.disconnect_stdio_server(server_id)
 
     # Remove from config
     success = config_manager.remove_server(server_id)
@@ -1640,6 +1640,9 @@ async def list_global_mcp_servers(
                 description=server.description,
                 transport=server.mcp_registry_config.get("transport_type", "http"),
                 url=server.mcp_registry_config.get("url"),
+                command=server.mcp_registry_config.get("command"),
+                args=server.mcp_registry_config.get("args", []),
+                env=server.mcp_registry_config.get("env", {}),
                 favicon_url=server.mcp_registry_config.get("favicon_url"),
                 category=server.server_metadata.get("category", "MCP Servers"),
                 icon=server.server_metadata.get("icon", "🔍"),

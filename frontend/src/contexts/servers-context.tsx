@@ -621,28 +621,8 @@ export function ServersProvider({ children }: ServersProviderProps) {
       const result = await apiClient.getGlobalMCPServers({}, accessToken);
       
       if (result.success && result.data) {
-        const servers = result.data.servers || [];
-        
         // Process servers to MCPRegistryServer format
-        const processedServers: MCPRegistryServer[] = servers.map((server: any) => ({
-          id: server.id || server.id,
-          name: server.name,
-          description: server.description || '',
-          transport: server.transport || 'http',
-          url: server.url || '',
-          favicon_url: server.favicon_url,
-          category: server.category || 'MCP Servers',
-          icon: server.icon || '🔍',
-          requiresAuth: server.requiresAuth || false,
-          env_vars: server.env_vars || '',
-          note: server.note || '',
-          mcp_registry_config: server.mcp_registry_config || {},
-          mcp_server_config: server.mcp_server_config || {},
-          stats: server.stats || {},
-          created_at: server.created_at || new Date().toISOString(),
-          updated_at: server.updated_at || new Date().toISOString()
-        }));
-
+        const processedServers: MCPRegistryServer[] = result.data.servers || [];
         // Calculate stats for registry servers
         const registryServerStats = {
           total: processedServers.length,

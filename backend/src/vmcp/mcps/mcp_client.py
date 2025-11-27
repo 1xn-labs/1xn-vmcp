@@ -146,7 +146,17 @@ def mcp_operation(func):
         try:
             # Use ClientSessionGroup for all transport types (persistent connections)
             session = await self.connect_server(server_config)
-            return await func(self, server_config, session, *args, **kwargs)
+            results =  await func(self, server_config, session, *args, **kwargs)
+
+            # Disconnect MCP connection if not keeping alive
+            if self._keep_alive is False:
+                logger.debug(f"[MCPClientManager] Disconnecting from server {server_config.name} after operation (keep_alive=False)")
+                await self.disconnect_server(server_config)
+                self._background_task.cancel()
+
+
+            return results
+
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
                 logger.debug(f"Authentication failed for server {server_config.name}: 401 Unauthorized")
@@ -226,12 +236,20 @@ class MCPClientManager:
     scope in a different task" errors.
     """
 
-    def __init__(self, config_manager: Optional[MCPConfigManager] = None):
-        logger.info("------------- Initializing MCPClientManager -------------")
+    def __init__(self, config_manager: Optional[MCPConfigManager] = None, keep_alive: Optional[bool] = False) -> None:
+        # Get the calling function for logging
+        # import inspect
+        # current_frame = inspect.currentframe()
+        # caller_frame = current_frame.f_back if current_frame else None
+        # caller_info = f"{caller_frame.f_code.co_filename}:{caller_frame.f_lineno} in {caller_frame.f_code.co_name}" if caller_frame else "Unknown"
+
+        # logger.info(f"------------- Initializing MCPClientManager [KeepAlive: {keep_alive}] -------------")
+        # logger.info(f"   📍 Called from: {caller_info}")
+
         self.auth_manager = MCPAuthManager()
         self.config_manager = config_manager
         self._cleanup_lock: asyncio.Lock = asyncio.Lock()
-
+        self._keep_alive = keep_alive
         # ClientSessionGroup manages all connections (stdio, SSE, HTTP)
         self._session_group: ClientSessionGroup | None = None
         self._server_sessions: Dict[str, ClientSession] = {}  # server_id -> session mapping
@@ -341,7 +359,7 @@ class MCPClientManager:
         Uses custom connection logic to pass message_handler to ClientSession
         for notification forwarding support.
         """
-        logger.info("[MCPClientManager] Background task starting...")
+        logger.info("[MCPClientManager BGTASK] Background task starting...")
 
         def name_hook(name: str, server_info) -> str:
             return f"{server_info.name}_{name}"
@@ -349,7 +367,7 @@ class MCPClientManager:
         async with ClientSessionGroup(component_name_hook=name_hook) as session_group:
             self._session_group = session_group
             self._ready_event.set()
-            logger.info("[MCPClientManager] ClientSessionGroup ready in background task")
+            logger.info("[MCPClientManager BGTASK] ClientSessionGroup ready in background task")
 
             # Process requests until shutdown
             while not self._shutdown_event.is_set():
@@ -366,21 +384,21 @@ class MCPClientManager:
                         if operation == "connect":
                             server_params = args["server_params"]
                             server_name = args.get("server_name", "unknown")
-                            logger.info(f"[MCPClientManager] Background task connecting to: {server_name}")
+                            logger.info(f"[MCPClientManager BGTASK] Background task connecting to: {server_name}")
 
                             # Custom connection with message_handler for notifications
                             session = await self._establish_session_with_handler(
                                 session_group, server_params, server_name
                             )
 
-                            logger.info(f"[MCPClientManager] Background task connected to: {server_name}")
+                            logger.info(f"[MCPClientManager BGTASK] Background task connected to: {server_name}")
                             result_future.set_result(session)
                         elif operation == "disconnect":
                             session = args["session"]
                             server_name = args.get("server_name", "unknown")
-                            logger.info(f"[MCPClientManager] Background task disconnecting from: {server_name}")
+                            logger.info(f"[MCPClientManager BGTASK] Background task disconnecting from: {server_name}")
                             await session_group.disconnect_from_server(session)
-                            logger.info(f"[MCPClientManager] Background task disconnected from: {server_name}")
+                            logger.info(f"[MCPClientManager BGTASK] Background task disconnected from: {server_name}")
                             result_future.set_result(True)
                         else:
                             result_future.set_exception(ValueError(f"Unknown operation: {operation}"))
@@ -391,17 +409,17 @@ class MCPClientManager:
                     # Normal timeout, check shutdown flag
                     continue
                 except asyncio.CancelledError:
-                    logger.info("[MCPClientManager] Background task cancelled")
+                    logger.info("[MCPClientManager BGTASK] Background task cancelled")
                     break
                 except Exception as e:
-                    logger.error(f"[MCPClientManager] Error in background task: {e}")
+                    logger.error(f"[MCPClientManager BGTASK] Error in background task: {e}")
 
             # Log sessions that will be cleaned up by context manager exit
             # Note: We don't call disconnect_from_server here because it can cause
             # task context errors. The ClientSessionGroup.__aexit__ handles cleanup.
-            logger.info(f"[MCPClientManager] Exiting context with {len(session_group.sessions)} sessions to clean up...")
+            logger.info(f"[MCPClientManager BGTASK] Exiting context with {len(session_group.sessions)} sessions to clean up...")
 
-        logger.info("[MCPClientManager] Background task exiting, session group cleaned up")
+        logger.info("[MCPClientManager BGTASK] Background task exiting, session group cleaned up")
 
     async def _establish_session_with_handler(
         self,
@@ -594,7 +612,7 @@ class MCPClientManager:
             logger.error(f"❌ [CONNECT] Failed to connect to {server_config.name}: {e}")
             raise
 
-    async def disconnect_server(self, server_config: "MCPServerConfig") -> bool:
+    async def disconnect_server(self, server_config: MCPServerConfig) -> bool:
         """Disconnect from a specific server."""
         if not self._started:
             return False

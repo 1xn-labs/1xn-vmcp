@@ -30,6 +30,7 @@ import { useVMCPActions, useVMCPList, useVMCPState } from '@/contexts/vmcp-conte
 import { useToast } from '@/hooks/use-toast';
 // import { newApi } from '@/lib/new-api';
 import { apiClient } from '@/api/client';
+import type { RegistryServerInfo, McpServerInfo } from '@/api/generated/types.gen';
 import { MCPServersDiscovery } from '@/components/discover/MCPServersDiscovery';
 import { Modal } from '@/components/ui/modal';
 
@@ -268,17 +269,15 @@ export default function MCPServersTab({
       }, {} as Record<string, string>);
 
       // Prepare the server data for the API
-      const serverData = {
+      const serverData: RegistryServerInfo = {
         name: customServerForm.name,
-        mode: customServerForm.transport,
+        transport: customServerForm.transport,
         description: customServerForm.description,
         command: customServerForm.transport === 'stdio' ? customServerForm.command : undefined,
         args: customServerForm.args ? customServerForm.args.split(',').map(arg => arg.trim()) : undefined,
         env: Object.keys(envObject).length > 0 ? envObject : undefined,
         url: (customServerForm.transport === 'http' || customServerForm.transport === 'sse') ? customServerForm.url : undefined,
-        headers: Object.keys(headersObject).length > 0 ? headersObject : undefined,
-        auto_connect: customServerForm.auto_connect,
-        enabled: customServerForm.enabled
+        headers: Object.keys(headersObject).length > 0 ? headersObject : undefined,      
       };
       
       const result = await apiClient.addServerToVMCP(vmcpConfig.id, serverData, accessToken);
@@ -567,13 +566,13 @@ export default function MCPServersTab({
   };
 
   // Server Card Component
-  const renderServerCard = (server: any, isUsedInOtherVmcps: boolean) => {
-    const isSelected = vmcpConfig.vmcp_config.selected_servers?.some(s => s.server_id === server.server_id);
+  const renderServerCard = (server: McpServerInfo, isUsedInOtherVmcps: boolean) => {
+    const isSelected = vmcpConfig.vmcp_config.selected_servers?.some(s => s.server_id === server.id);
     const status = getStatusDisplay(server);
     const StatusIcon = status.icon;
     
     return (
-      <div key={server.server_id} className={cn(
+      <div key={server.id} className={cn(
         "group relative p-4 rounded-lg border transition-all duration-200",
         "border-border/60 hover:border-border/80"
       )}>
@@ -608,8 +607,29 @@ export default function MCPServersTab({
               }));
               
             } else {
-              // Add server using the new backend endpoint
-              await addServerToVMCP(server);
+              let serverData: RegistryServerInfo;
+              // Prepare server data to add for vMCP
+              if (server.transport_type === 'stdio') {
+                serverData = {                
+                  id: server.id, 
+                  name: server.name,
+                  transport: server.transport_type,
+                  description: server.description,
+                  command: server.command,
+                  args: server.args,
+                  env: server.env,
+                };
+              } else {
+                serverData = {                
+                  id: server.id,
+                  name: server.name,
+                  transport: server.transport_type,
+                  description: server.description,
+                  url: server.url,
+                };
+              }
+              // Add server to vMCP
+              await addServerToVMCP(serverData);
             }
           }}
         >
@@ -1159,25 +1179,26 @@ export default function MCPServersTab({
                 </div>
               )}
 
-              {/* Environment Variables */}
-              <KeyValueInput
-                label="Environment Variables"
-                placeholder="Add environment variables"
-                keyPlaceholder="Variable name"
-                valuePlaceholder="Variable value"
-                pairs={customServerForm.env}
-                onChange={(pairs) => setCustomServerForm(prev => ({ ...prev, env: pairs }))}
-              />
-
-              {/* Headers */}
-              <KeyValueInput
-                label="Headers"
-                placeholder="Add custom headers"
-                keyPlaceholder="Header name"
-                valuePlaceholder="Header value"
-                pairs={customServerForm.headers}
-                onChange={(pairs) => setCustomServerForm(prev => ({ ...prev, headers: pairs }))}
-              />
+              {/* Environment Variables or Headers based on transport */}
+              {customServerForm.transport === 'stdio' ? (
+                <KeyValueInput
+                  label="Environment Variables"
+                  placeholder="Add environment variables"
+                  keyPlaceholder="Variable name"
+                  valuePlaceholder="Variable value"
+                  pairs={customServerForm.env}
+                  onChange={(pairs) => setCustomServerForm(prev => ({ ...prev, env: pairs }))}
+                />
+              ) : (
+                <KeyValueInput
+                  label="Headers"
+                  placeholder="Add custom headers"
+                  keyPlaceholder="Header name"
+                  valuePlaceholder="Header value"
+                  pairs={customServerForm.headers}
+                  onChange={(pairs) => setCustomServerForm(prev => ({ ...prev, headers: pairs }))}
+                />
+              )}
 
               {/* Options */}
               {/* <div className="flex items-center justify-between">

@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from mcp.types import Prompt, Resource, ResourceTemplate, Tool
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, model_validator
 
 from vmcp.shared.mcp_content_models import (
     MCPCapabilities,
@@ -1094,23 +1094,46 @@ class MCPRegistryConfig:
 class RegistryServerInfo(BaseModel):
     """Information about a server in the registry."""
     
-    id: str = Field(..., description="Server ID")
+    id: Optional[str] = Field(None, description="Server ID")
     name: str = Field(..., description="Server name")
-    description: str = Field(..., description="Server description")
+    description: Optional[str] = Field(None, description="Server description")
     transport: str = Field(..., description="Transport type")
-    url: Optional[str] = Field(None, description="Server URL")
+    url: Optional[str] = Field(None, description="Server URL for HTTP/SSE transport")
+    headers: Optional[Dict[str, str]] = Field(None, description="Headers for HTTP/SSE transport")
+    command: Optional[str] = Field(None, description="Command for stdio transport")
+    args: Optional[List[str]] = Field(None, description="Arguments for stdio transport")
+    env: Optional[Dict[str, str]] = Field(None, description="Environment variables for stdio transport")
     favicon_url: Optional[str] = Field(None, description="Favicon URL")
-    category: str = Field(..., description="Server category")
-    icon: str = Field(..., description="Server icon")
-    requiresAuth: bool = Field(False, description="Whether server requires authentication")
-    env_vars: str = Field("", description="Environment variables")
-    note: str = Field("", description="Additional notes")
-    mcp_registry_config: MCPRegistryConfigModel = Field(..., description="MCP registry configuration")
-    mcp_server_config: MCPServerConfigModel = Field(..., description="MCP server configuration")
-    stats: MCPRegistryStatsModel = Field(..., description="Server statistics")
+    category: Optional[str] = Field(None, description="Server category")
+    icon: Optional[str] = Field(None, description="Server icon")
+    requiresAuth: Optional[bool] = Field(False, description="Whether server requires authentication")
+    note: Optional[str] = Field("", description="Additional notes")
+    mcp_registry_config: Optional[MCPRegistryConfigModel] = Field(None, description="MCP registry configuration")
+    mcp_server_config: Optional[MCPServerConfigModel] = Field(None, description="MCP server configuration")
+    stats: Optional[MCPRegistryStatsModel] = Field(None, description="Server statistics")
     created_at: Optional[str] = Field(None, description="Creation timestamp")
     updated_at: Optional[str] = Field(None, description="Last update timestamp")
-    
+
+    @model_validator(mode='after')
+    def validate_transport_params(self):
+        """Validate that required parameters are provided based on transport type."""
+        transport_lower = self.transport.lower() if self.transport else None
+
+        if not transport_lower:
+            return self
+
+        # Validate stdio transport
+        if transport_lower == 'stdio':
+            if not self.command:
+                raise ValueError("'command' is required for stdio transport type")
+
+        # Validate http/sse transport
+        elif transport_lower in ['http', 'sse']:
+            if not self.url:
+                raise ValueError(f"'url' is required for {transport_lower} transport type")
+
+        return self
+
     class Config:
         json_schema_extra = {
             "example": {

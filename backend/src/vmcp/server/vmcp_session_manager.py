@@ -113,7 +113,8 @@ class VMCPSessionManager(StreamableHTTPSessionManager):
         # Create the manager
         manager = VMCPConfigManager(
             user_id=str(user_id),
-            vmcp_id=vmcp_id
+            vmcp_id=vmcp_id,
+            mcp_keep_alive=True, # Enable MCP connection keep-alive for vMCP sessions
         )
 
         # Cache it with TTL tracking

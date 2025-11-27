@@ -70,7 +70,7 @@ class UserContext:
     In OSS mode, this always represents the dummy local user.
     """
 
-    def __init__(self, user_id: int = 1, user_email: str = None, username: str = None, token: str = None, vmcp_name: str = None):
+    def __init__(self, user_id: str = "1", user_email: str = None, username: str = None, token: str = None, vmcp_name: str = None):
         self.user_id = user_id
         self.user_email = user_email or settings.dummy_user_email
         self.username = username or settings.dummy_user_id

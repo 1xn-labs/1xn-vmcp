@@ -2613,7 +2613,7 @@ export type RegistryServerInfo = {
      *
      * Server ID
      */
-    id: string;
+    id?: string | null;
     /**
      * Name
      *
@@ -2625,7 +2625,7 @@ export type RegistryServerInfo = {
      *
      * Server description
      */
-    description: string;
+    description?: string | null;
     /**
      * Transport
      *
@@ -2635,9 +2635,37 @@ export type RegistryServerInfo = {
     /**
      * Url
      *
-     * Server URL
+     * Server URL for HTTP/SSE transport
      */
     url?: string | null;
+    /**
+     * Headers
+     *
+     * Headers for HTTP/SSE transport
+     */
+    headers?: {
+        [key: string]: string;
+    } | null;
+    /**
+     * Command
+     *
+     * Command for stdio transport
+     */
+    command?: string | null;
+    /**
+     * Args
+     *
+     * Arguments for stdio transport
+     */
+    args?: Array<string> | null;
+    /**
+     * Env
+     *
+     * Environment variables for stdio transport
+     */
+    env?: {
+        [key: string]: string;
+    } | null;
     /**
      * Favicon Url
      *
@@ -2649,43 +2677,43 @@ export type RegistryServerInfo = {
      *
      * Server category
      */
-    category: string;
+    category?: string | null;
     /**
      * Icon
      *
      * Server icon
      */
-    icon: string;
+    icon?: string | null;
     /**
      * Requiresauth
      *
      * Whether server requires authentication
      */
-    requiresAuth?: boolean;
+    requiresAuth?: boolean | null;
     /**
      * Env Vars
      *
      * Environment variables
      */
-    env_vars?: string;
+    env_vars?: string | null;
     /**
      * Note
      *
      * Additional notes
      */
-    note?: string;
+    note?: string | null;
     /**
      * MCP registry configuration
      */
-    mcp_registry_config: McpRegistryConfig;
+    mcp_registry_config?: McpRegistryConfig | null;
     /**
      * MCP server configuration
      */
-    mcp_server_config: McpServerConfig;
+    mcp_server_config?: McpServerConfig | null;
     /**
      * Server statistics
      */
-    stats: McpRegistryStats;
+    stats?: McpRegistryStats | null;
     /**
      * Created At
      *
@@ -3420,166 +3448,18 @@ export type UploadedFile = {
 };
 
 /**
- * VMCPAddServerData
- *
- * Server data model for adding a server to a vMCP.
- *
- * Matches frontend MCPInstallRequest structure with optional server_id for existing servers.
- * Can be used directly or wrapped in mcp_server_config.
- */
-export type VmcpAddServerData = {
-    /**
-     * Server Id
-     *
-     * Existing server ID (if adding existing server)
-     */
-    server_id?: string | null;
-    /**
-     * Name
-     *
-     * Server name (required if server_id not provided)
-     */
-    name?: string | null;
-    /**
-     * Mode
-     *
-     * Transport mode: stdio, http, or sse (alternative to transport)
-     */
-    mode?: string | null;
-    /**
-     * Transport
-     *
-     * Transport type: stdio, http, or sse (alternative to mode)
-     */
-    transport?: string | null;
-    /**
-     * Description
-     *
-     * Server description
-     */
-    description?: string | null;
-    /**
-     * Command
-     *
-     * Command to run for stdio server
-     */
-    command?: string | null;
-    /**
-     * Args
-     *
-     * Command arguments
-     */
-    args?: Array<string> | null;
-    /**
-     * Env
-     *
-     * Environment variables
-     */
-    env?: {
-        [key: string]: string;
-    } | null;
-    /**
-     * Url
-     *
-     * Server URL for http/sse mode
-     */
-    url?: string | null;
-    /**
-     * Headers
-     *
-     * HTTP headers
-     */
-    headers?: {
-        [key: string]: string;
-    } | null;
-    /**
-     * Auth Type
-     *
-     * Auth type: none, oauth, bearer, basic
-     */
-    auth_type?: string | null;
-    /**
-     * Client Id
-     *
-     * OAuth client ID
-     */
-    client_id?: string | null;
-    /**
-     * Client Secret
-     *
-     * OAuth client secret
-     */
-    client_secret?: string | null;
-    /**
-     * Auth Url
-     *
-     * OAuth authorization URL
-     */
-    auth_url?: string | null;
-    /**
-     * Token Url
-     *
-     * OAuth token URL
-     */
-    token_url?: string | null;
-    /**
-     * Scope
-     *
-     * OAuth scope
-     */
-    scope?: string | null;
-    /**
-     * Access Token
-     *
-     * Bearer token
-     */
-    access_token?: string | null;
-    /**
-     * Auto Connect
-     *
-     * Auto-connect on startup
-     */
-    auto_connect?: boolean | null;
-    /**
-     * Enabled
-     *
-     * Server enabled
-     */
-    enabled?: boolean | null;
-    /**
-     * Favicon Url
-     *
-     * Favicon URL for the server
-     */
-    favicon_url?: string | null;
-    [key: string]: unknown | string | null | string | null | string | null | string | null | string | null | string | null | Array<string> | null | {
-        [key: string]: string;
-    } | null | string | null | {
-        [key: string]: string;
-    } | null | string | null | string | null | string | null | string | null | string | null | string | null | string | null | boolean | null | boolean | null | string | null | undefined;
-};
-
-/**
  * VMCPAddServerRequest
  *
  * Request model for adding a server to a vMCP.
  *
- * Supports two formats:
- * 1. Direct server config: { server_data: { name, mode, ... } }
- * 2. Wrapped format: { server_data: { mcp_server_config: { name, mode, ... } } }
+ * MCP Registry server config: { server_data: { id, name, ... } }
  */
 export type VmcpAddServerRequest = {
     /**
-     * Server Data
-     *
      * Server data or MCP server configuration
      */
-    server_data: VmcpAddServerData | {
-        [key: string]: unknown;
-    };
-    [key: string]: unknown | VmcpAddServerData | {
-        [key: string]: unknown;
-    };
+    server_data: RegistryServerInfo;
+    [key: string]: unknown | RegistryServerInfo;
 };
 
 /**
