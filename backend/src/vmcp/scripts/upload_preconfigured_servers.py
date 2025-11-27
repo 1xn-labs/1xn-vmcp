@@ -61,7 +61,10 @@ def create_mcp_registry_entry(server_data: Dict[str, Any]) -> Dict[str, Any]:
         'transport_type': transport_type,
         'url': server_data.get('url'),
         'headers': server_data.get('headers', {}),
-        'favicon_url': server_data.get('favicon_url', '')
+        'favicon_url': server_data.get('favicon_url', ''),
+        'command': server_data.get('command'),
+        'args': server_data.get('args', []),
+        'env': server_data.get('env', {})
     }
 
     server_metadata = {

@@ -42,6 +42,19 @@
       "env_vars": ""
     },
     {
+      "id": "playwright",
+      "name": "Playwright",
+      "description": "Browser Automation MCP with Playwright",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"],
+      "favicon_url": "https://playwright.dev/img/playwright-logo.ico",
+      "category": "MCP Servers",
+      "icon": "\ud83d\udd0d",
+      "requiresAuth": false,
+      "env_vars": ""
+    },
+    {
       "id": "everything",
       "name": "Everything",
       "description": "Everything MCP server",
