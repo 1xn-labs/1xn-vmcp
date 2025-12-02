@@ -873,6 +873,11 @@ export default function ServersPage() {
                             Last connected: {new Date(server.last_connected).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })} IST
                           </div>
                         )}
+                        {server.status == 'error' && (
+                          <div className="text-xs text-destructive">
+                            {server.last_error}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
