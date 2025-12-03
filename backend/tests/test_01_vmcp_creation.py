@@ -124,3 +124,44 @@ class TestVMCPCreation:
         assert updated["success"]
         assert updated["vMCP"]["description"] == new_description
         print("✅ vMCP description updated successfully")
+
+    def test_add_everything_server(self, base_url, create_vmcp, mcp_servers, helpers):
+        """Test 2.1: Add Everything MCP server to vMCP"""
+        vmcp = create_vmcp
+        print(f"\n📦 Test 1.6 - Adding Everything server to vMCP: {vmcp['id']}")
+
+        result = helpers["add_server"](
+            vmcp["id"],
+            mcp_servers["everything"],
+            "everything"
+        )
+
+        # Get current vMCP data
+        vmcp_data = helpers["get_vmcp"](vmcp["id"])
+        mcp_name = vmcp_data['vmcp_config']['selected_servers'][0]['name']
+        print(mcp_name)
+    
+        assert result is not None
+        assert mcp_name == 'everything'
+        print("✅ Everything server (HTTP) added successfully")
+
+    def test_add_allfeature_server(self, base_url, create_vmcp, mcp_servers, helpers):
+        """Test 1.7: Add AllFeature MCP server to vMCP"""
+        vmcp = create_vmcp
+        print(f"\n📦 Test 1.7 - Adding AllFeature server to vMCP: {vmcp['id']}")
+
+        result = helpers["add_server"](
+            vmcp["id"],
+            mcp_servers["allfeature"],
+            "allfeature"
+        )
+
+         # Get current vMCP data
+        vmcp_data = helpers["get_vmcp"](vmcp["id"])
+        mcp_name = vmcp_data['vmcp_config']['selected_servers'][0]['name']
+        print(mcp_name)
+    
+        assert result is not None
+        assert mcp_name == 'allfeature'
+
+        print("✅ AllFeature server added successfully")

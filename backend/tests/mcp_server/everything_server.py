@@ -9,11 +9,15 @@ import asyncio
 import base64
 import json
 import logging
+import os
 
 import click
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.fastmcp.prompts.base import UserMessage
 from mcp.server.session import ServerSession
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
 from mcp.types import (
     AudioContent,
     Completion,
@@ -46,6 +50,8 @@ TEST_AUDIO_BASE64 = "UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAA
 # Server state
 resource_subscriptions: set[str] = set()
 watched_resource_content = "Watched resource content"
+# Store headers from the last request
+last_request_headers: dict[str, str] = {}
 
 print(f"Initializing MCP Everything Server, Log Level: {log_level_config}")
 logger.info("Initializing MCP Everything Server, Log Level: %s", log_level_config)
@@ -56,12 +62,53 @@ mcp = FastMCP(
     debug=True,
 )
 
+# Add middleware to capture headers
+class HeaderCaptureMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        global last_request_headers
+        # Capture all headers
+        last_request_headers = dict(request.headers)
+        logger.debug(f"[HeaderCaptureMiddleware] Captured headers: {last_request_headers}")
+
+        # Continue processing the request
+        response = await call_next(request)
+        return response
 
 # Tools
 @mcp.tool()
 def test_simple_text() -> str:
     """Tests simple text content response"""
     return "This is a simple text response for testing."
+
+@mcp.tool()
+def test_get_env() -> str:
+    """Tests env setting for stdio servers"""
+    vmcp_env_vars = {key: value for key, value in os.environ.items() if key.startswith('VMCP_')}
+
+    if not vmcp_env_vars:
+        return "No environment variables starting with 'VMCP_' found."
+
+    return json.dumps(vmcp_env_vars, indent=2)
+
+@mcp.tool()
+def test_get_headers() -> str:
+    """Tests headers setting for sse/http servers"""
+    global last_request_headers
+
+    logger.info(f"[test_get_headers] Accessing captured headers: {last_request_headers}")
+
+    if not last_request_headers:
+        return json.dumps({"message": "No headers captured (likely using stdio transport)"}, indent=2)
+
+    # Filter headers starting with X-VMCP- (case-insensitive)
+    vmcp_headers = {key: value for key, value in last_request_headers.items() if key.upper().startswith('X-VMCP-')}
+
+    if vmcp_headers:
+        logger.info(f"[test_get_headers] Returning X-VMCP- headers: {vmcp_headers}")
+        return json.dumps(vmcp_headers, indent=2)
+    else:
+        logger.info(f"[test_get_headers] No X-VMCP- headers found. All headers: {last_request_headers}")
+        return json.dumps({"message": "No HTTP headers starting with 'X-VMCP-' found", "all_headers": last_request_headers}, indent=2)
 
 
 @mcp.tool()
@@ -368,7 +415,17 @@ def main(port: int, log_level: str, transport: str) -> int:
     logger.info(f"Endpoint will be: http://localhost:{port}/mcp")
 
     mcp.settings.port = port
-    mcp.run(transport=cast(Literal["stdio", "sse", "streamable-http"], transport))
+
+    if transport == 'streamable-http':
+        app = mcp.streamable_http_app()
+        app.add_middleware(HeaderCaptureMiddleware)
+
+        # Run with uvicorn
+        import uvicorn
+        logger.info(f"Running Starlette app with uvicorn on port {port}")
+        uvicorn.run(app, host="0.0.0.0", port=port, log_level=log_level_config.lower())
+    else:
+        mcp.run(transport=cast(Literal["stdio", "sse", "streamable-http"], transport))
 
     return 0
 

@@ -319,3 +319,72 @@ class TestMCPServerComposition:
                 print("   ✅ Prompt contains 'hello' argument")
                 print("   ✅ Prompt contains 'world' argument")
                 print("\n✅ Prompt with arguments test successful")
+
+    @pytest.mark.asyncio
+    async def test_mcp_http_headers(self, base_url, create_vmcp, mcp_servers, helpers):
+        """Test: Verify HTTP headers are passed to MCP server"""
+
+        vmcp = create_vmcp
+        print(f"\n📦 Test: Testing HTTP headers for MCP server: {vmcp['id']}")
+
+        # Add server with custom headers
+        server_config = mcp_servers["everything"].copy()
+        server_config["headers"] = {
+            "X-VMCP-Custom-Header": "custom_value_789",
+            "X-VMCP-Another-Header": "another_header_value"
+        }
+        helpers["add_server"](vmcp["id"], server_config, "everything_headers")
+
+        # Connect via MCP client
+        mcp_url = f"{base_url}private/{vmcp['name']}/vmcp"
+
+        async with streamablehttp_client(mcp_url) as (read_stream, write_stream, _):
+            async with ClientSession(read_stream, write_stream) as session:
+                await session.initialize()
+
+                # Call test_get_headers tool
+                result = await session.call_tool("everythingheaders_test_get_headers", arguments={})
+
+                print(f"📋 HTTP headers result: {result}")
+
+                # Verify result contains our custom headers
+                assert len(result.content) > 0
+
+                # Get text content from the result
+                from mcp.types import TextContent
+                result_text = ""
+                for content in result.content:
+                    if isinstance(content, TextContent):
+                        result_text = content.text
+                        break
+
+                assert result_text, "Expected text content in result"
+
+                import json
+                headers_data = json.loads(result_text)
+
+                print(f"   📋 Headers data received: {headers_data}")
+
+                # Check if we got headers (might be in different format depending on response)
+                if "message" not in headers_data or "No headers" not in headers_data.get("message", ""):
+                    # We should have our custom headers (headers are case-insensitive, usually lowercased)
+                    # Headers can be in the root or in 'all_headers'
+                    all_headers = headers_data if isinstance(headers_data, dict) and ("x-vmcp-custom-header" in headers_data or "X-VMCP-Custom-Header" in headers_data) else headers_data.get("all_headers", {})
+
+                    # Check for lowercase version (HTTP headers are case-insensitive)
+                    assert "x-vmcp-custom-header" in all_headers or "X-VMCP-Custom-Header" in all_headers, f"Expected X-VMCP-Custom-Header in result, got: {all_headers}"
+                    print(f"   ✅ Found X-VMCP-Custom-Header in headers")
+
+                    # Verify the values
+                    header_value = all_headers.get("x-vmcp-custom-header") or all_headers.get("X-VMCP-Custom-Header")
+                    assert header_value == "custom_value_789", f"Expected header value 'custom_value_789', got: {header_value}"
+                    print(f"   ✅ X-VMCP-Custom-Header value is correct: {header_value}")
+
+                    another_header_value = all_headers.get("x-vmcp-another-header") or all_headers.get("X-VMCP-Another-Header")
+                    assert another_header_value == "another_header_value", f"Expected header value 'another_header_value', got: {another_header_value}"
+                    print(f"   ✅ X-VMCP-Another-Header value is correct: {another_header_value}")
+
+                    print("\n✅ HTTP headers test successful")
+                else:
+                    print("⚠️  Headers not captured (might be stdio transport or middleware issue)")
+

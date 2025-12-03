@@ -20,6 +20,7 @@ except ImportError:
     # Fall back to absolute imports (when run directly)
     from all_feature_server import mcp as all_feature_mcp  # type: ignore[import-untyped]
     from everything_server import mcp as everything_mcp  # type: ignore[import-untyped]
+    from everything_server import HeaderCaptureMiddleware
 
 
 @contextlib.asynccontextmanager
@@ -40,6 +41,8 @@ app = Starlette(
     ],
     lifespan=lifespan,
 )
+
+app.add_middleware(HeaderCaptureMiddleware)
 
 
 @app.route("/health")
