@@ -12,8 +12,8 @@ from typing import Dict, Optional
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 
 # Import type-safe models
-from vmcp.mcps.mcp_client import AuthenticationError, MCPClientManager
-from vmcp.mcps.mcp_configmanager import MCPConfigManager
+from vmcp.mcps.mcp_client_manager import AuthenticationError, MCPClientManager
+from vmcp.mcps.mcp_config_manager import MCPConfigManager
 from vmcp.mcps.models import (
     MCPAuthConfig,
     MCPCapabilitiesResponse,
@@ -449,8 +449,8 @@ async def update_mcp_server(
         raise
     except Exception as e:
         logger.error(f"   ❌ Error updating server: {e}")
-        logger.error(f"   ❌ Exception type: {type(e).__name__}")
-        logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
+        # logger.error(f"   ❌ Exception type: {type(e).__name__}")
+        # logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to update server: {str(e)}") from e
 
 @router.delete("/{server_id}/uninstall", response_model=MCPUninstallResponse)
@@ -503,7 +503,7 @@ async def connect_mcp_server_with_capabilities(
     try:
         # Get managers from global connection manager
         config_manager = MCPConfigManager(str(user_context.user_id))
-        client_manager = MCPClientManager(config_manager)
+        client_manager = MCPClientManager(config_manager, keep_alive=True)
 
         # Check if server exists
         server_config = config_manager.get_server(server_id)
@@ -521,7 +521,7 @@ async def connect_mcp_server_with_capabilities(
             logger.debug(f"   ❌ Authentication error for server {server_id}: {e}")
             current_status = MCPConnectionStatus.AUTH_REQUIRED
         except Exception as e:
-            logger.error(f"   ❌ Error pinging server {server_id}: {traceback.format_exc()}")
+            # logger.error(f"   ❌ Error pinging server {server_id}: {traceback.format_exc()}")
             logger.error(f"   ❌ Error pinging server {server_id}: {e}")
             current_status = MCPConnectionStatus.ERROR
             config_manager.update_server_status(server_id, current_status, str(e))
@@ -575,6 +575,9 @@ async def connect_mcp_server_with_capabilities(
             except Exception as e:
                 logger.error(f"   ❌ Error discovering capabilities for server {server_id}: {e}")
                 # Don't fail the connection if capabilities discovery fails
+
+        # Close client connection 
+        await client_manager.stop()
 
         # Update vMCPs using server status
         vmcps_using_server = server_config.vmcps_using_server
@@ -659,15 +662,6 @@ async def disconnect_mcp_server(
         server_config.auth = None
         server_config.session_id = None
 
-        # If it's a stdio server, explicitly disconnect it from the connection pool
-        if server_config.transport_type == TransportType.STDIO:
-            logger.info(f"   🔌 Disconnecting stdio server: {server_id}")
-            disconnected = await MCPClientManager.disconnect_stdio_server(server_id)
-            if disconnected:
-                logger.info(f"   ✅ Successfully closed stdio connection for: {server_id}")
-            else:
-                logger.warning(f"   ⚠️  No active stdio connection found for: {server_id}")
-
         # Set status to disconnected
         config_manager.update_server_status(server_id, MCPConnectionStatus.DISCONNECTED)
 
@@ -697,8 +691,8 @@ async def disconnect_mcp_server(
         raise
     except Exception as e:
         logger.error(f"   ❌ Error disconnecting server: {e}")
-        logger.error(f"   ❌ Exception type: {type(e).__name__}")
-        logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
+        # logger.error(f"   ❌ Exception type: {type(e).__name__}")
+        # logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to disconnect server: {str(e)}") from e
 
 @router.post("/{server_id}/ping", response_model=MCPPingResponse)
@@ -804,8 +798,8 @@ async def get_server_status(
         raise
     except Exception as e:
         logger.error(f"   ❌ Error getting server status: {e}")
-        logger.error(f"   ❌ Exception type: {type(e).__name__}")
-        logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
+        # logger.error(f"   ❌ Exception type: {type(e).__name__}")
+        # logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to get server status: {str(e)}") from e
 
 # ============================================================================
@@ -935,8 +929,8 @@ async def discover_server_capabilities(
         raise
     except Exception as e:
         logger.error(f"   ❌ Error in discover capabilities endpoint: {e}")
-        logger.error(f"   ❌ Exception type: {type(e).__name__}")
-        logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
+        # logger.error(f"   ❌ Exception type: {type(e).__name__}")
+        # logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to discover capabilities: {str(e)}") from e
 
 # ============================================================================
@@ -967,8 +961,8 @@ async def call_mcp_tool(
             )
         except Exception as tool_error:
             logger.error(f"   ❌ Tool call failed: {tool_error}")
-            logger.error(f"   ❌ Tool call exception type: {type(tool_error).__name__}")
-            logger.error(f"   ❌ Tool call full traceback: {traceback.format_exc()}")
+            # logger.error(f"   ❌ Tool call exception type: {type(tool_error).__name__}")
+            # logger.error(f"   ❌ Tool call full traceback: {traceback.format_exc()}")
             raise
 
         if result is None:
@@ -997,8 +991,8 @@ async def call_mcp_tool(
         raise
     except Exception as e:
         logger.error(f"   ❌ Error calling MCP tool: {e}")
-        logger.error(f"   ❌ Exception type: {type(e).__name__}")
-        logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
+        # logger.error(f"   ❌ Exception type: {type(e).__name__}")
+        # logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to call MCP tool: {str(e)}") from e
 
 @router.post("/{server_id}/resources/read", response_model=MCPResourceResponse)
@@ -1021,8 +1015,8 @@ async def get_mcp_resource(
             logger.info(f"   🔍 get_resource returned: {contents}")
         except Exception as e:
             logger.error(f"   ❌ Exception in client_manager.read_resource: {e}")
-            logger.error(f"   ❌ Exception type: {type(e).__name__}")
-            logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
+            # logger.error(f"   ❌ Exception type: {type(e).__name__}")
+            # logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
             raise e
 
         if contents is None:
@@ -1049,8 +1043,8 @@ async def get_mcp_resource(
         )
     except Exception as e:
         logger.error(f"   ❌ Error getting MCP resource: {e}")
-        logger.error(f"   ❌ Exception type: {type(e).__name__}")
-        logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
+        # logger.error(f"   ❌ Exception type: {type(e).__name__}")
+        # logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to get MCP resource: {str(e)}") from e
 
 @router.post("/{server_id}/prompts/get", response_model=MCPPromptResponse)
@@ -1078,8 +1072,8 @@ async def get_mcp_prompt(
             logger.info(f"   🔍 get_prompt returned: {messages}")
         except Exception as e:
             logger.error(f"   ❌ Exception in client_manager.get_prompt: {e}")
-            logger.error(f"   ❌ Exception type: {type(e).__name__}")
-            logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
+            # logger.error(f"   ❌ Exception type: {type(e).__name__}")
+            # logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
             raise e
 
         if messages is None:
@@ -1107,8 +1101,8 @@ async def get_mcp_prompt(
         )
     except Exception as e:
         logger.error(f"   ❌ Error getting MCP prompt: {e}")
-        logger.error(f"   ❌ Exception type: {type(e).__name__}")
-        logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
+        # logger.error(f"   ❌ Exception type: {type(e).__name__}")
+        # logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
 
         # If it's a validation error, return 422 with details
         if hasattr(e, 'status_code') and e.status_code == 422:
@@ -1161,8 +1155,8 @@ async def discover_mcp_tools(
         )
     except Exception as e:
         logger.error(f"   ❌ Error discovering MCP tools: {e}")
-        logger.error(f"   ❌ Exception type: {type(e).__name__}")
-        logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
+        # logger.error(f"   ❌ Exception type: {type(e).__name__}")
+        # logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to discover MCP tools: {str(e)}") from e
 
 @router.get("/{server_id}/tools/list", response_model=MCPToolsResponse)
@@ -1189,8 +1183,8 @@ async def list_server_tools(
         raise HTTPException(status_code=401, detail=f"Authentication error for server {server_id}: {e}") from e
     except Exception as e:
         logger.error(f"   ❌ Error listing server tools: {e}")
-        logger.error(f"   ❌ Exception type: {type(e).__name__}")
-        logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
+        # logger.error(f"   ❌ Exception type: {type(e).__name__}")
+        # logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to list server tools: {str(e)}") from e
 
     # Get tools from live connection
@@ -1244,8 +1238,8 @@ async def list_server_resources(
         raise HTTPException(status_code=401, detail=f"Authentication error for server {server_id}: {e}") from e
     except Exception as e:
         logger.error(f"   ❌ Error listing server resources: {e}")
-        logger.error(f"   ❌ Exception type: {type(e).__name__}")
-        logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
+        # logger.error(f"   ❌ Exception type: {type(e).__name__}")
+        # logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to list server resources: {str(e)}") from e
 
     resources = []
@@ -1293,8 +1287,8 @@ async def list_server_prompts(
         raise HTTPException(status_code=401, detail=f"Authentication error for server {server_id}: {e}") from e
     except Exception as e:
         logger.error(f"   ❌ Error listing server prompts: {e}")
-        logger.error(f"   ❌ Exception type: {type(e).__name__}")
-        logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
+        # logger.error(f"   ❌ Exception type: {type(e).__name__}")
+        # logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to list server prompts: {str(e)}") from e
 
     prompts = []
@@ -1421,8 +1415,8 @@ async def list_mcp_servers(
         )
     except Exception as e:
         logger.error(f"   ❌ Error in list_mcp_servers: {e}")
-        logger.error(f"   ❌ Exception type: {type(e).__name__}")
-        logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
+        # logger.error(f"   ❌ Exception type: {type(e).__name__}")
+        # logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}") from e
 
 @router.get("/stats", response_model=MCPStatsResponse)
@@ -1476,8 +1470,8 @@ async def get_mcp_stats(
         )
     except Exception as e:
         logger.error(f"   ❌ Error getting MCP stats: {e}")
-        logger.error(f"   ❌ Exception type: {type(e).__name__}")
-        logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
+        # logger.error(f"   ❌ Exception type: {type(e).__name__}")
+        # logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to get MCP stats: {str(e)}") from e
 
 # ============================================================================
@@ -1549,8 +1543,8 @@ async def initiate_auth(
         raise
     except Exception as e:
         logger.error(f"   ❌ Error initiating auth for server '{server_id}': {e}")
-        logger.error(f"   ❌ Exception type: {type(e).__name__}")
-        logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
+        # logger.error(f"   ❌ Exception type: {type(e).__name__}")
+        # logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 # ============================================================================
@@ -1581,8 +1575,8 @@ async def connect_server_background(server_id: str, user_id: str,
             logger.warning(f"⚠️ Server '{server_id}' not found or not enabled for background connection")
     except Exception as e:
         logger.error(f"❌ Error in background connection task for server '{server_id}': {e}")
-        logger.error(f"❌ Exception type: {type(e).__name__}")
-        logger.error(f"❌ Full traceback: {traceback.format_exc()}")
+        # logger.error(f"❌ Exception type: {type(e).__name__}")
+        # logger.error(f"❌ Full traceback: {traceback.format_exc()}")
 
 # ============================================================================
 # REGISTRY ENDPOINTS
@@ -1669,8 +1663,8 @@ async def list_global_mcp_servers(
 
     except Exception as e:
         logger.error(f"❌ Error listing global MCP servers: {e}")
-        logger.error(f"❌ Exception type: {type(e).__name__}")
-        logger.error(f"❌ Full traceback: {traceback.format_exc()}")
+        # logger.error(f"❌ Exception type: {type(e).__name__}")
+        # logger.error(f"❌ Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to list global MCP servers: {str(e)}") from e
     finally:
         if 'db' in locals():

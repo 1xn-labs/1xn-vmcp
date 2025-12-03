@@ -220,6 +220,7 @@ class MCPConfigManager:
         if id_ in self._servers:
             logger.info(f"""
                            📊 Updating server config for {id_} {config.name}: 
+                           Status: [{config.status}]: {config.last_error} 
                            Tools: {len(config.tools)}
                            Resources: {len(config.resources)}
                            Prompts: {len(config.prompts)}""")

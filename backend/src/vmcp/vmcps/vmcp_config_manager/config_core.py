@@ -64,8 +64,8 @@ from mcp.types import (
 
 from vmcp.config import settings
 from vmcp.storage.base import StorageBase
-from vmcp.mcps.mcp_configmanager import MCPConfigManager
-from vmcp.mcps.mcp_client import MCPClientManager
+from vmcp.mcps.mcp_config_manager import MCPConfigManager
+from vmcp.mcps.mcp_client_manager import MCPClientManager
 from vmcp.vmcps.models import VMCPConfig, VMCPToolCallRequest, VMCPResourceTemplateRequest
 from vmcp.utilities.tracing import trace_method, add_event, log_to_span
 

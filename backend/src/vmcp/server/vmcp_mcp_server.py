@@ -160,6 +160,7 @@ class VMCPServer(FastMCP):
                 if manager:
                     user_context.vmcp_config_manager = manager
                     logger.info(f"[VMCPServer] Re-using VMCPConfigManager for user_id: {user_id}, vmcp_name: {vmcp_name}")
+                    logger.debug(f"[VMCPServer] Existing MCPClientManager ID: {id(user_context.vmcp_config_manager.mcp_client_manager)}")
                 else:
                     # Create new manager via session manager
                     user_context.vmcp_config_manager = self._session_manager.create_manager(

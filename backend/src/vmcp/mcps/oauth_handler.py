@@ -64,8 +64,8 @@ async def oauth_callback_page(code: str, state: str):
         
         # Create user context and managers
         from vmcp.mcps.models import MCPConnectionStatus
-        from vmcp.mcps.mcp_configmanager import MCPConfigManager
-        from vmcp.mcps.mcp_client import MCPClientManager
+        from vmcp.mcps.mcp_config_manager import MCPConfigManager
+        from vmcp.mcps.mcp_client_manager import MCPClientManager
         config_manager = MCPConfigManager(user_id)
         client_manager = MCPClientManager(config_manager)
         

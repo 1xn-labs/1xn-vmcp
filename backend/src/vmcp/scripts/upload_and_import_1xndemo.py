@@ -221,8 +221,8 @@ async def import_to_private_vmcp(user_id: int = 1) -> bool:
     """Import 1xndemo from public registry to private VMCP table using the same import flow as install endpoint"""
     try:
         # Import the same functions used in install endpoint
-        from vmcp.mcps.mcp_configmanager import MCPConfigManager
-        from vmcp.mcps.mcp_client import MCPClientManager
+        from vmcp.mcps.mcp_config_manager import MCPConfigManager
+        from vmcp.mcps.mcp_client_manager import MCPClientManager
         from vmcp.vmcps.router_typesafe import _process_servers_for_vmcp_import, _merge_vmcp_capabilities
         
         # Initialize managers (same as install endpoint)

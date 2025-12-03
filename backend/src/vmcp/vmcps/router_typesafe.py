@@ -17,8 +17,8 @@ from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Re
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from vmcp.mcps.mcp_client import AuthenticationError, MCPClientManager
-from vmcp.mcps.mcp_configmanager import MCPConfigManager
+from vmcp.mcps.mcp_client_manager import AuthenticationError, MCPClientManager
+from vmcp.mcps.mcp_config_manager import MCPConfigManager
 from vmcp.mcps.models import MCPConnectionStatus, MCPServerConfig, MCPTransportType
 
 # Import shared models
@@ -2552,31 +2552,38 @@ async def add_server_to_vmcp(
         # Try to connect and discover capabilities and upate server config
         try:
             logger.info(f"   🔗 Attempting to connect to server: {server_name}")
-            mcp_server = config_manager.get_server(server_id)
+            mcp_server: MCPServerConfig = config_manager.get_server(server_id)
             if mcp_server:
                 # Ping the server to get current status
-                try:
-                    current_status = await client_manager.ping_server(mcp_server.server_id)
-                    logger.info(f"   🔍 Server {mcp_server.server_id}: ping result = {current_status.value}")
-                except AuthenticationError as e:
-                    logger.debug(f"   ❌ Traceback: {traceback.format_exc()}")
-                    logger.debug(f"   ❌ Authentication error for server {mcp_server.server_id}: {e}")
-                    current_status = MCPConnectionStatus.AUTH_REQUIRED
-                except Exception as e:
-                    logger.debug(f"   ❌ Traceback: {traceback.format_exc()}")
-                    logger.debug(f"   ❌ Error pinging server {mcp_server.server_id}: {e}")
-                    current_status = MCPConnectionStatus.UNKNOWN
+                # try:
+                #     current_status = await client_manager.ping_server(mcp_server.server_id)
+                #     logger.info(f"   🔍 Server {mcp_server.server_id}: ping result = {current_status.value}")
+                # except AuthenticationError as e:
+                #     logger.debug(f"   ❌ Traceback: {traceback.format_exc()}")
+                #     logger.debug(f"   ❌ Authentication error for server {mcp_server.server_id}: {e}")
+                #     current_status = MCPConnectionStatus.AUTH_REQUIRED
+                # except Exception as e:
+                #     logger.debug(f"   ❌ Traceback: {traceback.format_exc()}")
+                #     logger.debug(f"   ❌ Error pinging server {mcp_server.server_id}: {e}")
+                #     current_status = MCPConnectionStatus.UNKNOWN
 
-                mcp_server.status = current_status
+                # mcp_server.status = current_status
                 
                 # Discover capabilities
+                capabilities = None
+
                 try:
                     capabilities = await client_manager.discover_capabilities(mcp_server.server_id)
+                
                 except Exception as e:
-                    logger.debug(f"   ❌ Traceback: {traceback.format_exc()}")
-                    logger.warning(f"   ❌ Error discovering capabilities for server {mcp_server.server_id}: {e}")
-                    capabilities = None
-
+                    mcp_server.last_error = str(e)
+                    if type(e) is AuthenticationError: 
+                        mcp_server.status = MCPConnectionStatus.AUTH_REQUIRED
+                    else:
+                        mcp_server.status = MCPConnectionStatus.ERROR
+                    #logger.debug(f"   ❌ Traceback: {traceback.format_exc()}")
+                    logger.debug(f"   ❌ Error discovering capabilities for server {mcp_server.server_id}: {e}")
+                    
                 if capabilities:
                     logger.info(f"   🔍 Server {mcp_server.server_id}: capabilities discovered")
                     # Update server config with discovered capabilities (matching original router exactly)
@@ -2602,7 +2609,7 @@ async def add_server_to_vmcp(
                         "resources": bool(mcp_server.resources and len(mcp_server.resources) > 0),
                         "prompts": bool(mcp_server.prompts and len(mcp_server.prompts) > 0)
                     }
-
+                
                 vmcps_using_server = mcp_server.vmcps_using_server
                 if vmcps_using_server:
                     logger.info(f"   🔄 vMCPs using server {mcp_server.server_id}: {vmcps_using_server}")
@@ -2731,6 +2738,14 @@ async def add_server_to_vmcp(
         
     except HTTPException:
         raise
+    except ExceptionGroup as eg:
+        logger.error(f"   ❌ ExceptionGroup while adding server to vMCP '{vmcp_id}': {len(eg.exceptions)} exceptions")
+        for i, sub_exc in enumerate(eg.exceptions):
+            logger.error(f"     Sub-exception {i+1}: {type(sub_exc).__name__}: {sub_exc}")
+        logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
+        # Extract first meaningful error message
+        error_msg = str(eg.exceptions[0]) if eg.exceptions else "Unknown error"
+        raise HTTPException(status_code=500, detail=f"Failed to add server to vMCP: {error_msg}")
     except Exception as e:
         logger.error(f"   ❌ Error adding server to vMCP '{vmcp_id}': {e}")
         logger.error(f"   ❌ Exception type: {type(e).__name__}")

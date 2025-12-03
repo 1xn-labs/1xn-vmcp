@@ -429,7 +429,7 @@ def mcp_list():
         vmcp mcp list
     """
     try:
-        from vmcp.mcps.mcp_configmanager import MCPConfigManager
+        from backend.src.vmcp.mcps.mcp_config_manager import MCPConfigManager
 
         config_manager = MCPConfigManager(user_id="1")
         servers = config_manager.list_servers()

@@ -27,7 +27,7 @@ from mcp.types import Tool, Resource, ResourceTemplate, Prompt, PromptArgument
 
 from vmcp.config import settings
 from vmcp.storage.base import StorageBase
-from vmcp.mcps.mcp_configmanager import MCPConfigManager
+from vmcp.mcps.mcp_config_manager import MCPConfigManager
 from vmcp.vmcps.default_prompts import get_all_default_prompts
 from vmcp.vmcps.vmcp_config_manager.widget_utils import UIWidget, _tool_meta
 from vmcp.utilities.tracing import trace_method, add_event, log_to_span

@@ -33,7 +33,7 @@ from mcp.types import (
 )
 
 from vmcp.storage.base import StorageBase
-from vmcp.mcps.mcp_client import MCPClientManager
+from vmcp.mcps.mcp_client_manager import MCPClientManager
 from vmcp.vmcps.models import VMCPToolCallRequest, VMCPResourceTemplateRequest
 from vmcp.vmcps.default_prompts import handle_default_prompt
 from vmcp.utilities.tracing import trace_method, add_event
