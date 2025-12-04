@@ -2,29 +2,22 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from '@/hooks/useRouter';
-import { CheckCircle, Server, X, Plus, Trash2, RefreshCw, Wifi, WifiOff, Lock, LinkIcon, AlertTriangle, Activity, Terminal, Globe } from 'lucide-react';
+import { CheckCircle, Server, Plus, Trash2, Globe } from 'lucide-react';
 import {PromptIcon, ToolIcon, McpIcon, VmcpIcon, ResourceIcon} from '@/lib/vmcp';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FaviconIcon } from '@/components/ui/favicon-icon';
-import { KeyValueInput } from '@/components/ui/key-value-input';
 import { VMCPConfig } from '@/types/vmcp';
 import { getStatusDisplay } from '@/lib/vmcp';
 import { cn } from '@/lib/utils';
 
-import { 
-  useServersList, 
-  useServerStats, 
-  useServersLoading, 
-  useServersError, 
-  useServersActions 
+import {
+  useServersList,
+  useServerStats,
+  useServersLoading,
+  useServersError,
+  useServersActions
 } from '@/contexts/servers-context';
 import { useVMCPActions, useVMCPList, useVMCPState } from '@/contexts/vmcp-context';
 import { useToast } from '@/hooks/use-toast';
@@ -33,6 +26,8 @@ import { apiClient } from '@/api/client';
 import type { RegistryServerInfo, McpServerInfo } from '@/api/generated/types.gen';
 import { MCPServersDiscovery } from '@/components/discover/MCPServersDiscovery';
 import { Modal } from '@/components/ui/modal';
+import { ServerDetailsModal } from '@/components/vmcp/ServerDetailsModal';
+import { CustomServerModal, type CustomServerFormData } from '@/components/vmcp/CustomServerModal';
 
 // Validation functions for MCP server names
 const validateServerName = (name: string): { isValid: boolean; errors: string[] } => {
@@ -100,15 +95,15 @@ export default function MCPServersTab({
   const [selectedModalServerId, setSelectedModalServerId] = useState<string | null>(null);
   const [modalLoading, setModalLoading] = useState<{refresh?: boolean, connect?: boolean, auth?: boolean}>({});
   const [showCustomServerModal, setShowCustomServerModal] = useState(false);
-  const [customServerForm, setCustomServerForm] = useState({
+  const [customServerForm, setCustomServerForm] = useState<CustomServerFormData>({
     name: '',
     description: '',
-    transport: 'http' as 'stdio' | 'http' | 'sse',
+    transport: 'http',
     command: '',
     url: '',
     args: '',
-    env: [] as Array<{key: string, value: string}>,
-    headers: [] as Array<{key: string, value: string}>,
+    env: [],
+    headers: [],
     auto_connect: true,
     enabled: true
   });
@@ -393,66 +388,6 @@ export default function MCPServersTab({
       console.error('Failed to remove server from vMCP:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to remove server from vMCP';
       toastError(errorMessage);
-    }
-  };
-
-  // Helper function to get status display (similar to servers page)
-  const getModalStatusDisplay = (server: any) => {
-    const currentStatus = server?.status;
-    const isLoading = modalLoading.refresh || false;
-    
-    if (isLoading) {
-      return {
-        label: 'Fetching...',
-        color: 'bg-blue-500/20 border-blue-500/30 text-blue-400',
-        icon: Activity,
-        bgColor: 'bg-blue-500/10'
-      };
-    }
-    
-    switch (currentStatus) {
-      case 'connected':
-        return {
-          label: 'Connected',
-          color: 'bg-green-500/20 border-green-500/30 text-green-400',
-          icon: CheckCircle,
-          bgColor: 'bg-green-500/10'
-        };
-      case 'auth_required':
-        return {
-          label: 'Auth Required',
-          color: 'bg-amber-500/20 border-amber-500/30 text-amber-400',
-          icon: Lock,
-          bgColor: 'bg-amber-500/10'
-        };
-      case 'error':
-        return {
-          label: 'Error',
-          color: 'bg-red-500/20 border-red-500/30 text-red-400',
-          icon: AlertTriangle,
-          bgColor: 'bg-red-500/10'
-        };
-      default:
-        return {
-          label: 'Disconnected',
-          color: 'bg-gray-500/20 border-gray-500/30 text-gray-400',
-          icon: WifiOff,
-          bgColor: 'bg-gray-500/10'
-        };
-    }
-  };
-
-  // Helper function to get transport icon
-  const getTransportIcon = (transport: string) => {
-    switch (transport) {
-      case 'stdio':
-        return Terminal;
-      case 'http':
-        return Globe;
-      case 'sse':
-        return Wifi;
-      default:
-        return Server;
     }
   };
 
@@ -860,401 +795,36 @@ export default function MCPServersTab({
       {selectedModalServerId && (() => {
         // First try to find the server in the vMCP configuration (it has the full server data)
         let selectedModalServer = vmcpConfig.vmcp_config.selected_servers?.find(s => s.server_id === selectedModalServerId);
-        
+
         // If not found in vMCP config, try to find it in the servers context
         if (!selectedModalServer) {
           selectedModalServer = servers.find(s => s.server_id === selectedModalServerId);
         }
-        
+
         if (!selectedModalServer) return null;
-        
+
         return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-background border border-border rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-border">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                  <Server className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-foreground font-mono">{selectedModalServer.name}</h2>
-                  <div className="flex items-center gap-3 mt-1">
-                    <p className="text-sm text-muted-foreground">Server Details</p>
-                    {(() => {
-                      const status = getModalStatusDisplay(selectedModalServer);
-                      const StatusIcon = status.icon;
-                      return (
-                        <Badge
-                          variant={selectedModalServer.status === 'connected' ? 'default' :
-                            selectedModalServer.status === 'auth_required' ? 'secondary' :
-                            selectedModalServer.status === 'error' ? 'destructive' : 'outline'}
-                          className="text-xs"
-                        >
-                          <StatusIcon className="h-3 w-3 mr-1" />
-                          {status.label}
-                        </Badge>
-                      );
-                    })()}
-                  </div>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={closeServerModal}
-                className="h-8 w-8 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="p-6 space-y-6">
-              {/* Server Actions */}
-              <div className="flex items-center justify-center">
-                <div className="flex items-center gap-3">
-                  {/* Connect/Authorize Button */}
-                  {selectedModalServer.status === 'connected' ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={modalLoading.refresh || modalLoading.connect || modalLoading.auth}
-                      className="flex items-center gap-2"
-                    >
-                      <WifiOff className="h-4 w-4" />
-                      Disconnect
-                    </Button>
-                  ) : selectedModalServer.status === 'auth_required' ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleModalAuth}
-                      disabled={modalLoading.refresh || modalLoading.connect || modalLoading.auth}
-                      className="flex items-center gap-2"
-                    >
-                      <LinkIcon className="h-4 w-4" />
-                      Authorize
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleModalConnect}
-                      disabled={modalLoading.refresh || modalLoading.connect || modalLoading.auth}
-                      className="flex items-center gap-2"
-                    >
-                      <Wifi className="h-4 w-4" />
-                      Connect
-                    </Button>
-                  )}
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleModalRefresh}
-                    disabled={modalLoading.refresh || modalLoading.connect || modalLoading.auth}
-                    className="flex items-center gap-2"
-                  >
-                    <RefreshCw className={`h-4 w-4 ${modalLoading.refresh ? 'animate-spin' : ''}`} />
-                    Refresh
-                  </Button>
-                </div>
-              </div>
-
-              {/* Server Description */}
-              {selectedModalServer.description && (
-                <div>
-                  <h3 className="text-sm font-medium text-foreground mb-2">Description</h3>
-                  <p className="text-sm text-muted-foreground">{selectedModalServer.description}</p>
-                </div>
-              )}
-
-              {/* Connection Details */}
-              <div>
-                <h3 className="text-sm font-medium text-foreground mb-2">Connection Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Transport:</span>
-                    <Badge variant="outline" className="text-xs">
-                      {(() => {
-                        const TransportIcon = getTransportIcon(selectedModalServer.transport_type || 'unknown');
-                        return (
-                          <div className="flex items-center gap-1">
-                            <TransportIcon className="h-3 w-3" />
-                            {selectedModalServer.transport_type || 'unknown'}
-                          </div>
-                        );
-                      })()}
-                    </Badge>
-                  </div>
-                  {selectedModalServer.url && (
-                    <div className="flex items-start gap-2">
-                      <span className="text-sm text-muted-foreground shrink-0">URL:</span>
-                      <code className="text-xs bg-muted px-2 py-1 rounded font-mono break-all">{selectedModalServer.url}</code>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Capabilities Summary */}
-              <div>
-                <h3 className="text-sm font-medium text-foreground mb-3">Capabilities</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card>
-                    <CardContent className="p-4 text-center">
-                      <div className="flex items-center justify-center mb-2">
-                        <ToolIcon className="h-8 w-8 text-primary" />
-                      </div>
-                      <div className="text-2xl font-bold text-foreground">
-                        {(selectedModalServer.tool_details?.length || 0)}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Tools Available</div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4 text-center">
-                      <div className="flex items-center justify-center mb-2">
-                        <PromptIcon className="h-8 w-8 text-primary" />
-                      </div>
-                      <div className="text-2xl font-bold text-foreground">
-                        {(selectedModalServer.prompt_details?.length || 0)}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Prompts Available</div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4 text-center">
-                      <div className="flex items-center justify-center mb-2">
-                        <ResourceIcon className="h-8 w-8 text-primary" />
-                      </div>
-                      <div className="text-2xl font-bold text-foreground">
-                        {(selectedModalServer.resource_details?.length || 0)}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Resources Available</div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-
-              {/* Last Connected Info */}
-              {selectedModalServer.last_connected && (
-                <div className="text-center py-4 border-t border-border">
-                  <p className="text-sm text-muted-foreground">
-                    Last connected: {new Date(selectedModalServer.last_connected).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })} IST
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+          <ServerDetailsModal
+            server={selectedModalServer}
+            isOpen={true}
+            onClose={closeServerModal}
+            onRefresh={handleModalRefresh}
+            onConnect={handleModalConnect}
+            onAuth={handleModalAuth}
+            isLoading={modalLoading}
+          />
         );
       })()}
 
       {/* Custom Server Modal */}
-      {showCustomServerModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-background border border-border rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-border">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-linear-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                  <Plus className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-foreground">Add Custom Server</h2>
-                  <p className="text-sm text-muted-foreground">Add a custom MCP server directly to this vMCP</p>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowCustomServerModal(false)}
-                className="h-8 w-8 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {/* Server Name */}
-                <div className="space-y-2 md:col-span-3">
-                  <Label htmlFor="server-name">Server Name *</Label>
-                  <Input
-                    id="server-name"
-                    value={customServerForm.name}
-                    onChange={(e) => setCustomServerForm(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="my-custom-server"
-                    className="font-mono"
-                  />
-                </div>
-
-                {/* Transport Type */}
-                <div className="space-y-2 md:col-span-1">
-                  <Label htmlFor="transport">Transport Type *</Label>
-                  <Select
-                    value={customServerForm.transport}
-                    onValueChange={(value: 'stdio' | 'http' | 'sse') => 
-                      setCustomServerForm(prev => ({ ...prev, transport: value }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue/>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {/* Enable stdio only for OSS builds */}
-                      {import.meta.env.VITE_VMCP_OSS_BUILD && <SelectItem value="stdio">
-                        <div className="flex items-center gap-2">
-                          <Terminal className="h-4 w-4" />
-                          stdio
-                        </div>
-                      </SelectItem>}
-                      <SelectItem value="http">
-                        <div className="flex items-center gap-2">
-                          <Globe className="h-4 w-4" />
-                          http
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="sse">
-                        <div className="flex items-center gap-2">
-                          <Wifi className="h-4 w-4" />
-                          sse
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={customServerForm.description}
-                  onChange={(e) => setCustomServerForm(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Brief description of what this server does..."
-                  rows={3}
-                />
-              </div>
-
-              {/* Transport-specific fields */}
-              {customServerForm.transport === 'stdio' && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="command">Command *</Label>
-                    <Input
-                      id="command"
-                      value={customServerForm.command}
-                      onChange={(e) => setCustomServerForm(prev => ({ ...prev, command: e.target.value }))}
-                      placeholder="python -m my_mcp_server"
-                      className="font-mono"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="args">Arguments (comma-separated)</Label>
-                    <Input
-                      id="args"
-                      value={customServerForm.args}
-                      onChange={(e) => setCustomServerForm(prev => ({ ...prev, args: e.target.value }))}
-                      placeholder="--port,8080,--debug"
-                      className="font-mono"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {(customServerForm.transport === 'http' || customServerForm.transport === 'sse') && (
-                <div className="space-y-2">
-                  <Label htmlFor="url">URL *</Label>
-                  <Input
-                    id="url"
-                    value={customServerForm.url}
-                    onChange={(e) => setCustomServerForm(prev => ({ ...prev, url: e.target.value }))}
-                    placeholder="https://api.example.com/mcp"
-                    className="font-mono"
-                  />
-                </div>
-              )}
-
-              {/* Environment Variables or Headers based on transport */}
-              {customServerForm.transport === 'stdio' ? (
-                <KeyValueInput
-                  label="Environment Variables"
-                  placeholder="Add environment variables"
-                  keyPlaceholder="Variable name"
-                  valuePlaceholder="Variable value"
-                  pairs={customServerForm.env}
-                  onChange={(pairs) => setCustomServerForm(prev => ({ ...prev, env: pairs }))}
-                />
-              ) : (
-                <KeyValueInput
-                  label="Headers"
-                  placeholder="Add custom headers"
-                  keyPlaceholder="Header name"
-                  valuePlaceholder="Header value"
-                  pairs={customServerForm.headers}
-                  onChange={(pairs) => setCustomServerForm(prev => ({ ...prev, headers: pairs }))}
-                />
-              )}
-
-              {/* Options */}
-              {/* <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="auto-connect"
-                    checked={customServerForm.auto_connect}
-                    onCheckedChange={(checked: boolean) => 
-                      setCustomServerForm(prev => ({ ...prev, auto_connect: checked }))
-                    }
-                  />
-                  <Label htmlFor="auto-connect">Auto-connect on startup</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="enabled"
-                    checked={customServerForm.enabled}
-                    onCheckedChange={(checked: boolean) => 
-                      setCustomServerForm(prev => ({ ...prev, enabled: checked }))
-                    }
-                  />
-                  <Label htmlFor="enabled">Enabled</Label>
-                </div>
-              </div> */}
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowCustomServerModal(false)}
-                  disabled={customServerLoading}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={addCustomServerToVMCP}
-                  disabled={customServerLoading || !customServerForm.name.trim()}
-                  className="flex items-center gap-2"
-                >
-                  {customServerLoading ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                      Adding...
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="h-4 w-4" />
-                      Add to vMCP
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <CustomServerModal
+        isOpen={showCustomServerModal}
+        onClose={() => setShowCustomServerModal(false)}
+        onSubmit={addCustomServerToVMCP}
+        formData={customServerForm}
+        setFormData={setCustomServerForm}
+        isLoading={customServerLoading}
+      />
 
       {/* Discovery Modal */}
       <Modal
