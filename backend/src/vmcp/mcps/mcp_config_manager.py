@@ -207,11 +207,11 @@ class MCPConfigManager:
             if old_status != status:
                 old_status_str = old_status.value if hasattr(old_status, 'value') else str(old_status)
                 new_status_str = status.value if hasattr(status, 'value') else str(status)
-                logger.info(f"📊 Status change for {id_}: {old_status_str} → {new_status_str}")
+                logger.info(f"📊 MCP Connection Status change for {id_}: {old_status_str} → {new_status_str}")
             
             # Convert MCPServerConfig objects to dictionaries for JSON serialization
             # servers_dict = {name: server.to_dict() for name, server in self._servers.items()}
-            return self.storage.save_mcp_servers([x.to_dict() for x in list(self._servers.values())])
+            return self.storage.save_mcp_servers([self._servers[id_].to_dict()])
         else:
             logger.warning(f"⚠️  Cannot update status for unknown server: {id_}")
             return False

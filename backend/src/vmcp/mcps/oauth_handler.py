@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, Depends
 from vmcp.storage.dummy_user import get_user_context
 from vmcp.utilities.logging.config import get_logger
 from fastapi import Query
+import traceback
 
 logger = get_logger("OAUTH_HANDLER")
 
@@ -67,7 +68,7 @@ async def oauth_callback_page(code: str, state: str):
         from vmcp.mcps.mcp_config_manager import MCPConfigManager
         from vmcp.mcps.mcp_client_manager import MCPClientManager
         config_manager = MCPConfigManager(user_id)
-        client_manager = MCPClientManager(config_manager)
+        client_manager = MCPClientManager(config_manager, keep_alive=True)
         
         # Handle OAuth callback
         logger.info(f"🔄 Processing OAuth callback...")
@@ -138,7 +139,7 @@ async def oauth_callback_page(code: str, state: str):
                         from vmcp.mcps.models import MCPAuthConfig
                         server_config.auth = MCPAuthConfig(
                             type="oauth",
-                            client_id=result.get('client_id', '1xn-cli'),
+                            client_id=result.get('client_id', '1xn-vMCP'),
                             access_token=result.get('access_token'),
                             refresh_token=result.get('refresh_token')
                         )
@@ -177,7 +178,7 @@ async def oauth_callback_page(code: str, state: str):
                         try:
                             capabilities = await client_manager.discover_capabilities(server_config.server_id)
                         except Exception as e:
-                            logger.error(f"   ❌ Error discovering capabilities for server {server_config.server_id}: {e}")
+                            logger.error(f"   ❌ Error discovering capabilities for server {server_config.server_name}: {e}")
                             capabilities = None
 
             
@@ -214,6 +215,9 @@ async def oauth_callback_page(code: str, state: str):
                     except Exception as e:
                         logger.warning(f"Failed to auto-connect after OAuth for {server_name}: {traceback.format_exc()}")
                         logger.warning(f"Failed to auto-connect after OAuth for {server_name}: {e}")
+
+                    finally:
+                        await client_manager.stop()
             
             # Dynamic client notification
             if chat_client_callback_url and conversation_id:
@@ -252,6 +256,8 @@ async def oauth_callback_page(code: str, state: str):
             <body style="font-family: Arial; text-align: center; padding: 50px;">
                 <h1>Authentication Successful</h1>
                 <p>Successfully authenticated with {server_name}</p>
+                <p><b>Please click Refresh in the vmcp app to see the updated MCP data</b></p>
+
                 <button onclick="window.close()">Close Window</button>
             </body>
             </html>

@@ -100,7 +100,7 @@ class MCPAuthManager:
             callback_url = f"{settings.base_url}/api/otherservers/oauth/callback"
 
         try:
-            client_id = '1xn-cli'  # Default client ID
+            client_id = '1xn-vmcp'  # Default client ID
             client_secret = None
             if server_url.startswith("https://api.githubcopilot.com/mcp") and (not headers):
                 provider = "github"
@@ -230,7 +230,7 @@ class MCPAuthManager:
 
             # Create a temporary OAuth provider just for discovery
             temp_metadata = OAuthClientMetadata(
-                client_name="1xn-discovery",
+                client_name="1xn-vMCP",
                 redirect_uris=[AnyUrl(callback_url)],
                 grant_types=["authorization_code"],
                 response_types=["code"],
@@ -300,7 +300,6 @@ class MCPAuthManager:
                         parsed_url = urlparse(server_url)
                         resource_metadata_url = f"{parsed_url.scheme}://{parsed_url.netloc}/.well-known/oauth-protected-resource"
                         discovery_response = await client.get(resource_metadata_url)
-                # ====================================================================================
 
                     if discovery_response.status_code == 200:
                         protected_resource_data = discovery_response.json()
@@ -352,11 +351,15 @@ class MCPAuthManager:
         try:
             async with httpx.AsyncClient() as client:
                 registration_data = {
-                    'client_name': '1xn-cli',
+                    'client_name': '1xn-vMCP',
                     'redirect_uris': [callback_url],
                     'grant_types': ['authorization_code'],
                     'response_types': ['code'],
-                    'token_endpoint_auth_method': 'none'
+                    'token_endpoint_auth_method': 'none',
+                    'client_uri': 'https://1xn.ai',
+                    'logo_uri': 'https://1xn.ai/img/1xn_logo.png',
+                    'contacts': ['contact@1xn.ai'],
+                    'application_type': 'web',
                 }
 
                 response = await client.post(
@@ -400,7 +403,7 @@ class MCPAuthManager:
             logger.info(f"   Code: '{code}'")
             logger.info(f"   Code length: {len(code)}")
             logger.info(f"   Redirect URI: '{auth_data['callback_url']}'")
-            logger.info(f"   Client ID: '{auth_data.get('client_id', '1xn-cli')}'")
+            logger.info(f"   Client ID: '{auth_data.get('client_id', '1xn-vMCP')}'")
             logger.info(f"   Code Verifier: '{auth_data['code_verifier']}'")
             logger.info(f"   Code Verifier length: {len(auth_data['code_verifier'])}")
             logger.info("   Grant Type: authorization_code")
@@ -410,7 +413,7 @@ class MCPAuthManager:
                 'grant_type': 'authorization_code',
                 'code': code,
                 'redirect_uri': auth_data['callback_url'],
-                'client_id': auth_data.get('client_id', '1xn-cli'),
+                'client_id': auth_data.get('client_id', '1xn-vMCP'),
                 'code_verifier': auth_data['code_verifier']
             }
             logger.info("🔍 Exact token exchange data:")
@@ -421,7 +424,7 @@ class MCPAuthManager:
                 'grant_type': 'authorization_code',
                 'code': code,
                 'redirect_uri': auth_data['callback_url'],
-                'client_id': auth_data.get('client_id', '1xn-cli'),
+                'client_id': auth_data.get('client_id', '1xn-vMCP'),
                 'code_verifier': auth_data['code_verifier']
             }
             if auth_data.get('client_secret'):

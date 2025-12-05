@@ -1,4 +1,5 @@
 import asyncio, contextlib
+from datetime import timedelta
 
 from contextlib import AsyncExitStack
 import traceback
@@ -56,7 +57,7 @@ except NameError:
             super().__init__(message)
             self.exceptions = exceptions
 
-logger = get_logger("1xN_MCP_CLIENT")
+logger = get_logger("VMCP_MCP_CLIENT")
 
 def safe_extract_response_info(response):
     """Safely extract status code and text from an HTTP response, handling streaming responses"""
@@ -95,20 +96,20 @@ def safe_extract_response_info(response):
 
 async def _handle_401_oauth(self, server_name: str, server_config, func, kwargs):
     """Handle 401 Unauthorized by initiating OAuth flow."""
-    from vmcp.config import settings
+    # from vmcp.config import settings
     from mcp.types import CallToolResult, GetPromptResult, PromptMessage, ReadResourceResult, TextContent, TextResourceContents
     from pydantic import AnyHttpUrl
 
     logger.info(f"Handling 401 Unauthorized for {func.__name__}")
     user_id = self.config_manager.user_id
-    enhanced_callback = f"{settings.base_url}/api/otherservers/oauth/callback"
+    # enhanced_callback = f"{settings.base_url}/api/otherservers/oauth/callback"
 
     try:
         oauth_result = await self.auth_manager.initiate_oauth_flow(
             server_name=server_name,
             server_url=server_config.url,
             user_id=user_id,
-            callback_url=enhanced_callback,
+            # callback_url=enhanced_callback,
             headers=server_config.headers,
             **kwargs
         )
@@ -135,106 +136,6 @@ async def _handle_401_oauth(self, server_name: str, server_config, func, kwargs)
         raise AuthenticationError(f"Authentication failed for server {server_name}: 401 Unauthorized") from oauth_error
 
 
-def mcp_operation(func):
-    """Decorator for MCP operations that handles connection management via ClientSessionGroup."""
-    async def wrapper(self, server_name: str, *args, **kwargs):
-        server_config = self.config_manager.get_server(server_name)
-        if not server_config:
-            server_config = self.config_manager.get_server_by_name(server_name)
-            if not server_config:
-                raise ValueError(f"Server configuration not found for: {server_name}")
-
-        session = None
-        results = None
-        try:
-            # Use ClientSessionGroup for all transport types (persistent connections)
-            session = await self.connect_server(server_config)
-            if session:
-                results =  await func(self, server_config, session, *args, **kwargs)
-
-
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 401:
-                logger.debug(f"Authentication failed for server {server_config.name}: 401 Unauthorized")
-                logger.debug("Please check your access token and authentication configuration")
-                return await _handle_401_oauth(self, server_name, server_config, func, kwargs)
-                #raise AuthenticationError(f"Authentication failed for server {server_config.name}: 401 Unauthorized") from e
-            else:
-                status_code, error_text = safe_extract_response_info(e.response)
-                logger.error(f"HTTP error for server {server_config.name}: {status_code} - {error_text}")
-                raise HTTPError(f"HTTP error for server {server_config.name}: {status_code} - {error_text}") from e
-        
-        except httpx.ConnectError as e:
-            logger.error(f"Connection error for server {server_config.name}: {e}")
-            raise
-        # except asyncio.CancelledError as e:
-        #     logger.warning(f"Operation cancelled for server {server_config.name} : {e}")
-        #     await self._session_group._session_exit_stacks[session].aclose()
-        #     raise OperationCancelledError(f"Operation cancelled for server {server_config.name}") from e
-        except asyncio.TimeoutError as e:
-            logger.error(f"Operation timed out for server {server_config.name}")
-            raise OperationTimedOutError(f"Operation timed out for server {server_config.name}") from e
-        
-        except ExceptionGroup as eg:
-            logger.debug(f"Failed to connect to server {server_config.name}: {eg}")
-            # logger.debug(traceback.format_exc())
-
-            # Handle ExceptionGroup and extract status code from nested exceptions
-            status_code = None
-            error_text = None
-
-            if hasattr(eg, 'exceptions'):
-                for sub_exception in eg.exceptions:
-                    if hasattr(sub_exception, 'status_code'):
-                        status_code = sub_exception.status_code
-                    elif hasattr(sub_exception, 'response'):
-                        status_code, error_text = safe_extract_response_info(sub_exception.response)
-
-                    if status_code == 401:
-                        # Handle 401 with OAuth flow
-                        return await _handle_401_oauth(self, server_name, server_config, func, kwargs)
-
-            if status_code:
-                logger.error(f"HTTP error for server {server_config.name}: {status_code} - {error_text}")
-                raise MCPOperationError(f"HTTP error: {status_code} - {error_text}") from eg
-            raise MCPOperationError(f"Connection failed: {eg}") from eg
-        except Exception as e:
-            logger.error(f"Error for server {server_config.name}: {e}")
-            raise MCPOperationError(f"Error: {e}") from e
-
-        finally:
-             # Disconnect MCP connection if not keeping alive
-            if self._keep_alive is False and session is not None:
-                logger.debug(f"[MCPClientManager] Disconnecting from server {server_config.name} after operation (keep_alive=False)")
-                await self.disconnect_server(session)
-            if results is not None:
-                return results
-
-    async def retry_wrapper(self, server_name: str, *args, **kwargs):
-        retries = 2
-        server_config = self.config_manager.get_server(server_name)
-        if not server_config:
-            server_config = self.config_manager.get_server_by_name(server_name)
-            if not server_config:
-                raise ValueError(f"Server configuration not found for: {server_name}")
-
-        for retry_count in range(retries):
-            try:
-                logger.debug(f"[MCPClientManager] ({server_name}) {retry_count+1}/{retries}: {func.__name__}")
-                return await wrapper(self, server_name, *args, **kwargs)
-            except InvalidSessionIdError:
-                server_config.session_id = None
-                if self.config_manager:
-                    self.config_manager.update_server_config(server_config.server_id, server_config)
-                continue
-            except Exception as e:
-                logger.debug(f"[MCPClientManager] ({server_name}) {retry_count+1}/{retries} failed: {e}")
-                #cleanup before retrying
-
-                await asyncio.sleep(0.5 * (retry_count + 1))  # Exponential backoff
-                raise
-
-    return retry_wrapper
 
 # Most flexible approach - Generic decorator for any MCP operation:
 class MCPClientManager:
@@ -373,101 +274,8 @@ class MCPClientManager:
             logger.error(f"[MCPClientManager NOTIFICATION] Error forwarding notification from {server_name}: {e}")
 
     
-    async def _establish_session_with_handler(
-        self,
-        server_params: "StdioServerParameters | SseServerParameters | StreamableHttpParameters",
-        server_name: str,
-    ) -> tuple[ClientSession, contextlib.AsyncExitStack]:
-        """Establish a session with custom message_handler for notification forwarding.
-
-        Returns tuple of (session, exit_stack) for cleanup management.
-        The exit_stack MUST be closed in the same task context where this was called.
-        """
-
-        session_stack = contextlib.AsyncExitStack()
-        try:
-            # Create read and write streams based on transport type
-            if isinstance(server_params, StdioServerParameters):
-                client = mcp.stdio_client(server_params)
-                read, write = await session_stack.enter_async_context(client)
-            elif isinstance(server_params, SseServerParameters):
-                client = sse_client(
-                    url=server_params.url,
-                    headers=server_params.headers,
-                    timeout=server_params.timeout,
-                    sse_read_timeout=server_params.sse_read_timeout,
-                )
-                read, write = await session_stack.enter_async_context(client)
-            else:
-                # StreamableHttpParameters
-                client = streamablehttp_client(
-                    url=server_params.url,
-                    headers=server_params.headers,
-                    timeout=10,
-                    sse_read_timeout=server_params.sse_read_timeout,
-                    terminate_on_close=server_params.terminate_on_close,
-                )
-                read, write, _ = await session_stack.enter_async_context(client)
-
-            # Create ClientSession WITH message_handler for notification forwarding
-            message_handler = self._create_notification_handler(server_name)
-            session = await session_stack.enter_async_context(
-                mcp.ClientSession(read, write, message_handler=message_handler)
-            )
-            logger.info(f"[MCPClientManager DETACHED] Created ClientSession with notification handler for {server_name}")
-
-            # Initialize the session
-            result = await session.initialize()
-            logger.info(f"[MCPClientManager DETACHED] Session initialized for {server_name}: {result.serverInfo.name}")
-
-            # Return both session and its exit stack for cleanup
-            return session, session_stack
-        except McpError as err:
-            logger.error(f"[MCPClientManager DETACHED] MCPError establishing session for {server_name}: {err}")
-            try:
-                await session_stack.aclose()
-            except ExceptionGroup as cleanup_eg:
-                logger.error(f"[MCPClientManager DETACHED] ExceptionGroup during cleanup: {cleanup_eg}")
-            except Exception as cleanup_err:
-                logger.error(f"[MCPClientManager DETACHED] Error during cleanup: {cleanup_err}")
-            raise err
-        except ExceptionGroup as eg:
-            # If anything fails, clean up the session-specific stack
-            logger.error(f"[MCPClientManager DETACHED] ExceptionGroup establishing session for {server_name}, cleaning up...", exc_info=True)
-
-            # Log all sub-exceptions for debugging
-            for i, exc in enumerate(eg.exceptions):
-                logger.error(f"[MCPClientManager DETACHED] Sub-exception {i+1}/{len(eg.exceptions)}: {type(exc).__name__}: {exc}")
-
-            try:
-                logger.debug("Cleaning up session_stack...")
-                await session_stack.aclose()
-            except ExceptionGroup as cleanup_eg:
-                logger.error(f"[MCPClientManager DETACHED] ExceptionGroup during cleanup: {cleanup_eg}")
-                for i, exc in enumerate(cleanup_eg.exceptions):
-                    logger.error(f"[MCPClientManager DETACHED] Cleanup sub-exception {i+1}: {type(exc).__name__}: {exc}")
-            except Exception as cleanup_err:
-                logger.error(f"[MCPClientManager DETACHED] Error during cleanup: {cleanup_err}")
-
-            # Extract the first meaningful exception and raise it
-            # This makes the error more understandable to callers
-            if eg.exceptions:
-                first_exc = eg.exceptions[0]
-                logger.error(f"[MCPClientManager DETACHED] Raising first exception: {type(first_exc).__name__}: {first_exc}")
-                raise first_exc from eg
-            raise eg
-        except Exception as e:
-            # If anything fails, clean up the session-specific stack
-            logger.error(f"[MCPClientManager DETACHED] Error establishing session for {server_name}, cleaning up...", exc_info=True)
-            try:
-                await session_stack.aclose()
-            except ExceptionGroup as cleanup_eg:
-                logger.error(f"[MCPClientManager DETACHED] ExceptionGroup during cleanup: {cleanup_eg}")
-            except Exception as cleanup_err:
-                logger.error(f"[MCPClientManager DETACHED] Error during cleanup: {cleanup_err}")
-            raise e
+    # _establish_session_with_handler removed in favor of nested context managers in connect_server
        
-        
         
     async def start(self) -> None:
         """Initialize the session manager. Call once per vMCP session."""
@@ -475,17 +283,11 @@ class MCPClientManager:
             logger.warning("[MCPClientManager] Already started, skipping")
             return
 
-        logger.info("[MCPClientManager] Starting session manager...")
         self._started = True
-        logger.info("[MCPClientManager] Session manager started")
         return
 
     async def stop(self) -> int:
         """Cleanup all connections. Call when vMCP session ends. Returns count of cleaned connections."""
-        # if not self._started:
-        #     logger.warning("[MCPClientManager] Not started or already stopped")
-        #     return 0
-
         count = len(self._server_sessions)
         # Build list of "server_name (server_id)" for logging
         server_info = [f"{self._server_id_to_name.get(sid, 'unknown')} ({sid})" for sid in self._server_sessions.keys()]
@@ -535,8 +337,8 @@ class MCPClientManager:
 
         if server_config.auth and server_config.auth.access_token:
             headers['Authorization'] = f'Bearer {server_config.auth.access_token}'
-        if server_config.session_id:
-            headers['mcp-session-id'] = server_config.session_id
+        # if server_config.session_id:
+        #     headers['mcp-session-id'] = server_config.session_id
 
         if server_config.transport_type == MCPTransportType.STDIO:
             return server_config.server_params
@@ -554,6 +356,131 @@ class MCPClientManager:
         else:
             raise ValueError(f"Unknown transport type: {server_config.transport_type}")
 
+    async def run_session_detached(self, server_config: MCPServerConfig, session_future: asyncio.Future[ClientSession]):
+        """Run session in detached context and manage its lifecycle.
+
+        This task stays alive to manage the session in the same task context
+        where it was created. When task is cancelled, it cleans up the session.
+        """
+        #Get the task name from the current task
+        task_name = asyncio.current_task().get_name()
+        logger.info(f"[MCPClientManager DETACHED] Starting detached session task {task_name}")
+        
+        # Get server parameters
+        server_params = self._to_server_params(server_config)
+        server_name = server_config.name
+        server_id = server_config.server_id or server_config.name
+        
+        # Create transport client based on transport type
+        transport_cm = None
+        if isinstance(server_params, StdioServerParameters):
+            logger.info(f"📡 Opening Stdio transport connection for {server_name}({server_id})...")
+            transport_cm = mcp.stdio_client(server_params)
+        elif isinstance(server_params, SseServerParameters):
+            logger.info(f"📡 Opening SSE transport connection for {server_name}({server_id})...")
+            transport_cm = sse_client(
+                url=server_params.url,
+                headers=server_params.headers,
+                timeout=server_params.timeout,
+                sse_read_timeout=server_params.sse_read_timeout,
+            )
+        elif isinstance(server_params, StreamableHttpParameters):
+            logger.info(f"📡 Opening StreamableHTTP transport connection for {server_name}({server_id}) headers: {server_params.headers}")
+        
+            transport_cm = streamablehttp_client(
+                url=server_params.url,
+                headers=server_params.headers,
+                timeout=timedelta(seconds=60), # Explicit timeout as in snippet
+                sse_read_timeout=server_params.sse_read_timeout,
+                terminate_on_close=server_params.terminate_on_close,
+            )
+        else:
+            raise ValueError(f"Unknown server parameters type: {type(server_params)}")
+        
+        try:
+            # Use async with to properly manage contexts
+            async with transport_cm as transport_result:                
+                # Handle different return types from transport clients
+                get_session_id = None
+                if isinstance(server_params, StdioServerParameters):
+                    read_stream, write_stream = transport_result
+                elif isinstance(server_params, SseServerParameters):
+                    read_stream, write_stream = transport_result
+                else:
+                    # StreamableHttpParameters returns 3 values
+                    read_stream, write_stream, get_session_id = transport_result
+
+                # Create ClientSession WITH message_handler for notification forwarding
+                message_handler = self._create_notification_handler(server_name)
+                
+                async with ClientSession(read_stream, write_stream, message_handler=message_handler) as session:
+                    logger.debug(f"✅ [MCPClientManager DETACHED] initializing session for {server_name}")
+                    init_result = None
+                    try:
+                        init_result = await session.initialize()
+                    except ExceptionGroup as eg:
+                        logger.debug(f"[--------MCPClientManager DETACHED] MCPerr eg caught {eg}")
+                        # Initialization failed - signal error and let contexts clean up
+                        if not session_future.done():
+                            session_future.set_exception(eg)
+                        # Re-raise to trigger context cleanup
+                        raise
+
+                    logger.debug(f"✅ [MCPClientManager DETACHED] Session initialized for {server_name}: {init_result.serverInfo.name}")
+
+                    if get_session_id:
+                        session_id = get_session_id()
+                        if session_id:
+                            logger.debug(f"Session ID: {session_id}")
+                            # Update session ID in config if available
+                            if self.config_manager and server_config.server_id:
+                                server_config.session_id = session_id
+                                # We don't save to disk here to avoid excessive writes, 
+                                # but it's available in memory
+
+                    # Only assign session after successful initialization
+                    self._server_sessions[server_id] = session
+                    self._server_id_to_name[server_id] = server_config.name
+
+                    # Signal that session is ready
+                    session_future.set_result(session)
+
+                    # Run interactive loop in this detached context
+                    # This keeps the task and contexts alive
+                    # await self.interactive_loop() 
+                    # REPLACEMENT: Wait forever until cancelled
+                    logger.debug(f"✅ [MCPClientManager DETACHED] waiting for task to be cancelled for {server_name}")
+                    await asyncio.Event().wait()
+
+        except asyncio.CancelledError:
+            # Task cancelled - contexts will clean up automatically
+            logger.info(f"[MCPClientManager DETACHED] Task cancelled for {server_config.name}, contexts cleaning up")
+            # Clean up tracking
+            if server_id in self._server_sessions:
+                # Don't delete here, let disconnect_server handle it or just let it be overwritten
+                pass
+            raise  # Re-raise CancelledError
+        except ExceptionGroup as eg:
+            for e in eg.exceptions:
+                logger.debug(f"[MCPClientManager DETACHED] eg exception: {e}")
+
+            # Handle ExceptionGroup from anyio task groups during cleanup
+            # Extract the first meaningful exception for the future if not already set
+            if eg.exceptions and not session_future.done():
+                first_exc = eg.exceptions[0]
+                # Unwrap nested ExceptionGroups
+                while isinstance(first_exc, ExceptionGroup) and first_exc.exceptions:
+                    first_exc = first_exc.exceptions[0]
+                session_future.set_exception(first_exc)
+            # ExceptionGroup is from context cleanup - don't re-raise
+        except Exception as e:
+            logger.debug(f"[MCPClientManager DETACHED] exception caught: {e}")
+
+            if not session_future.done():
+                session_future.set_exception(e)
+            # Don't re-raise - let task exit gracefully
+
+
     async def connect_server(self, server_config: MCPServerConfig) -> ClientSession:
         """Connect to a server using the session group. Returns the session."""
         server_id = server_config.server_id or server_config.name
@@ -563,86 +490,27 @@ class MCPClientManager:
             logger.info(f"♻️ ⬆️ [REUSE] Re-using existing connection for {server_config.name}")
             return self._server_sessions[server_id]
 
-        logger.info("[MCPClientManager] Creating new session connection")
-
         # Create session in a detached background task to prevent ExceptionGroup from
         # the ClientSession's background receive loop from propagating to Starlette middleware.
-        # This is critical: the ClientSession creates its own anyio task group internally for
-        # the receive loop. If that fails, it would normally propagate to the parent task group
-        # (Starlette middleware). By creating the session in a detached task, we isolate it.
-        session_future = asyncio.Future()
-
-        async def create_session_detached():
-            """Create session in detached context and manage its lifecycle.
-
-            This task stays alive to manage the session's exit stack in the same task context
-            where it was created. When task is cancelled, it cleans up the exit stack.
-            """
-            session_stack = None
-            try:
-                server_params = self._to_server_params(server_config)
-                server_name = server_config.name
-                logger.info(f"[MCPClientManager DETACHED] Connecting to: {server_name}")
-                # Custom connection with message_handler for notifications
-                session, session_stack = await self._establish_session_with_handler(
-                    server_params, server_name
-                )
-                # session is initialized here
-                self._server_sessions[server_id] = session
-                self._server_id_to_name[server_id] = server_config.name
-                logger.info(f"✅ ⬆️ [MCPClientManager DETACHED] Connected to {server_config.name}")
-                session_future.set_result(session)
-
-                # Keep task alive indefinitely to manage exit stack in same task context
-                # Task will be cancelled when disconnect is requested
-                await asyncio.Event().wait()  # Wait forever until cancelled
-
-            except asyncio.CancelledError:
-                # Task cancelled - clean up the exit stack in the same task context where it was created
-                logger.info(f"[MCPClientManager DETACHED] Task cancelled, cleaning up session for {server_config.name}")
-                if session_stack:
-                    try:
-                        await session_stack.aclose()
-                        logger.info(f"✅ [MCPClientManager DETACHED] Cleaned up session for {server_config.name}")
-                    except Exception as cleanup_err:
-                        logger.error(f"[MCPClientManager DETACHED] Error during cleanup: {cleanup_err}")
-                raise  # Re-raise CancelledError
-            except ExceptionGroup as eg:
-                logger.error(f"❌ [MCPClientManager DETACHED] Failed to connect to {server_config.name}: ExceptionGroup with {len(eg.exceptions)} exceptions")
-                for i, sub_exc in enumerate(eg.exceptions):
-                    logger.error(f"  Sub-exception {i+1}: {type(sub_exc).__name__}: {sub_exc}")
-                session_future.set_exception(eg)
-                # Clean up on error
-                if session_stack:
-                    try:
-                        await session_stack.aclose()
-                    except Exception as cleanup_err:
-                        logger.error(f"[MCPClientManager DETACHED] Error during cleanup: {cleanup_err}")
-            except Exception as e:
-                logger.error(f"❌ [MCPClientManager DETACHED] Failed to connect to {server_config.name}: {e}")
-                session_future.set_exception(e)
-                # Clean up on error
-                if session_stack:
-                    try:
-                        await session_stack.aclose()
-                    except Exception as cleanup_err:
-                        logger.error(f"[MCPClientManager DETACHED] Error during cleanup: {cleanup_err}")
+        session_future: asyncio.Future[ClientSession] = asyncio.Future()
 
         # Start detached task and track it
-        task = asyncio.create_task(create_session_detached())
-       
+        task = asyncio.create_task(self.run_session_detached(server_config, session_future), name=f"session_runner_{server_config.name}")
 
-        # Wait for the result via future (not the task itself)
+        # Wait for the session to be ready via future (NOT the task itself)
         try:
-            session = await asyncio.wait_for(session_future, timeout=10.0)
+            session = await asyncio.wait_for(session_future, timeout=30.0)
             # Store the cleanup task for this session (task stays alive to manage exit stack)
             self._session_cleanup_tasks[session] = task
             return session
         except asyncio.TimeoutError:
+            logger.error(f"[MCPClientManager] Session initialization timeout for {server_config.name}")
             task.cancel()
             raise MCPOperationError(f"Connection timeout for {server_config.name}")
-            
-
+        except Exception as e:
+            logger.error(f"[MCPClientManager] Session initialization failed for {server_config.name}: {e}")
+            task.cancel()
+            raise
             
 
     async def disconnect_server(self, session: ClientSession) -> bool:
@@ -690,6 +558,107 @@ class MCPClientManager:
             logger.error(f"❌ [DISCONNECT] Error disconnecting from Server: {e}")
             return False
 
+    def mcp_operation(func):
+        """Decorator for MCP operations that handles connection management via ClientSessionGroup."""
+        async def wrapper(self, server_name: str, *args, **kwargs):
+            server_config = self.config_manager.get_server(server_name)
+            if not server_config:
+                server_config = self.config_manager.get_server_by_name(server_name)
+                if not server_config:
+                    raise ValueError(f"Server configuration not found for: {server_name}")
+
+            session = None
+            results = None
+            try:
+                # Use ClientSessionGroup for all transport types (persistent connections)
+                session = await self.connect_server(server_config)
+                if session:
+                    results =  await func(self, server_config, session, *args, **kwargs)
+
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 401:
+                    logger.debug(f"Authentication failed for server {server_config.name}: 401 Unauthorized")
+                    logger.debug("Please check your access token and authentication configuration")
+                    return await _handle_401_oauth(self, server_name, server_config, func, kwargs)
+                    #raise AuthenticationError(f"Authentication failed for server {server_config.name}: 401 Unauthorized") from e
+                else:
+                    status_code, error_text = safe_extract_response_info(e.response)
+                    logger.error(f"HTTP error for server {server_config.name}: {status_code} - {error_text}")
+                    raise HTTPError(f"HTTP error for server {server_config.name}: {status_code} - {error_text}") from e
+            
+            except httpx.ConnectError as e:
+                logger.error(f"Connection error for server {server_config.name}: {e}")
+                raise
+            # except asyncio.CancelledError as e:
+            #     logger.warning(f"Operation cancelled for server {server_config.name} : {e}")
+            #     await self._session_group._session_exit_stacks[session].aclose()
+            #     raise OperationCancelledError(f"Operation cancelled for server {server_config.name}") from e
+            except asyncio.TimeoutError as e:
+                logger.error(f"Operation timed out for server {server_config.name}")
+                raise OperationTimedOutError(f"Operation timed out for server {server_config.name}") from e
+            
+            except ExceptionGroup as eg:
+                logger.debug(f"Failed to connect to server {server_config.name}: {eg}")
+                # logger.debug(traceback.format_exc())
+
+                # Handle ExceptionGroup and extract status code from nested exceptions
+                status_code = None
+                error_text = None
+
+                if hasattr(eg, 'exceptions'):
+                    for sub_exception in eg.exceptions:
+                        if hasattr(sub_exception, 'status_code'):
+                            status_code = sub_exception.status_code
+                        elif hasattr(sub_exception, 'response'):
+                            status_code, error_text = safe_extract_response_info(sub_exception.response)
+
+                        if status_code == 401:
+                            # Handle 401 with OAuth flow
+                            return await _handle_401_oauth(self, server_name, server_config, func, kwargs)
+
+                if status_code:
+                    logger.error(f"HTTP error for server {server_config.name}: {status_code} - {error_text}")
+                    raise MCPOperationError(f"HTTP error: {status_code} - {error_text}") from eg
+                raise MCPOperationError(f"Connection failed: {eg}") from eg
+            except Exception as e:
+                logger.error(f"Error for server {server_config.name}: {e}")
+                raise MCPOperationError(f"Error: {e}") from e
+
+            finally:
+                # Disconnect MCP connection if not keeping alive
+                if self._keep_alive is False and session is not None:
+                    logger.debug(f"[MCPClientManager] Disconnecting from server {server_config.name} after operation (keep_alive=False)")
+                    await self.disconnect_server(session)
+                if results is not None:
+                    return results
+
+        async def retry_wrapper(self, server_name: str, *args, **kwargs):
+            retries = 2
+            server_config = self.config_manager.get_server(server_name)
+            if not server_config:
+                server_config = self.config_manager.get_server_by_name(server_name)
+                if not server_config:
+                    raise ValueError(f"Server configuration not found for: {server_name}")
+
+            for retry_count in range(retries):
+                try:
+                    logger.debug(f"[MCPClientManager] ({server_name}) {retry_count+1}/{retries}: {func.__name__}")
+                    logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+
+                    return await wrapper(self, server_name, *args, **kwargs)
+                except InvalidSessionIdError:
+                    server_config.session_id = None
+                    if self.config_manager:
+                        self.config_manager.update_server_config(server_config.server_id, server_config)
+                    continue
+                except Exception as e:
+                    logger.debug(f"[MCPClientManager] ({server_name}) {retry_count+1}/{retries} failed: {e}")
+                    #cleanup before retrying
+
+                    await asyncio.sleep(0.5 * (retry_count + 1))  # Exponential backoff
+                    raise
+
+        return retry_wrapper
 
     @mcp_operation
     @trace_method("[MCPClientManager]: List Tools", operation="list_tools")
@@ -914,9 +883,10 @@ class MCPClientManager:
             logger.info("✅ Pinged server")
             # Update the server config status to CONNECTED
             if self.config_manager and server_config.server_id:
-                server_config.status = MCPConnectionStatus.CONNECTED
-                self.config_manager.update_server_config(server_config.server_id, server_config)
-                logger.info(f"💾 [SESSION_PERSISTENCE: HTTP] Saved session ID to config for {server_config.name}: {server_config.session_id}")
+                pass
+                # server_config.status = MCPConnectionStatus.CONNECTED
+                # self.config_manager.update_server_config(server_config.server_id, server_config)
+                # logger.info(f"💾 [SESSION_PERSISTENCE: HTTP] Saved session ID to config for {server_config.name}: {server_config.session_id}")
             else:
                 logger.warning(f"No config manager or server_id available for {server_config.name}")
             return MCPConnectionStatus.CONNECTED

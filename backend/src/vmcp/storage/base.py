@@ -149,7 +149,7 @@ class StorageBase:
                 server.name = server_config.get("name", server.name)
                 server.description = server_config.get("description")
                 server.mcp_server_config = server_config
-                logger.info(f"Updated MCP server: {server_id}")
+                logger.debug(f"Updated MCP server: {server_id}")
             else:
                 # Create new server
                 server = MCPServer(
@@ -161,7 +161,7 @@ class StorageBase:
                     mcp_server_config=server_config,
                 )
                 session.add(server)
-                logger.info(f"Created new MCP server: {server_id}")
+                logger.debug(f"Created new MCP server: {server_id}")
 
             session.commit()
             return True
@@ -176,7 +176,7 @@ class StorageBase:
     def save_mcp_servers(self, servers: List[Dict[str, Any]]) -> bool:
         """Save multiple MCP servers to database."""
         try:
-            logger.info(f"Saving {len(servers)} MCP servers")
+            logger.debug(f"Saving {len(servers)} MCP servers")
             
             success = True
             for server in servers:
@@ -191,7 +191,7 @@ class StorageBase:
                     success = False
             
             if success:
-                logger.info(f"Successfully saved {len(servers)} MCP servers")
+                logger.debug(f"Successfully saved {len(servers)} MCP servers")
             else:
                 logger.error("Some MCP servers failed to save")
             
@@ -213,7 +213,7 @@ class StorageBase:
             if server:
                 session.delete(server)
                 session.commit()
-                logger.info(f"Deleted MCP server: {server_id}")
+                logger.debug(f"Deleted MCP server: {server_id}")
                 return True
             else:
                 logger.warning(f"MCP server not found for deletion: {server_id}")
@@ -243,7 +243,7 @@ class StorageBase:
                 vmcp.name = vmcp_config.get("name", vmcp.name)
                 vmcp.description = vmcp_config.get("description")
                 vmcp.vmcp_config = vmcp_config
-                logger.info(f"Updated vMCP: {vmcp_id}")
+                logger.debug(f"Updated vMCP: {vmcp_id}")
             else:
                 # Create new vMCP
                 vmcp = VMCP(
@@ -255,7 +255,7 @@ class StorageBase:
                     vmcp_config=vmcp_config,
                 )
                 session.add(vmcp)
-                logger.info(f"Created new vMCP: {vmcp_id}")
+                logger.debug(f"Created new vMCP: {vmcp_id}")
 
             session.commit()
             return True
@@ -281,14 +281,14 @@ class StorageBase:
         # Check if it's a public vMCP (contains ":")
         is_public = ":" in decoded_vmcp_id
         
-        logger.info(f"Loading vMCP config: {decoded_vmcp_id} - is_public: {is_public}")
+        logger.debug(f"Loading vMCP config: {decoded_vmcp_id} - is_public: {is_public}")
         
         session = self._get_session()
         try:
             if is_public:
                 # For public vMCPs, load from global public vMCP registry
                 public_vmcp_id = decoded_vmcp_id
-                logger.info(f"Loading public vMCP: {public_vmcp_id}")
+                logger.debug(f"Loading public vMCP: {public_vmcp_id}")
                 
                 # Load from global public vMCP registry
                 public_vmcp = session.query(GlobalPublicVMCPRegistry).filter(
@@ -377,14 +377,14 @@ class StorageBase:
                 # Sync uploaded_files from custom_resources if uploaded_files is empty
                 # This handles legacy vMCPs that were created before uploaded_files was populated
                 if not vmcp_config.uploaded_files and vmcp_config.custom_resources:
-                    logger.info(f"Syncing uploaded_files from custom_resources for public vMCP {public_vmcp_id}")
+                    logger.debug(f"Syncing uploaded_files from custom_resources for public vMCP {public_vmcp_id}")
                     vmcp_config.uploaded_files = vmcp_config.custom_resources.copy()
                 
-                logger.info(f"Successfully loaded public vMCP config: {vmcp_config.name} (ID: {public_vmcp_id})")
+                logger.debug(f"Successfully loaded public vMCP config: {vmcp_config.name} (ID: {public_vmcp_id})")
                 return vmcp_config
             else:
                 # For private vMCPs, load from user private vMCP registry (existing logic)
-                logger.info(f"Loading private vMCP: {decoded_vmcp_id}")
+                logger.debug(f"Loading private vMCP: {decoded_vmcp_id}")
                 
                 vmcp = session.query(VMCP).filter(
                     VMCP.user_id == self.user_id,
@@ -426,10 +426,10 @@ class StorageBase:
                 # Sync uploaded_files from custom_resources if uploaded_files is empty
                 # This handles legacy vMCPs that were created before uploaded_files was populated
                 if not config.uploaded_files and config.custom_resources:
-                    logger.info(f"Syncing uploaded_files from custom_resources for vMCP {decoded_vmcp_id}")
+                    logger.debug(f"Syncing uploaded_files from custom_resources for vMCP {decoded_vmcp_id}")
                     config.uploaded_files = config.custom_resources.copy()
                 
-                logger.info(f"Successfully loaded private vMCP config: {config.name} (ID: {decoded_vmcp_id})")
+                logger.debug(f"Successfully loaded private vMCP config: {config.name} (ID: {decoded_vmcp_id})")
                 return config
 
         except Exception as e:
@@ -609,29 +609,29 @@ class StorageBase:
         # Check if it's a public vMCP (contains ":")
         is_public = ":" in decoded_vmcp_id
         
-        logger.info(f"Deleting vMCP: {decoded_vmcp_id} - is_public: {is_public}")
+        logger.debug(f"Deleting vMCP: {decoded_vmcp_id} - is_public: {is_public}")
         
         session = self._get_session()
         try:
             if is_public:
                 # For public vMCPs, delete from user-specific tables only
                 public_vmcp_id = decoded_vmcp_id
-                logger.info(f"Deleting public vMCP: {public_vmcp_id}")
+                logger.debug(f"Deleting public vMCP: {public_vmcp_id}")
                 
                 deleted_any = False
                 
                 # 1. Delete from UserPublicVMCPRegistry (enterprise mode)
                 try:
                     from models.user_public_vmcp_registry import UserPublicVMCPRegistry
-                    logger.info(f"Querying UserPublicVMCPRegistry for user_id={self.user_id}, public_vmcp_id={public_vmcp_id}")
+                    logger.debug(f"Querying UserPublicVMCPRegistry for user_id={self.user_id}, public_vmcp_id={public_vmcp_id}")
                     
                     # First, let's see if there are any entries at all
                     all_entries = session.query(UserPublicVMCPRegistry).filter(
                         UserPublicVMCPRegistry.user_id == self.user_id
                     ).all()
-                    logger.info(f"Found {len(all_entries)} UserPublicVMCPRegistry entries for user {self.user_id}")
+                    logger.debug(f"Found {len(all_entries)} UserPublicVMCPRegistry entries for user {self.user_id}")
                     for entry in all_entries:
-                        logger.info(f"  - Entry: id={entry.id}, public_vmcp_id={entry.public_vmcp_id}, user_id={entry.user_id}")
+                        logger.debug(f"  - Entry: id={entry.id}, public_vmcp_id={entry.public_vmcp_id}, user_id={entry.user_id}")
                     
                     user_public_vmcp = session.query(UserPublicVMCPRegistry).filter(
                         UserPublicVMCPRegistry.user_id == self.user_id,
@@ -639,10 +639,10 @@ class StorageBase:
                     ).first()
                     
                     if user_public_vmcp:
-                        logger.info(f"Found UserPublicVMCPRegistry entry for: {public_vmcp_id}, deleting...")
+                        logger.debug(f"Found UserPublicVMCPRegistry entry for: {public_vmcp_id}, deleting...")
                         session.delete(user_public_vmcp)
                         deleted_any = True
-                        logger.info(f"Marked for deletion from UserPublicVMCPRegistry: {public_vmcp_id}")
+                        logger.debug(f"Marked for deletion from UserPublicVMCPRegistry: {public_vmcp_id}")
                     else:
                         logger.warning(f"No UserPublicVMCPRegistry entry found for user_id={self.user_id}, public_vmcp_id={public_vmcp_id}")
                 except ImportError:
@@ -668,17 +668,17 @@ class StorageBase:
                     
                     if env:
                         session.delete(env)
-                        logger.info(f"Deleted environment variables for public vMCP: {public_vmcp_id}")
+                        logger.debug(f"Deleted environment variables for public vMCP: {public_vmcp_id}")
                     
                     # Delete the VMCP entry
                     session.delete(vmcp)
                     deleted_any = True
-                    logger.info(f"Deleted from VMCP table: {public_vmcp_id}")
+                    logger.debug(f"Deleted from VMCP table: {public_vmcp_id}")
                 
                 if deleted_any:
                     try:
                         session.commit()
-                        logger.info(f"Successfully committed deletion of public vMCP: {public_vmcp_id}")
+                        logger.debug(f"Successfully committed deletion of public vMCP: {public_vmcp_id}")
                         return True
                     except Exception as commit_error:
                         import traceback
@@ -691,7 +691,7 @@ class StorageBase:
                     return False
             else:
                 # For private vMCPs, use existing logic
-                logger.info(f"Deleting private vMCP: {decoded_vmcp_id}")
+                logger.debug(f"Deleting private vMCP: {decoded_vmcp_id}")
                 
                 vmcp = session.query(VMCP).filter(
                     VMCP.user_id == self.user_id,
@@ -707,11 +707,11 @@ class StorageBase:
                     
                     if env:
                         session.delete(env)
-                        logger.info(f"Deleted environment variables for vMCP: {decoded_vmcp_id}")
+                        logger.debug(f"Deleted environment variables for vMCP: {decoded_vmcp_id}")
                     
                     session.delete(vmcp)
                     session.commit()
-                    logger.info(f"Deleted vMCP: {decoded_vmcp_id}")
+                    logger.debug(f"Deleted vMCP: {decoded_vmcp_id}")
                     return True
                 else:
                     logger.warning(f"vMCP not found for deletion: {decoded_vmcp_id}")
@@ -737,7 +737,7 @@ class StorageBase:
         success = self.save_vmcp(vmcp_config.id, vmcp_config.to_dict())
 
         if success:
-            logger.info(f"Successfully updated vMCP: {vmcp_config.id}")
+            logger.debug(f"Successfully updated vMCP: {vmcp_config.id}")
         else:
             logger.error(f"Failed to update vMCP: {vmcp_config.id}")
 
@@ -768,7 +768,7 @@ class StorageBase:
             if env:
                 # Update existing environment
                 env.environment_vars = environment_vars
-                logger.info(f"Updated environment for vMCP: {vmcp_id}")
+                logger.debug(f"Updated environment for vMCP: {vmcp_id}")
             else:
                 # Create new environment
                 env = VMCPEnvironment(
@@ -778,7 +778,7 @@ class StorageBase:
                     environment_vars=environment_vars,
                 )
                 session.add(env)
-                logger.info(f"Created environment for vMCP: {vmcp_id}")
+                logger.debug(f"Created environment for vMCP: {vmcp_id}")
 
             session.commit()
             return True
@@ -840,7 +840,7 @@ class StorageBase:
                 # Update existing state
                 oauth_state.state_data = state_data
                 oauth_state.expires_at = expires_at
-                logger.info(f"Updated OAuth state: {state[:8]}...")
+                logger.debug(f"Updated OAuth state: {state[:8]}...")
             else:
                 # Create new state
                 oauth_state = ThirdPartyOAuthState(
@@ -849,7 +849,7 @@ class StorageBase:
                     expires_at=expires_at,
                 )
                 session.add(oauth_state)
-                logger.info(f"Created OAuth state: {state[:8]}...")
+                logger.debug(f"Created OAuth state: {state[:8]}...")
 
             session.commit()
             return True
@@ -901,7 +901,7 @@ class StorageBase:
             if oauth_state:
                 session.delete(oauth_state)
                 session.commit()
-                logger.info(f"Deleted OAuth state: {state[:8]}...")
+                logger.debug(f"Deleted OAuth state: {state[:8]}...")
                 return True
             else:
                 logger.warning(f"OAuth state not found for deletion: {state[:8]}...")
@@ -963,7 +963,7 @@ class StorageBase:
                 session.add(new_state)
             
             session.commit()
-            logger.info(f"Saved OAuth state: {mcp_state[:8]}...")
+            logger.debug(f"Saved OAuth state: {mcp_state[:8]}...")
             return True
         except Exception as e:
             logger.error(f"Error saving OAuth state: {e}")
@@ -1000,7 +1000,7 @@ class StorageBase:
             if oauth_state:
                 session.delete(oauth_state)
                 session.commit()
-                logger.info(f"Deleted OAuth state: {state[:8]}...")
+                logger.debug(f"Deleted OAuth state: {state[:8]}...")
                 return True
             else:
                 logger.warning(f"OAuth state not found for deletion: {state[:8]}...")
@@ -1106,7 +1106,7 @@ class StorageBase:
     def save_public_vmcp(self, vmcp_config: 'VMCPConfig') -> bool:
         """Save a vMCP as public for sharing (OSS version - simplified)."""
         try:
-            logger.info(f"Saving public vMCP: {vmcp_config.id}")
+            logger.debug(f"Saving public vMCP: {vmcp_config.id}")
             
             # In OSS version, we treat all vMCPs as "public" since there's only one user
             # We simply save the vMCP using the existing save_vmcp method
@@ -1120,7 +1120,7 @@ class StorageBase:
     def remove_public_vmcp(self, vmcp_id: str) -> bool:
         """Remove a vMCP from public list (OSS version - simplified)."""
         try:
-            logger.info(f"Removing public vMCP: {vmcp_id}")
+            logger.debug(f"Removing public vMCP: {vmcp_id}")
             
             # In OSS version, we simply delete the vMCP using the existing delete_vmcp method
             return self.delete_vmcp(vmcp_id)
@@ -1133,7 +1133,7 @@ class StorageBase:
         """List all public vMCPs from the global_public_vmcp_registry table."""
         session = self._get_session()
         try:
-            logger.info("Listing public vMCPs from global_public_vmcp_registry database")
+            logger.debug("Listing public vMCPs from global_public_vmcp_registry database")
             
             # Query the global_public_vmcp_registry table directly
             # JSONType automatically parses JSON fields (works for both PostgreSQL JSONB and SQLite TEXT)
@@ -1154,7 +1154,7 @@ class StorageBase:
                     logger.warning(f"Error processing public vMCP {registry.public_vmcp_id}: {e}")
                     continue
             
-            logger.info(f"Found {len(public_vmcps)} public vMCPs from database")
+            logger.debug(f"Found {len(public_vmcps)} public vMCPs from database")
             return public_vmcps
             
         except Exception as e:
@@ -1170,7 +1170,7 @@ class StorageBase:
         """Get details of a specific public vMCP from the global_public_vmcp_registry table."""
         session = self._get_session()
         try:
-            logger.info(f"Getting public vMCP from database: {vmcp_id}")
+            logger.debug(f"Getting public vMCP from database: {vmcp_id}")
             
             # Query the global_public_vmcp_registry table directly
             registry = session.query(GlobalPublicVMCPRegistry).filter(
@@ -1187,7 +1187,7 @@ class StorageBase:
                 # Ensure the config has the public_vmcp_id for reference
                 if 'id' not in vmcp_config:
                     vmcp_config['id'] = registry.public_vmcp_id
-                logger.info(f"Successfully retrieved public vMCP: {vmcp_id}")
+                logger.debug(f"Successfully retrieved public vMCP: {vmcp_id}")
                 return vmcp_config
             
             logger.warning(f"Public vMCP {vmcp_id} has no vmcp_config")
@@ -1204,7 +1204,7 @@ class StorageBase:
     def update_private_vmcp_registry(self, private_vmcp_id: str, private_vmcp_registry_data: Dict[str, Any], operation: str) -> bool:
         """Update private vMCP registry (OSS version - simplified)."""
         try:
-            logger.info(f"Private registry operation '{operation}' for vMCP {private_vmcp_id}")
+            logger.debug(f"Private registry operation '{operation}' for vMCP {private_vmcp_id}")
             
             if operation == "add":
                 # Extract vmcp_config from registry data
@@ -1244,7 +1244,7 @@ class StorageBase:
         In OSS mode: returns False (install route is blocked anyway)
         """
         try:
-            logger.info(f"Public registry operation '{operation}' for vMCP {public_vmcp_id}")
+            logger.debug(f"Public registry operation '{operation}' for vMCP {public_vmcp_id}")
             
             # Check if enterprise mode by trying to import enterprise model
             try:
@@ -1283,7 +1283,7 @@ class StorageBase:
                         existing.description = description
                         existing.vmcp_config = vmcp_config
                         existing.updated_at = datetime.utcnow()
-                        logger.info(f"Updated existing UserPublicVMCPRegistry entry: {registry_id}")
+                        logger.debug(f"Updated existing UserPublicVMCPRegistry entry: {registry_id}")
                     else:
                         # Create new record
                         new_registry = EnterpriseUserPublicVMCPRegistry(
@@ -1295,7 +1295,7 @@ class StorageBase:
                             vmcp_config=vmcp_config
                         )
                         session.add(new_registry)
-                        logger.info(f"Created new UserPublicVMCPRegistry entry: {registry_id}")
+                        logger.debug(f"Created new UserPublicVMCPRegistry entry: {registry_id}")
                     
                     session.commit()
                     return True
@@ -1309,7 +1309,7 @@ class StorageBase:
                     if existing:
                         session.delete(existing)
                         session.commit()
-                        logger.info(f"Deleted UserPublicVMCPRegistry entry: {registry_id}")
+                        logger.debug(f"Deleted UserPublicVMCPRegistry entry: {registry_id}")
                         return True
                     else:
                         logger.warning(f"UserPublicVMCPRegistry entry not found: {registry_id}")
@@ -1334,7 +1334,7 @@ class StorageBase:
                         existing.vmcp_config = vmcp_config
                         existing.updated_at = datetime.utcnow()
                         session.commit()
-                        logger.info(f"Updated UserPublicVMCPRegistry entry: {registry_id}")
+                        logger.debug(f"Updated UserPublicVMCPRegistry entry: {registry_id}")
                         return True
                     else:
                         logger.warning(f"UserPublicVMCPRegistry entry not found for update: {registry_id}")
@@ -1616,22 +1616,22 @@ class StorageBase:
                 VMCP.name == vmcp_name
             ).all()
             
-            logger.info(f"🔍 Searching for vMCP with name '{vmcp_name}' in {len(vmcps)} vMCPs")
+            logger.debug(f"🔍 Searching for vMCP with name '{vmcp_name}' in {len(vmcps)} vMCPs")
             
             for vmcp in vmcps:
                 vmcp_config = vmcp.vmcp_config or {}
                 actual_vmcp_id = vmcp_config.get('id')  # This is the UUID from the JSON
                 table_vmcp_id = vmcp.vmcp_id  # This is the composite ID from the table
                 
-                logger.info(f"🔍 Checking vMCP: table_id={table_vmcp_id}, actual_id={actual_vmcp_id}, name={vmcp.name}")
+                logger.debug(f"🔍 Checking vMCP: table_id={table_vmcp_id}, actual_id={actual_vmcp_id}, name={vmcp.name}")
                 
                 if vmcp.name == vmcp_name and actual_vmcp_id:
-                    logger.info(f"✅ Found vMCP: {vmcp_name} -> {actual_vmcp_id}")
+                    logger.debug(f"✅ Found vMCP: {vmcp_name} -> {actual_vmcp_id}")
                     return actual_vmcp_id  # Return the UUID from vmcp_config, not the table ID
             
             # If not found in private registry, check user_public_vmcp_registry (enterprise mode)
             # This follows the same pattern as delete_vmcp method
-            logger.info(f"🔍 vMCP not found in private registry, checking user_public_vmcp_registry for user_id={self.user_id}")
+            logger.debug(f"🔍 vMCP not found in private registry, checking user_public_vmcp_registry for user_id={self.user_id}")
             try:
                 from models.user_public_vmcp_registry import UserPublicVMCPRegistry
                 
@@ -1639,7 +1639,7 @@ class StorageBase:
                 # This handles URLs like /@sanket_onexn/google_workspace/vmcp
                 if vmcp_username and vmcp_username.startswith('@'):
                     constructed_public_vmcp_id = f"{vmcp_username}:{vmcp_name}"
-                    logger.info(f"🔍 Trying constructed public_vmcp_id from vmcp_username: {constructed_public_vmcp_id}")
+                    logger.debug(f"🔍 Trying constructed public_vmcp_id from vmcp_username: {constructed_public_vmcp_id}")
                     # Query by public_vmcp_id (same pattern as delete_vmcp)
                     user_public_vmcp = session.query(UserPublicVMCPRegistry).filter(
                         UserPublicVMCPRegistry.user_id == self.user_id,
@@ -1648,7 +1648,7 @@ class StorageBase:
                     
                     if user_public_vmcp:
                         public_vmcp_id = user_public_vmcp.public_vmcp_id
-                        logger.info(f"✅ Found vMCP in user_public_vmcp_registry by public_vmcp_id: {constructed_public_vmcp_id} -> {public_vmcp_id}")
+                        logger.debug(f"✅ Found vMCP in user_public_vmcp_registry by public_vmcp_id: {constructed_public_vmcp_id} -> {public_vmcp_id}")
                         return public_vmcp_id
                 
                 # Try to find by name (for cases like "google_workspace")
@@ -1659,7 +1659,7 @@ class StorageBase:
                 
                 if user_public_vmcp:
                     public_vmcp_id = user_public_vmcp.public_vmcp_id
-                    logger.info(f"✅ Found vMCP in user_public_vmcp_registry by name: {vmcp_name} -> {public_vmcp_id}")
+                    logger.debug(f"✅ Found vMCP in user_public_vmcp_registry by name: {vmcp_name} -> {public_vmcp_id}")
                     return public_vmcp_id
                 
                 # If name is in format @username/vmcp_name, try to construct public_vmcp_id
@@ -1671,7 +1671,7 @@ class StorageBase:
                         vmcp_name_part = parts[1]  # vmcp_name
                         constructed_public_vmcp_id = f"{username_part}:{vmcp_name_part}"
                         
-                        logger.info(f"🔍 Trying constructed public_vmcp_id from name: {constructed_public_vmcp_id}")
+                        logger.debug(f"🔍 Trying constructed public_vmcp_id from name: {constructed_public_vmcp_id}")
                         # Query by public_vmcp_id (same pattern as delete_vmcp)
                         user_public_vmcp = session.query(UserPublicVMCPRegistry).filter(
                             UserPublicVMCPRegistry.user_id == self.user_id,
@@ -1680,10 +1680,10 @@ class StorageBase:
                         
                         if user_public_vmcp:
                             public_vmcp_id = user_public_vmcp.public_vmcp_id
-                            logger.info(f"✅ Found vMCP in user_public_vmcp_registry by public_vmcp_id: {vmcp_name} -> {public_vmcp_id}")
+                            logger.debug(f"✅ Found vMCP in user_public_vmcp_registry by public_vmcp_id: {vmcp_name} -> {public_vmcp_id}")
                             return public_vmcp_id
                 
-                logger.info("🔍 vMCP not found in user_public_vmcp_registry (checked by public_vmcp_id and name)")
+                logger.debug("🔍 vMCP not found in user_public_vmcp_registry (checked by public_vmcp_id and name)")
             except ImportError:
                 # OSS mode - UserPublicVMCPRegistry not available
                 logger.debug("UserPublicVMCPRegistry not available (OSS mode)")

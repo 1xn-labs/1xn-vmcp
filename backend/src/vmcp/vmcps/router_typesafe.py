@@ -1431,7 +1431,7 @@ async def refresh_vmcp(
     try:
         # Get managers from global connection manager
         config_manager = MCPConfigManager(user_context.user_id)
-        client_manager = MCPClientManager(config_manager)
+        client_manager = MCPClientManager(config_manager, keep_alive=True)
         user_vmcp_manager = VMCPConfigManager(user_context.user_id, vmcp_id)
         
         # Load the vMCP configuration
@@ -1531,11 +1531,12 @@ async def refresh_vmcp(
                     
                     # Save updated server config
                     config_manager.update_server_config(mcp_server.server_id, mcp_server)
-                    
             except Exception as e:
                 logger.error(f"   ❌ Full traceback: {traceback.format_exc()}")
                 logger.warning(f"   ⚠️ Failed to connect/discover capabilities for server {mcp_server.name}: {mcp_server.server_id}: {e}")
                 # Continue anyway - server will be added but not connected
+            finally:
+                await client_manager.stop()
             
             processed_servers.append(mcp_server.server_id)
             mcp_server = config_manager.get_server_by_id(mcp_server.server_id)
@@ -2585,6 +2586,7 @@ async def add_server_to_vmcp(
                     logger.debug(f"   ❌ Error discovering capabilities for server {mcp_server.server_id}: {e}")
                     
                 if capabilities:
+                    mcp_server.status = MCPConnectionStatus.CONNECTED
                     logger.info(f"   🔍 Server {mcp_server.server_id}: capabilities discovered")
                     # Update server config with discovered capabilities (matching original router exactly)
                     if capabilities.get('tools',[]):
@@ -2621,7 +2623,7 @@ async def add_server_to_vmcp(
                 # Save updated server config
                 config_manager.update_server_config(mcp_server.server_id, mcp_server)
                 
-                logger.info(f"   ✅ Discovered capabilities for server '{mcp_server.server_id} Current status {mcp_server.status.value}'")
+                logger.info(f"   ✅ Discovered capabilities for server '{mcp_server.name} ({mcp_server.server_id}) - Status {mcp_server.status.value}'")
                 await client_manager.stop()
                 
                 
