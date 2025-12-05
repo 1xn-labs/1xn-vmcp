@@ -1080,22 +1080,6 @@
         "args": [],
         "env": {},
         "url": "https://1xn.ai/mega_server/mcp/gsheets/mcp",
-        "headers": {},
-        "auth": {
-          "type": "oauth",
-          "client_id": "1xn-cli",
-          "client_secret": null,
-          "auth_url": null,
-          "token_url": null,
-          "scope": null,
-          "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZjhiOGQyODUtOTc3Mi00NDFiLTllODYtNzU4YThhMmVlMmZiIiwic2VydmljZSI6ImdzaGVldHMiLCJpYXQiOjE3NjI3OTA0NDQsImV4cCI6MTc2MzM5NTI0NH0.rGCEXya5JiwFXpUCRaNwi7l3lzpfYiahP5QWsJOWzio",
-          "refresh_token": null,
-          "expires_at": "2025-11-17T21:30:44.198851"
-        },
-        "session_id": "a6546426d4fc4c72aa1b6ba1010017d7",
-        "status": "connected",
-        "last_connected": "2025-11-10T21:30:50.004705",
-        "last_error": null,
         "capabilities": {
           "tools": true,
           "resources": false,
