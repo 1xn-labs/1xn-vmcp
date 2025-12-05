@@ -31,6 +31,13 @@ export function ServerDetailsModal({
   onAuth,
   isLoading = {}
 }: ServerDetailsModalProps) {
+  const [isWaitingForAuth, setIsWaitingForAuth] = useState(false);
+
+  const handleAuth = async () => {
+    setIsWaitingForAuth(true);
+    await onAuth();
+  };
+
   if (!isOpen) return null;
 
   // Helper function to get status display
@@ -90,6 +97,8 @@ export function ServerDetailsModal({
     }
   };
 
+
+
   const status = getModalStatusDisplay(server.status);
   const StatusIcon = status.icon;
   const TransportIcon = getTransportIcon(server.transport_type);
@@ -110,7 +119,7 @@ export function ServerDetailsModal({
                 <Badge
                   variant={server.status === 'connected' ? 'default' :
                     server.status === 'auth_required' ? 'secondary' :
-                    server.status === 'error' ? 'destructive' : 'outline'}
+                      server.status === 'error' ? 'destructive' : 'outline'}
                   className="text-xs"
                 >
                   <StatusIcon className="h-3 w-3 mr-1" />
@@ -128,6 +137,26 @@ export function ServerDetailsModal({
             <X className="h-4 w-4" />
           </Button>
         </div>
+        {server.status === 'error' && (
+          <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-3">
+            <Activity className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
+            <div className="text-sm text-red-200">
+              <p className="font-medium mb-1">{server.last_error}</p>
+            </div>
+          </div>
+        )}
+
+        {isWaitingForAuth && (
+          <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-start gap-3">
+            <Activity className="h-5 w-5 text-blue-400 shrink-0 mt-0.5" />
+            <div className="text-sm text-blue-200">
+              <p className="font-medium mb-1">Authentication in progress</p>
+              <p className="text-blue-200/80">
+                Please complete the authentication process in the new window, then click the Refresh button to update the MCP status.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Modal Content */}
         <div className="p-6 space-y-6">
@@ -149,12 +178,12 @@ export function ServerDetailsModal({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={onAuth}
-                  disabled={isLoading.refresh || isLoading.connect || isLoading.auth}
+                  onClick={handleAuth}
+                  disabled={isLoading.refresh || isLoading.connect || isLoading.auth || isWaitingForAuth}
                   className="flex items-center gap-2"
                 >
                   <LinkIcon className="h-4 w-4" />
-                  Authorize
+                  {isWaitingForAuth ? 'Waiting...' : 'Authorize'}
                 </Button>
               ) : (
                 <Button
@@ -193,9 +222,9 @@ export function ServerDetailsModal({
           {/* Connection Details */}
           <div>
             <h3 className="text-sm font-medium text-foreground mb-2">Connection Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Transport:</span>
+                {/* <span className="text-sm text-muted-foreground">Transport:</span> */}
                 <Badge variant="outline" className="text-xs">
                   <div className="flex items-center gap-1">
                     <TransportIcon className="h-3 w-3" />
@@ -204,9 +233,15 @@ export function ServerDetailsModal({
                 </Badge>
               </div>
               {server.url && (
-                <div className="flex items-start gap-2">
-                  <span className="text-sm text-muted-foreground shrink-0">URL:</span>
+                <div className="flex-1 items-start gap-2">
+                  {/* <span className="text-sm text-muted-foreground shrink-0">URL:</span> */}
                   <code className="text-xs bg-muted px-2 py-1 rounded font-mono break-all">{server.url}</code>
+                </div>
+              )}
+              {server.command && (
+                <div className="flex-1 items-start gap-2">
+                  {/* <span className="text-sm text-muted-foreground shrink-0">Command:</span> */}
+                  <code className="text-xs bg-muted px-2 py-1 rounded font-mono break-all"># {server.command} {server.args ? ' ' + server.args.join(' ') : ''}</code>
                 </div>
               )}
             </div>
