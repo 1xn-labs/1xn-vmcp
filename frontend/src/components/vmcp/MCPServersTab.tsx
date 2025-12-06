@@ -528,15 +528,15 @@ export default function MCPServersTab({
                 ...prev,
                 vmcp_config: {
                   ...prev.vmcp_config,
-                  selected_servers: prev.vmcp_config.selected_servers.filter(s => s.server_id !== server.server_id),
+                  selected_servers: prev.vmcp_config.selected_servers.filter(s => s.server_id !== server.id),
                   selected_tools: Object.fromEntries(
-                    Object.entries(prev.vmcp_config.selected_tools).filter(([key]) => key !== server.server_id)
+                    Object.entries(prev.vmcp_config.selected_tools).filter(([key]) => key !== server.id)
                   ),
                   selected_prompts: Object.fromEntries(
-                    Object.entries(prev.vmcp_config.selected_prompts).filter(([key]) => key !== server.server_id)
+                    Object.entries(prev.vmcp_config.selected_prompts).filter(([key]) => key !== server.id)
                   ),
                   selected_resources: Object.fromEntries(
-                    Object.entries(prev.vmcp_config.selected_resources).filter(([key]) => key !== server.server_id)
+                    Object.entries(prev.vmcp_config.selected_resources).filter(([key]) => key !== server.id)
                   )
                 }
               }));
@@ -579,8 +579,7 @@ export default function MCPServersTab({
         <div>
           <div className="flex items-start gap-2 mb-3">
           <FaviconIcon
-              url={server.url}
-              faviconUrl={server.favicon_url}
+              url={server.url || undefined}
               className="h-8 w-8"
               size={32}
           />
@@ -794,18 +793,23 @@ export default function MCPServersTab({
       {/* Server Details Modal */}
       {selectedModalServerId && (() => {
         // First try to find the server in the vMCP configuration (it has the full server data)
-        let selectedModalServer = vmcpConfig.vmcp_config.selected_servers?.find(s => s.server_id === selectedModalServerId);
+        const vmcpServer = vmcpConfig.vmcp_config.selected_servers?.find(s => s.server_id === selectedModalServerId);
 
         // If not found in vMCP config, try to find it in the servers context
-        if (!selectedModalServer) {
-          selectedModalServer = servers.find(s => s.server_id === selectedModalServerId);
-        }
+        const serverFromContext = servers.find(s => (s.server_id || s.id) === selectedModalServerId);
+        
+        const selectedModalServer = vmcpServer || serverFromContext;
 
         if (!selectedModalServer) return null;
 
+        const serverForModal: McpServerInfo = {
+          ...selectedModalServer,
+          id: selectedModalServer.server_id || selectedModalServer.id,
+        } as unknown as McpServerInfo;
+
         return (
           <ServerDetailsModal
-            server={selectedModalServer}
+            server={serverForModal}
             isOpen={true}
             onClose={closeServerModal}
             onRefresh={handleModalRefresh}
