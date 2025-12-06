@@ -1009,7 +1009,10 @@ class MCPServerConfig:
         from mcp.types import Tool, Resource, ResourceTemplate, Prompt
         
         data['transport_type'] = MCPTransportType(data['transport_type'])
-        data['status'] = MCPConnectionStatus(data['status'])
+        if 'status' not in data:
+            data['status'] = MCPConnectionStatus.UNKNOWN
+        else:
+            data['status'] = MCPConnectionStatus(data['status'])
         
         if data.get('last_connected'):
             data['last_connected'] = datetime.fromisoformat(data['last_connected'])

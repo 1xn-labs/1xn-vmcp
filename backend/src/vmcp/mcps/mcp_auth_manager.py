@@ -94,9 +94,10 @@ class MCPAuthManager:
         """Initiate OAuth authorization flow with PKCE"""
         logger.info(f"initiate_oauth_flow kwargs: {kwargs}")
 
+        from vmcp.config import settings
+
         # Set default callback URL if not provided
         if callback_url is None:
-            from vmcp.config import settings
             callback_url = f"{settings.base_url}/api/otherservers/oauth/callback"
 
         try:
