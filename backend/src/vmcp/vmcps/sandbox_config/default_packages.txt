@@ -1,0 +1,23 @@
+# HTTP/Network
+httpx[socks]      # For SOCKS proxy support in MCP clients
+requests          # Common HTTP library
+aiohttp           # Async HTTP client/server
+
+# Data Processing
+pandas            # Data manipulation and analysis
+numpy             # Numerical computing
+
+# Web Scraping & Parsing
+beautifulsoup4    # HTML/XML parsing
+lxml              # Fast XML/HTML parser
+
+# Data Formats
+pyyaml            # YAML parsing
+python-dotenv     # Environment variable management
+
+# Utilities
+pydantic          # Data validation using Python type annotations
+jinja2            # Templating engine
+markdown          # Markdown processing
+pillow            # Image processing
+openpyxl          # Excel file reading/writing
