@@ -26,7 +26,10 @@ from mcp.types import (
     ServerResult,
     TextContent,
     Tool,
+    ListToolsRequest
 )
+
+from mcp.server.streamable_http import MCP_SESSION_ID_HEADER
 
 from vmcp.vmcps.vmcp_config_manager import VMCPConfigManager
 from vmcp.config import settings
@@ -70,7 +73,7 @@ class VMCPServer(FastMCP):
         #super().__init__(name, streamable_http_path="/mcp", instructions="1xn v(irtual)MCP server", log_level=log_level, debug=settings.debug)
         super().__init__(name, streamable_http_path="/mcp", instructions="1xn v(irtual)MCP server")
 
-        self._mcp_server.create_initialization_options(
+        self._server_options = self._mcp_server.create_initialization_options(
             notification_options=NotificationOptions(prompts_changed=True, resources_changed=True, tools_changed=True),
             experimental_capabilities={"1xn": {"vmcp": True}})
 
@@ -90,8 +93,14 @@ class VMCPServer(FastMCP):
                 event_store=self._event_store,
                 json_response=self.settings.json_response,
                 stateless=False,
+                init_options = self._mcp_server.create_initialization_options(
+                                    notification_options=NotificationOptions(prompts_changed=True, 
+                                                                             resources_changed=True, 
+                                                                             tools_changed=True),
+                                    experimental_capabilities={"1xn": {"vmcp": True}})
             )
-            logger.info("[VMCPServer] Created custom VMCPSessionManager with session-aware stdio cleanup")
+            self._vmcp_session_manager = self._session_manager
+            logger.info("[VMCPServer] Created custom VMCPSessionManager with session-aware cleanup")
 
 
         return super().streamable_http_app()
@@ -144,7 +153,7 @@ class VMCPServer(FastMCP):
             agent_name = self._mcp_server.request_context.session.client_params.clientInfo.name
             logger.debug(f"[VMCPServer] Client ctx: {agent_name}")
 
-            session_id = get_http_request().headers.get('mcp-session-id')
+            session_id = get_http_request().headers.get(MCP_SESSION_ID_HEADER)
 
             if session_id:
                 # Create lightweight UserContext (pure identity, no manager)
@@ -167,7 +176,7 @@ class VMCPServer(FastMCP):
                     user_context.vmcp_config_manager = self._session_manager.create_manager(
                         session_id=session_id,
                         user_id=user_id,
-                        vmcp_name=vmcp_name
+                        vmcp_name=vmcp_name,
                     )
                     logger.info(f"[VMCPServer] Created new VMCPConfigManager for user_id: {user_id}, vmcp_name: {vmcp_name}")
 
@@ -561,6 +570,7 @@ class VMCPServer(FastMCP):
         else:
             preset_tools = []
         logger.info(f"[VMCPServer] Found {len(preset_tools)} preset tools")
+        logger.debug(type(self))
 
         # Combine preset tools with vMCP tools
         all_tools = preset_tools + tools
@@ -570,8 +580,19 @@ class VMCPServer(FastMCP):
         logger.debug(f"[VMCPServer] Returning {len(tools)} tools")
         logger.debug("=" * 60)
 
+        session_id = get_http_request().headers.get(MCP_SESSION_ID_HEADER)
+
+        if session_id:
+            session = self._vmcp_session_manager
+            sandbox_mode = session._sessions[session_id].sandbox_mode
+
         # Log tool details
         for i, tool in enumerate(all_tools):
+            # Claude code and most MCP client dont add the outputSchema to context, so add it to the tool desc
+            if sandbox_mode and tool.outputSchema:
+                import json
+                schema_str = json.dumps(tool.outputSchema, indent=2)
+                tool.description = f"{tool.description or ''}\n\n\"outputSchema\": {schema_str}"
             tool_type = "PRESET" if i < len(preset_tools) else "vMCP"
             logger.debug(f"[VMCPServer] Tool {i+1} [{tool_type}]: {tool.name} - {tool.description[:50] if tool.description else 'No description'}...")
 

@@ -26,6 +26,8 @@ from mcp.server.streamable_http import (
     StreamableHTTPServerTransport,
 )
 from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
+from mcp.server.models import InitializationOptions
+
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import Receive, Scope, Send
@@ -33,6 +35,7 @@ from starlette.types import Receive, Scope, Send
 from vmcp.config import settings
 from vmcp.utilities.logging import get_logger
 from vmcp.vmcps.vmcp_config_manager import VMCPConfigManager
+from vmcp.vmcps.models import VMCPConfig
 
 logger = get_logger("VMCPSessionManager")
 
@@ -41,11 +44,14 @@ logger = get_logger("VMCPSessionManager")
 class SessionEntry:
     """Tracks a session with its manager and last access time for TTL."""
     manager: VMCPConfigManager
+    mcp_session_id: str | None = None #MCP session ID 
+    sandbox_mode: bool = False #Sandbox PTC mode for this vMCP session
+    pd_mode: bool = False #Progressive discovery for this vMCP session
     last_accessed: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class VMCPSessionManager(StreamableHTTPSessionManager):
-    """
+    """ 
     Custom session manager that handles MCP connection cleanup when sessions end.
 
     Provides session lifecycle hooks:
@@ -56,7 +62,7 @@ class VMCPSessionManager(StreamableHTTPSessionManager):
     cleaned up automatically when the session ends.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, init_options:InitializationOptions, *args, **kwargs):
         """
         Initialize session manager with TTL-based cleanup.
         """
@@ -64,6 +70,8 @@ class VMCPSessionManager(StreamableHTTPSessionManager):
         self._sessions: dict[str, SessionEntry] = {}
         self._cleanup_task: Optional[TaskStatus] = None
         self._shutdown_event: Optional[anyio.Event] = None
+        self._init_options: Optional[InitializationOptions] = init_options
+       
         logger.info(f"[VMCPSessionManager] Initialized (TTL={settings.ttl_seconds}s, cleanup_interval={settings.cleanup_every_seconds}s)")
 
     def get_manager(self, session_id: str) -> Optional[VMCPConfigManager]:
@@ -118,8 +126,13 @@ class VMCPSessionManager(StreamableHTTPSessionManager):
         )
 
         # Cache it with TTL tracking
-        self._sessions[session_id] = SessionEntry(manager=manager)
-        logger.info(f"[VMCPSessionManager] Created and cached VMCPConfigManager for session {session_id[:16]}...")
+        vmcpconfig:VMCPConfig = manager.load_vmcp_config(vmcp_id)
+        if vmcpconfig:
+            sandbox_enabled = vmcpconfig.metadata.get('sandbox_enabled', False)
+            pd_enabled = vmcpconfig.metadata.get('progressive_discovery_enabled', False)
+        self._sessions[session_id] = SessionEntry(manager=manager, mcp_session_id=session_id, sandbox_mode=sandbox_enabled, pd_mode=pd_enabled)
+
+        logger.debug(f"[VMCPSessionManager] Created new session {session_id[:16]}, sandbox={sandbox_enabled}, pd={pd_enabled}")
 
         return manager
 
@@ -280,7 +293,7 @@ class VMCPSessionManager(StreamableHTTPSessionManager):
                             await self.app.run(
                                 read_stream,
                                 write_stream,
-                                self.app.create_initialization_options(),
+                                self._init_options if self._init_options else self.app.create_initialization_options(),
                                 stateless=False,
                             )
                         except Exception as e:
