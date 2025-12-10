@@ -82,8 +82,8 @@ async def root(request):
 def main():
     """Main entry point for the MCP servers."""
     print("🚀 Starting MCP Servers...")
-    print("📊 Everything Server: http://localhost:8001/everything")
-    print("🔧 All Feature Server: http://localhost:8001/allfeature")
+    print("📊 Everything Server: http://localhost:8001/everything/mcp")
+    print("🔧 All Feature Server: http://localhost:8001/allfeature/mcp")
     print("❤️  Health Check: http://localhost:8001/health")
     print("=" * 60)
 
