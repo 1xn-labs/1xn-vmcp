@@ -180,7 +180,14 @@ export interface VMCPConfig {
       selected_tools: Record<string, string[]>;
       selected_resources: Record<string, string[]>;
       selected_prompts: Record<string, string[]>;
-      selected_tool_overrides: Record<string, Record<string, { name: string; description: string; originalName: string; originalDescription: string }>>;
+      selected_tool_overrides: Record<string, Record<string, { 
+        name?: string; 
+        description?: string; 
+        tool_example?: string; 
+        sample_result?: string;
+        originalName?: string; 
+        originalDescription?: string;
+      }>>;
       tags: string[];
       is_default: boolean;
     };

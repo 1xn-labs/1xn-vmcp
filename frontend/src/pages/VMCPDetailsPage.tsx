@@ -37,6 +37,7 @@ import ToolsTab from '@/components/vmcp/ToolsTab';
 import ResourcesTab from '@/components/vmcp/ResourcesTab';
 import EnvironmentVariablesTab from '@/components/vmcp/EnvironmentVariablesTab';
 import SandboxTab from '@/components/vmcp/SandboxTab';
+import ProgressiveDiscoveryTab from '@/components/vmcp/ProgressiveDiscoveryTab';
 
 export default function VMCPDetailPage() {
   const params = useParams();
@@ -1008,14 +1009,11 @@ export default function VMCPDetailPage() {
             </TabsTrigger>
             <TabsTrigger value="sandbox" className="flex items-center gap-2">
               <span>Sandbox</span>
-              <div className="flex items-center gap-1">
-                <div className={`w-2 h-2 rounded-full ${sandboxEnabled ? 'bg-green-500' : 'bg-red-500'}`} />
-                {progressiveDiscoveryEnabled && (
-                  <div className="w-4 h-4 rounded-full border border-primary flex items-center justify-center">
-                    <span className="text-[10px] font-semibold text-primary">P</span>
-                  </div>
-                )}
-              </div>
+              <div className={`w-2 h-2 rounded-full ${sandboxEnabled ? 'bg-green-500' : 'bg-red-500'}`} />
+            </TabsTrigger>
+            <TabsTrigger value="progressive_discovery" className="flex items-center gap-2">
+              <span>PD</span>
+              <div className={`w-2 h-2 rounded-full ${progressiveDiscoveryEnabled ? 'bg-green-500' : 'bg-red-500'}`} />
             </TabsTrigger>
             {/* <TabsTrigger value="system">System</TabsTrigger> */}
           </TabsList>
@@ -1127,6 +1125,14 @@ export default function VMCPDetailPage() {
             vmcpId={vmcpId}
             isRemoteVMCP={isRemoteVMCP}
             onSandboxStatusChange={setSandboxEnabled}
+          />
+        </TabsContent>
+
+        <TabsContent value="progressive_discovery" className="flex-1 min-h-0 h-full max-h-full overflow-hidden">
+          <ProgressiveDiscoveryTab
+            vmcpConfig={vmcpConfig}
+            vmcpId={vmcpId}
+            isRemoteVMCP={isRemoteVMCP}
             onProgressiveDiscoveryStatusChange={setProgressiveDiscoveryEnabled}
           />
         </TabsContent>

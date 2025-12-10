@@ -199,6 +199,8 @@ export default function ToolsTab({
   const [overrideTool, setOverrideTool] = useState<any | null>(null);
   const [overrideNameValue, setOverrideNameValue] = useState('');
   const [overrideDescriptionValue, setOverrideDescriptionValue] = useState('');
+  const [overrideToolExampleValue, setOverrideToolExampleValue] = useState('');
+  const [overrideSampleResultValue, setOverrideSampleResultValue] = useState('');
   const [savingOverride, setSavingOverride] = useState(false);
 
   // HTTP tool importer states
@@ -709,6 +711,8 @@ export default function ToolsTab({
     const existingOverride = (vmcpConfig.vmcp_config as any).selected_tool_overrides?.[serverId]?.[tool.name];
     setOverrideNameValue(existingOverride?.name || '');
     setOverrideDescriptionValue(existingOverride?.description || '');
+    setOverrideToolExampleValue(existingOverride?.tool_example || '');
+    setOverrideSampleResultValue(existingOverride?.sample_result || '');
 
     setShowToolOverrideModal(true);
   };
@@ -720,6 +724,8 @@ export default function ToolsTab({
     setOverrideTool(null);
     setOverrideNameValue('');
     setOverrideDescriptionValue('');
+    setOverrideToolExampleValue('');
+    setOverrideSampleResultValue('');
   };
 
   const saveToolOverride = async () => {
@@ -739,19 +745,30 @@ export default function ToolsTab({
       const existingOverrides = (vmcpConfig.vmcp_config as any).selected_tool_overrides?.[overrideServerId] || {};
 
       // Create or update the override for this tool
-      const newOverride = {
-        name: overrideNameValue.trim(),
-        description: overrideDescriptionValue.trim(),
+      const newOverride: any = {
         originalName: tool.name,
         originalDescription: tool.description || ''
       };
+      
+      if (overrideNameValue.trim()) {
+        newOverride.name = overrideNameValue.trim();
+      }
+      if (overrideDescriptionValue.trim()) {
+        newOverride.description = overrideDescriptionValue.trim();
+      }
+      if (overrideToolExampleValue.trim()) {
+        newOverride.tool_example = overrideToolExampleValue.trim();
+      }
+      if (overrideSampleResultValue.trim()) {
+        newOverride.sample_result = overrideSampleResultValue.trim();
+      }
 
       // Only save if there are actual changes
       const updatedOverrides = { ...existingOverrides };
-      if (newOverride.name || newOverride.description) {
+      if (newOverride.name || newOverride.description || newOverride.tool_example || newOverride.sample_result) {
         updatedOverrides[overrideToolName] = newOverride;
       } else {
-        // Remove override if both fields are empty
+        // Remove override if all fields are empty
         delete updatedOverrides[overrideToolName];
       }
 
@@ -2151,6 +2168,72 @@ export default function ToolsTab({
                   <pre className="text-sm text-foreground whitespace-pre-wrap overflow-x-auto">
                     {testToolResult}
                   </pre>
+                  {selectedToolIndex !== null && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          const tool = vmcpConfig.custom_tools[selectedToolIndex];
+                          const toolExample = JSON.stringify(testToolParameters, null, 2);
+                          const sampleResult = testToolResult;
+                          
+                          // Update custom tool with example and result in meta
+                          const updatedCustomTools = vmcpConfig.custom_tools.map((t, idx) => {
+                            if (idx === selectedToolIndex) {
+                              return {
+                                ...t,
+                                meta: {
+                                  ...((t as any).meta || {}),
+                                  tool_example: toolExample,
+                                  sample_result: sampleResult
+                                }
+                              };
+                            }
+                            return t;
+                          });
+                          
+                          // Update local state
+                          setVmcpConfig(prev => ({
+                            ...prev,
+                            custom_tools: updatedCustomTools
+                          }));
+                          
+                          // Save to backend
+                          const accessToken = localStorage.getItem('access_token');
+                          if (!accessToken) {
+                            error('No access token available. Please log in again.');
+                            return;
+                          }
+                          
+                          const saveData = {
+                            name: vmcpConfig.name,
+                            description: vmcpConfig.description,
+                            system_prompt: vmcpConfig.system_prompt,
+                            vmcp_config: vmcpConfig.vmcp_config,
+                            custom_prompts: vmcpConfig.custom_prompts,
+                            custom_tools: updatedCustomTools,
+                            custom_context: vmcpConfig.custom_context,
+                            custom_resources: vmcpConfig.custom_resources,
+                            custom_resource_uris: vmcpConfig.custom_resource_uris,
+                            environment_variables: vmcpConfig.environment_variables,
+                            uploaded_files: vmcpConfig.uploaded_files,
+                            metadata: vmcpConfig.metadata
+                          };
+                          
+                          await apiClient.updateVMCP(vmcpConfig.id, saveData as any, accessToken);
+                          success('Tool example and sample result saved successfully');
+                        } catch (err) {
+                          console.error('Error saving tool example:', err);
+                          error('Failed to save tool example and sample result');
+                        }
+                      }}
+                      className="mt-3"
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Input as Tool Example & Output as Sample Result
+                    </Button>
+                  )}
                 </div>
               )}
 
@@ -2604,6 +2687,88 @@ export default function ToolsTab({
                     {mcpTestToolModal.result}
                   </pre>
                 </div>
+                {mcpTestToolModal.tool && mcpTestToolModal.serverId && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      if (!mcpTestToolModal.serverId) return;
+                      try {
+                        const toolExample = JSON.stringify(mcpTestToolModal.formData, null, 2);
+                        const sampleResult = mcpTestToolModal.result;
+                        const serverId = mcpTestToolModal.serverId;
+                        
+                        // Get existing overrides
+                        const existingOverrides = (vmcpConfig.vmcp_config as any).selected_tool_overrides?.[serverId] || {};
+                        const existingOverride = existingOverrides[mcpTestToolModal.tool.name] || {};
+                        
+                        // Update override with example and result
+                        const updatedOverride = {
+                          ...existingOverride,
+                          tool_example: toolExample,
+                          sample_result: sampleResult,
+                          originalName: mcpTestToolModal.tool.name,
+                          originalDescription: mcpTestToolModal.tool.description || ''
+                        };
+                        
+                        const updatedOverrides = {
+                          ...existingOverrides,
+                          [mcpTestToolModal.tool.name]: updatedOverride
+                        };
+                        
+                        // Update local state
+                        setVmcpConfig(prev => ({
+                          ...prev,
+                          vmcp_config: {
+                            ...prev.vmcp_config,
+                            selected_tool_overrides: {
+                              ...(prev.vmcp_config as any).selected_tool_overrides,
+                              [serverId]: updatedOverrides
+                            }
+                          }
+                        }));
+                        
+                        // Save to backend
+                        const accessToken = localStorage.getItem('access_token');
+                        if (!accessToken) {
+                          error('No access token available. Please log in again.');
+                          return;
+                        }
+                        
+                        const saveData = {
+                          name: vmcpConfig.name,
+                          description: vmcpConfig.description,
+                          system_prompt: vmcpConfig.system_prompt,
+                          vmcp_config: {
+                            ...vmcpConfig.vmcp_config,
+                            selected_tool_overrides: {
+                              ...(vmcpConfig.vmcp_config as any).selected_tool_overrides,
+                              [serverId]: updatedOverrides
+                            }
+                          },
+                          custom_prompts: vmcpConfig.custom_prompts,
+                          custom_tools: vmcpConfig.custom_tools,
+                          custom_context: vmcpConfig.custom_context,
+                          custom_resources: vmcpConfig.custom_resources,
+                          custom_resource_uris: vmcpConfig.custom_resource_uris,
+                          environment_variables: vmcpConfig.environment_variables,
+                          uploaded_files: vmcpConfig.uploaded_files,
+                          metadata: vmcpConfig.metadata
+                        };
+                        
+                        await apiClient.updateVMCP(vmcpConfig.id, saveData as any, accessToken);
+                        success('Tool example and sample result saved successfully');
+                      } catch (err) {
+                        console.error('Error saving tool example:', err);
+                        error('Failed to save tool example and sample result');
+                      }
+                    }}
+                    className="mt-3"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Input as Tool Example & Output as Sample Result
+                  </Button>
+                )}
               </div>
             )}
 
@@ -2699,6 +2864,38 @@ export default function ToolsTab({
                 />
                 <div className="text-xs text-muted-foreground mt-1">
                   Override the tool description as it appears to the LLM
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Tool Example (JSON)
+                </label>
+                <textarea
+                  value={overrideToolExampleValue}
+                  onChange={(e) => setOverrideToolExampleValue(e.target.value)}
+                  placeholder='Example: {"param1": "value1", "param2": "value2"}'
+                  rows={4}
+                  className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm font-mono"
+                />
+                <div className="text-xs text-muted-foreground mt-1">
+                  Example input parameters for this tool (JSON format)
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Sample Result (JSON)
+                </label>
+                <textarea
+                  value={overrideSampleResultValue}
+                  onChange={(e) => setOverrideSampleResultValue(e.target.value)}
+                  placeholder='Example: {"result": "success", "data": {...}}'
+                  rows={4}
+                  className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm font-mono"
+                />
+                <div className="text-xs text-muted-foreground mt-1">
+                  Example output/result from this tool (JSON format)
                 </div>
               </div>
             </div>

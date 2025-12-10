@@ -79,6 +79,20 @@ class VMCPClient:
         
         tools = await self.manager.tools_list()
         
+        # Check if progressive discovery is enabled - if so, filter tools
+        vmcp_config = self.manager.load_vmcp_config(self.vmcp_id)
+        progressive_discovery_enabled = False
+        if vmcp_config:
+            metadata = getattr(vmcp_config, 'metadata', {}) or {}
+            if isinstance(metadata, dict):
+                progressive_discovery_enabled = metadata.get('progressive_discovery_enabled', False) is True
+        
+        # If progressive discovery is enabled, only expose PD tools
+        if progressive_discovery_enabled:
+            # Filter to only tools_list, tool_detail, upload_prompt
+            pd_tool_names = ['tools_list', 'tool_detail', 'upload_prompt']
+            tools = [t for t in tools if t.name in pd_tool_names]
+        
         # Convert Tool objects to dicts
         self._tools_cache = []
         for tool in tools:
@@ -159,9 +173,37 @@ class VMCPClient:
     
     
     async def list_tools(self) -> List[Dict[str, Any]]:
-        """List all tools available in this vMCP."""
-        await self._load_tools()
-        return self._tools_cache or []
+        """
+        List all tools available in this vMCP.
+        
+        This method honors tool selection and overrides by bypassing the progressive
+        discovery filter, similar to the progressive discovery tools_list tool.
+        This ensures that selected MCP tools and tool overrides are properly included
+        in the results.
+        """
+        if not self.vmcp_id:
+            raise ValueError("No vMCP specified. Set vmcp_name or use set_active_vmcp()")
+        
+        # Bypass PD filter to get all tools with selection/overrides honored
+        # This matches the behavior of the progressive discovery tools_list tool
+        tools = await self.manager.tools_list(bypass_pd_filter=True)
+        
+        # Convert Tool objects to dicts
+        tools_list = []
+        for tool in tools:
+            if hasattr(tool, 'model_dump'):
+                tools_list.append(tool.model_dump())
+            elif isinstance(tool, dict):
+                tools_list.append(tool)
+            else:
+                # Fallback: convert to dict manually
+                tools_list.append({
+                    "name": getattr(tool, 'name', str(tool)),
+                    "description": getattr(tool, 'description', ''),
+                    "inputSchema": getattr(tool, 'inputSchema', {})
+                })
+        
+        return tools_list
     
     async def list_prompts(self) -> List[Dict[str, Any]]:
         """List all prompts available in this vMCP."""

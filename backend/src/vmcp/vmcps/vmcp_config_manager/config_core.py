@@ -832,7 +832,7 @@ class VMCPConfigManager:
     # =========================================================================
 
     @trace_method("[VMCPConfigManager]: List Tools")
-    async def tools_list(self) -> List[Tool]:
+    async def tools_list(self, bypass_pd_filter: bool = False) -> List[Tool]:
         """
         List all tools available in the vMCP.
 
@@ -840,6 +840,10 @@ class VMCPConfigManager:
         - Tools from selected MCP servers
         - Custom tools defined in the vMCP
         - Tool overrides and widget attachments
+
+        Args:
+            bypass_pd_filter: If True, bypass progressive discovery filter to show all tools
+                             (used by tools_list tool itself)
 
         Returns:
             List of Tool objects from all sources
@@ -849,7 +853,8 @@ class VMCPConfigManager:
             vmcp_id=self.vmcp_id,
             user_id=self.user_id,
             mcp_config_manager=self.mcp_config_manager,
-            log_vmcp_operation=self.log_vmcp_operation
+            log_vmcp_operation=self.log_vmcp_operation,
+            bypass_pd_filter=bypass_pd_filter
         )
 
     @trace_method("[VMCPConfigManager]: List Resources")

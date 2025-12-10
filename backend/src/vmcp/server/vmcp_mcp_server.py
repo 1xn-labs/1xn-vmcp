@@ -6,6 +6,7 @@ This module contains the VMCPServer class which handles MCP protocol operations.
 It extends FastMCP and provides protocol handlers for tools, resources, prompts, etc.
 """
 
+import json
 import re
 import traceback
 from dataclasses import dataclass
@@ -358,6 +359,143 @@ class VMCPServer(FastMCP):
         agent_name = getattr(deps, 'agent_name', 'unknown')
         logger.info(f"[VMCPServer] Listing tools for user {user_id}, client {client_id}, agent {agent_name}")
 
+        # Check if progressive discovery is enabled
+        progressive_discovery_enabled = False
+        if deps.vmcp_config_manager:
+            vmcp_id = deps.vmcp_config_manager.vmcp_id
+            if vmcp_id:
+                vmcp_config = deps.vmcp_config_manager.load_vmcp_config(vmcp_id)
+                if vmcp_config:
+                    metadata = getattr(vmcp_config, 'metadata', {}) or {}
+                    if isinstance(metadata, dict):
+                        progressive_discovery_enabled = metadata.get('progressive_discovery_enabled', False) is True
+
+        # If progressive discovery is enabled, only return PD tools
+        if progressive_discovery_enabled:
+            vmcp_id = deps.vmcp_config_manager.vmcp_id if deps.vmcp_config_manager else 'unknown'
+            logger.info(f"[VMCPServer] Progressive discovery enabled for vMCP {vmcp_id}, returning only PD tools")
+            pd_tools = [
+                Tool(
+                    name="tools_list",
+                    description="List all available tools in this vMCP with their names and descriptions. Honors tool selection - only shows tools that are enabled.",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {},
+                        "required": []
+                    }
+                ),
+                Tool(
+                    name="tool_detail",
+                    description="Get detailed information about a specific tool including name, description, inputSchema, outputSchema, tool examples, and sample results.",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "tool_name": {
+                                "type": "string",
+                                "description": "The name of the tool to get details for"
+                            }
+                        },
+                        "required": ["tool_name"]
+                    }
+                ),
+                Tool(
+                    name="execute_tool",
+                    description="Execute a tool by name with the provided arguments. Use this to call any tool available in the vMCP.",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "tool_name": {
+                                "type": "string",
+                                "description": "The name of the tool to execute"
+                            },
+                            "arguments": {
+                                "type": "object",
+                                "description": "The arguments to pass to the tool (key-value pairs)",
+                                "additionalProperties": True
+                            }
+                        },
+                        "required": ["tool_name", "arguments"]
+                    }
+                )
+            ]
+            
+            # Add execute_bash tool if sandbox is enabled (from sandbox tools)
+            if deps.vmcp_config_manager:
+                try:
+                    # Check if sandbox is enabled
+                    from vmcp.vmcps.sandbox_service import get_sandbox_service
+                    sandbox_service = get_sandbox_service()
+                    vmcp_config = deps.vmcp_config_manager.load_vmcp_config(vmcp_id)
+                    sandbox_enabled = sandbox_service.is_enabled(vmcp_id, vmcp_config) if vmcp_config else False
+                    
+                    if sandbox_enabled:
+                        # Get all tools with bypass_pd_filter to find execute_bash
+                        all_tools = await deps.vmcp_config_manager.tools_list(bypass_pd_filter=True)
+                        execute_bash_tool = next((t for t in all_tools if t.name == "execute_bash"), None)
+                        if execute_bash_tool:
+                            pd_tools.append(execute_bash_tool)
+                            logger.info(f"[VMCPServer] Added execute_bash to PD tools (sandbox enabled)")
+                except Exception as e:
+                    logger.warning(f"[VMCPServer] Failed to get execute_bash tool for PD: {e}")
+            
+            # Add upload_prompt if not remote user
+            if not(deps.vmcp_username_header and deps.vmcp_username_header.startswith("@")):
+                pd_tools.append(
+                    Tool(
+                        name="upload_prompt",
+                        description=UPLOAD_PROMPT_DESCRIPTION,
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "prompt_json": {
+                                    "type": "object",
+                                    "description": "JSON object containing the prompt configuration",
+                                    "properties": {
+                                        "name": {
+                                            "type": "string",
+                                            "description": "Name for the new prompt"
+                                        },
+                                        "description": {
+                                            "type": "string",
+                                            "description": "Description of what the prompt does (optional)"
+                                        },
+                                        "text": {
+                                            "type": "string",
+                                            "description": "The actual prompt text content. Use {variableName} format to reference variables (e.g., {username})"
+                                        },
+                                        "variables": {
+                                            "type": "array",
+                                            "description": "Optional list of variables that can be used in the prompt text",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string",
+                                                        "description": "Variable name (referenced as @var.name in prompt text)"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "description": "Description of what this variable represents"
+                                                    },
+                                                    "required": {
+                                                        "type": "boolean",
+                                                        "description": "Whether this variable is required when using the prompt"
+                                                    }
+                                                },
+                                                "required": ["name", "description", "required"]
+                                            }
+                                        }
+                                    },
+                                    "required": ["name", "text"]
+                                }
+                            },
+                            "required": ["prompt_json"]
+                        }
+                    )
+                )
+            logger.info(f"[VMCPServer] Returning {len(pd_tools)} PD tools")
+            return pd_tools
+
         # Get vMCP tools
         if deps.vmcp_config_manager:
             tools = await deps.vmcp_config_manager.tools_list()
@@ -583,8 +721,128 @@ class VMCPServer(FastMCP):
         logger.info(f"[VMCPServer] Executing tool '{name}' for user {user_id}, client {client_id}, agent {agent_name}")
 
         try:
+            # Handle progressive discovery tools
+            if name == "tools_list":
+                logger.debug(f"[VMCPServer] Executing PD tool '{name}'")
+                if not deps.vmcp_config_manager:
+                    raise Exception("No vMCP manager available for tools_list")
+                
+                # Get all tools honoring selection (bypass PD filter to show all selected tools)
+                all_tools = await deps.vmcp_config_manager.tools_list(bypass_pd_filter=True)
+                
+                # Format tools list with name and description
+                tools_info = []
+                for tool in all_tools:
+                    tools_info.append({
+                        "name": tool.name,
+                        "description": tool.description or "No description"
+                    })
+                
+                result_text = json.dumps({"tools": tools_info, "total": len(tools_info)}, indent=2)
+                logger.info(f"[VMCPServer] tools_list returned {len(tools_info)} tools")
+                logger.debug("=" * 60)
+                
+                from mcp.types import CallToolResult
+                return CallToolResult(
+                    content=[TextContent(type="text", text=result_text)],
+                    isError=False
+                )
+            
+            elif name == "tool_detail":
+                logger.debug(f"[VMCPServer] Executing PD tool '{name}'")
+                if not deps.vmcp_config_manager:
+                    raise Exception("No vMCP manager available for tool_detail")
+                
+                tool_name = arguments.get("tool_name")
+                if not tool_name:
+                    raise ValueError("tool_name is required")
+                
+                # Get all tools (bypass PD filter to show all selected tools)
+                all_tools = await deps.vmcp_config_manager.tools_list(bypass_pd_filter=True)
+                
+                # Find the tool
+                tool = next((t for t in all_tools if t.name == tool_name), None)
+                if not tool:
+                    raise ValueError(f"Tool '{tool_name}' not found")
+                
+                # Build tool detail response
+                tool_detail = {
+                    "name": tool.name,
+                    "description": tool.description or "No description",
+                    "inputSchema": tool.inputSchema or {},
+                    "outputSchema": tool.outputSchema or {},
+                }
+                
+                # Get tool example and sample result from meta if present
+                # Note: tool.meta may be None even though meta was set during creation,
+                # so we also check model_dump() which preserves the meta field
+                tool_meta = tool.meta or {}
+                if not tool_meta and hasattr(tool, 'model_dump'):
+                    tool_dict = tool.model_dump()
+                    tool_meta = tool_dict.get('meta', {}) or {}
+                
+                if "tool_example" in tool_meta:
+                    logger.debug(f"[VMCPServer] tool_detail: Found tool_example")
+                    tool_detail["tool_example"] = tool_meta["tool_example"]
+                if "sample_result" in tool_meta:
+                    logger.debug(f"[VMCPServer] tool_detail: Found sample_result")
+                    tool_detail["sample_result"] = tool_meta["sample_result"]
+                
+                result_text = json.dumps(tool_detail, indent=2)
+                logger.info(f"[VMCPServer] tool_detail returned info for '{tool_name}'")
+                logger.debug("=" * 60)
+                
+                from mcp.types import CallToolResult
+                return CallToolResult(
+                    content=[TextContent(type="text", text=result_text)],
+                    isError=False
+                )
+            
+            elif name == "execute_tool":
+                logger.debug(f"[VMCPServer] Executing PD tool '{name}'")
+                if not deps.vmcp_config_manager:
+                    raise Exception("No vMCP manager available for execute_tool")
+                
+                tool_name = arguments.get("tool_name")
+                tool_arguments = arguments.get("arguments", {})
+                
+                if not tool_name:
+                    raise ValueError("tool_name is required")
+                if not isinstance(tool_arguments, dict):
+                    raise ValueError("arguments must be a dictionary")
+                
+                # Execute the tool using the vMCP config manager
+                tool_call_request = VMCPToolCallRequest(
+                    tool_name=tool_name,
+                    arguments=tool_arguments
+                )
+                
+                result = await deps.vmcp_config_manager.call_tool(
+                    tool_call_request,
+                    connect_if_needed=True,
+                    return_metadata=False
+                )
+                
+                # Format the result
+                if hasattr(result, 'content'):
+                    # It's a CallToolResult, return it as-is
+                    logger.info(f"[VMCPServer] execute_tool returned result for '{tool_name}'")
+                    logger.debug("=" * 60)
+                    return result
+                else:
+                    # Convert to CallToolResult
+                    result_text = json.dumps(result, indent=2, default=str)
+                    logger.info(f"[VMCPServer] execute_tool returned result for '{tool_name}'")
+                    logger.debug("=" * 60)
+                    
+                    from mcp.types import CallToolResult
+                    return CallToolResult(
+                        content=[TextContent(type="text", text=result_text)],
+                        isError=False
+                    )
+            
             # For now, check if this is the vmcp_create_prompt tool
-            if name == "upload_prompt":
+            elif name == "upload_prompt":
                 logger.debug(f"[VMCPServer] Executing PRESET tool '{name}'")
                 # Execute the preset tool directly (manually for now)
                 result = await self._execute_upload_prompt(arguments)

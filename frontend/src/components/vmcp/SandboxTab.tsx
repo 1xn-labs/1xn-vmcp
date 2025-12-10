@@ -21,16 +21,13 @@ interface SandboxTabProps {
   vmcpId: string;
   isRemoteVMCP?: boolean;
   onSandboxStatusChange?: (enabled: boolean) => void;
-  onProgressiveDiscoveryStatusChange?: (enabled: boolean) => void;
 }
 
-export default function SandboxTab({ vmcpConfig, vmcpId, isRemoteVMCP = false, onSandboxStatusChange, onProgressiveDiscoveryStatusChange }: SandboxTabProps) {
+export default function SandboxTab({ vmcpConfig, vmcpId, isRemoteVMCP = false, onSandboxStatusChange }: SandboxTabProps) {
   const [sandboxEnabled, setSandboxEnabled] = useState(false);
-  const [progressiveDiscoveryEnabled, setProgressiveDiscoveryEnabled] = useState(false);
   const [folderExists, setFolderExists] = useState(false);
   const [loading, setLoading] = useState(true);
   const [enabling, setEnabling] = useState(false);
-  const [togglingProgressiveDiscovery, setTogglingProgressiveDiscovery] = useState(false);
   const [files, setFiles] = useState<FileNode[]>([]);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string>('');
@@ -124,22 +121,6 @@ export default function SandboxTab({ vmcpConfig, vmcpId, isRemoteVMCP = false, o
     }
   }, [vmcpId, loadFiles]);
 
-  // Load progressive discovery status
-  const loadProgressiveDiscoveryStatus = useCallback(async () => {
-    try {
-      const accessToken = localStorage.getItem('access_token') || (import.meta.env.VITE_VMCP_OSS_BUILD === 'true' ? 'local-token' : undefined);
-      const result = await apiClient.getProgressiveDiscoveryStatus(vmcpId, accessToken);
-
-      if (result.success && result.data) {
-        setProgressiveDiscoveryEnabled(result.data.enabled);
-        if (onProgressiveDiscoveryStatusChange) {
-          onProgressiveDiscoveryStatusChange(result.data.enabled);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading progressive discovery status:', error);
-    }
-  }, [vmcpId, onProgressiveDiscoveryStatusChange]);
 
   // Find file node by path to check if it's a directory
   const findFileNode = (path: string, nodes: FileNode[]): FileNode | null => {
@@ -204,8 +185,7 @@ export default function SandboxTab({ vmcpConfig, vmcpId, isRemoteVMCP = false, o
   // Initial load - only load files if folder exists
   useEffect(() => {
     loadSandboxStatus();
-    loadProgressiveDiscoveryStatus();
-  }, [loadSandboxStatus, loadProgressiveDiscoveryStatus]);
+  }, [loadSandboxStatus]);
 
   // Memoize file tree to prevent unnecessary re-renders
   const memoizedFiles = useMemo(() => files, [files]);
@@ -255,47 +235,6 @@ export default function SandboxTab({ vmcpConfig, vmcpId, isRemoteVMCP = false, o
       if (checked) {
         setEnabling(false);
       }
-    }
-  };
-
-  // Handle toggle progressive discovery (enable/disable)
-  const handleToggleProgressiveDiscovery = async (checked: boolean) => {
-    try {
-      setTogglingProgressiveDiscovery(true);
-      const accessToken = localStorage.getItem('access_token') || (import.meta.env.VITE_VMCP_OSS_BUILD === 'true' ? 'local-token' : undefined);
-
-      if (checked) {
-        // Enable progressive discovery
-        const result = await apiClient.enableProgressiveDiscovery(vmcpId, accessToken);
-
-        if (result.success) {
-          setProgressiveDiscoveryEnabled(true);
-          if (onProgressiveDiscoveryStatusChange) {
-            onProgressiveDiscoveryStatusChange(true);
-          }
-          showSuccess('Progressive discovery enabled successfully');
-        } else {
-          showError(result.error || 'Failed to enable progressive discovery');
-        }
-      } else {
-        // Disable progressive discovery
-        const result = await apiClient.disableProgressiveDiscovery(vmcpId, accessToken);
-
-        if (result.success) {
-          setProgressiveDiscoveryEnabled(false);
-          if (onProgressiveDiscoveryStatusChange) {
-            onProgressiveDiscoveryStatusChange(false);
-          }
-          showSuccess('Progressive discovery disabled successfully');
-        } else {
-          showError(result.error || 'Failed to disable progressive discovery');
-        }
-      }
-    } catch (error) {
-      console.error('Error toggling progressive discovery:', error);
-      showError(`Failed to ${checked ? 'enable' : 'disable'} progressive discovery`);
-    } finally {
-      setTogglingProgressiveDiscovery(false);
     }
   };
 
@@ -515,21 +454,6 @@ export default function SandboxTab({ vmcpConfig, vmcpId, isRemoteVMCP = false, o
                 Delete Sandbox
               </Button>
             )}
-          </div>
-        </div>
-
-        {/* Progressive Discovery Toggle */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Switch
-              id="progressive-discovery-toggle"
-              checked={progressiveDiscoveryEnabled}
-              onCheckedChange={handleToggleProgressiveDiscovery}
-              disabled={isRemoteVMCP || togglingProgressiveDiscovery}
-            />
-            <Label htmlFor="progressive-discovery-toggle" className="text-sm font-medium">
-              {progressiveDiscoveryEnabled ? 'Disable Progressive Discovery' : 'Enable Progressive Discovery'}
-            </Label>
           </div>
         </div>
       </div>

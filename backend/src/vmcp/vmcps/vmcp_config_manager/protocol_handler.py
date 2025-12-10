@@ -125,7 +125,8 @@ async def tools_list(
     user_id: Optional[str],
     storage: StorageBase,
     mcp_config_manager: MCPConfigManager,
-    log_vmcp_operation: Optional[callable] = None
+    log_vmcp_operation: Optional[callable] = None,
+    bypass_pd_filter: bool = False
 ) -> List[Tool]:
     """
     List all tools from the vMCP's selected servers and custom tools.
@@ -171,24 +172,20 @@ async def tools_list(
     vmcp_selected_tool_overrides = vmcp_config.vmcp_config.get('selected_tool_overrides', {})
     all_tools = []
 
-    # Check if both sandbox and progressive discovery are enabled
-    # MCP tools should only be hidden when BOTH are enabled
+    # Check if progressive discovery is enabled (independent of sandbox)
     metadata = getattr(vmcp_config, 'metadata', {}) or {}
-    sandbox_enabled = False
     progressive_discovery_enabled = False
     if isinstance(metadata, dict):
-        sandbox_enabled = metadata.get('sandbox_enabled', False) is True
         progressive_discovery_enabled = metadata.get('progressive_discovery_enabled', False) is True
 
-    # Only hide MCP server tools if BOTH sandbox AND progressive discovery are enabled
-    # If sandbox is off, show MCP tools regardless of progressive discovery
-    # If sandbox is on but progressive discovery is off, show MCP tools
-    logger.debug(f"vMCP {vmcp_id}: sandbox_enabled={sandbox_enabled}, progressive_discovery_enabled={progressive_discovery_enabled}")
-    if sandbox_enabled and progressive_discovery_enabled:
-        logger.info(f"Sandbox and progressive discovery both enabled for vMCP {vmcp_id}, skipping MCP server tools")
+    # Hide MCP server tools if progressive discovery is enabled (independent of sandbox)
+    # But allow bypass when called from tools_list tool itself
+    logger.debug(f"vMCP {vmcp_id}: progressive_discovery_enabled={progressive_discovery_enabled}, bypass_pd_filter={bypass_pd_filter}")
+    if progressive_discovery_enabled and not bypass_pd_filter:
+        logger.info(f"Progressive discovery enabled for vMCP {vmcp_id}, hiding MCP server tools")
         vmcp_servers = []  # Skip all MCP server tools
     else:
-        logger.debug(f"vMCP {vmcp_id}: Showing MCP server tools (sandbox={sandbox_enabled}, progressive_discovery={progressive_discovery_enabled})")
+        logger.debug(f"vMCP {vmcp_id}: Showing MCP server tools (progressive_discovery={progressive_discovery_enabled}, bypass={bypass_pd_filter})")
 
     # Process tools from each server
     for server in vmcp_servers:
@@ -206,7 +203,7 @@ async def tools_list(
             selected_tool_overrides = vmcp_selected_tool_overrides.get(server_id, {})
 
         for tool in server_tools:
-            # Apply tool overrides (name, description)
+            # Apply tool overrides (name, description, tool_example, sample_result)
             tool_override = selected_tool_overrides.get(tool.name, {})
             _tool_name = tool_override.get("name", tool.name)
             _tool_description = tool_override.get("description", tool.description)
@@ -219,6 +216,12 @@ async def tools_list(
                 "vmcp_id": vmcp_id,
                 "server_id": server_id
             }
+
+            # Store tool_example and sample_result from override in meta
+            if "tool_example" in tool_override:
+                tool_meta["tool_example"] = tool_override["tool_example"]
+            if "sample_result" in tool_override:
+                tool_meta["sample_result"] = tool_override["sample_result"]
 
             widget_meta = {}
             # Widget support removed in OSS version
@@ -239,67 +242,69 @@ async def tools_list(
             )
             all_tools.append(vmcp_tool)
 
-    # Add custom tools
-    for custom_tool in vmcp_config.custom_tools:
-        tool_type = custom_tool.get('tool_type', 'prompt')
+    # Add custom tools (skip if progressive discovery is enabled, unless bypassing)
+    # This includes both user-defined custom tools AND sandbox tools (which are injected into custom_tools)
+    if not progressive_discovery_enabled or bypass_pd_filter:
+        for custom_tool in vmcp_config.custom_tools:
+            tool_type = custom_tool.get('tool_type', 'prompt')
 
-        if tool_type == 'python':
-            # For Python tools, parse the function to extract parameters
-            tool_input_schema = _parse_python_function_schema(custom_tool)
-        else:
-            # For prompt and HTTP tools, use the existing logic
-            tool_input_variables = custom_tool.get("variables", [])
-            tool_input_schema = {
-                "type": "object",
-                "properties": {
-                    var.get("name"): {
-                        "type": "string",
-                        "description": var.get("description")
-                    }
-                    for var in tool_input_variables
-                },
-                "required": [var.get("name") for var in tool_input_variables if var.get("required")],
-                "additionalProperties": False,
-                "$schema": "http://json-schema.org/draft-07/schema#"
+            if tool_type == 'python':
+                # For Python tools, parse the function to extract parameters
+                tool_input_schema = _parse_python_function_schema(custom_tool)
+            else:
+                # For prompt and HTTP tools, use the existing logic
+                tool_input_variables = custom_tool.get("variables", [])
+                tool_input_schema = {
+                    "type": "object",
+                    "properties": {
+                        var.get("name"): {
+                            "type": "string",
+                            "description": var.get("description")
+                        }
+                        for var in tool_input_variables
+                    },
+                    "required": [var.get("name") for var in tool_input_variables if var.get("required")],
+                    "additionalProperties": False,
+                    "$schema": "http://json-schema.org/draft-07/schema#"
+                }
+
+            # Get keywords from custom tool config and append to description
+            keywords = custom_tool.get("keywords", [])
+            description = custom_tool.get("description", "")
+
+            # Append keywords to description if they exist
+            if keywords:
+                keywords_str = ", ".join(keywords) if isinstance(keywords, list) else str(keywords)
+                description = f"{description} [Keywords: {keywords_str}]"
+
+            title = custom_tool.get('name')
+
+            # Preserve original meta fields (especially 'source' for sandbox_discovered tools)
+            original_meta = custom_tool.get('meta', {})
+            tool_meta = {
+                "type": "custom",
+                "tool_type": tool_type,
+                "vmcp_id": vmcp_id
             }
+            # Preserve source and other meta fields from original tool
+            if isinstance(original_meta, dict):
+                if 'source' in original_meta:
+                    tool_meta['source'] = original_meta['source']
+                if 'script_path' in original_meta:
+                    tool_meta['script_path'] = original_meta['script_path']
+                # Preserve any other meta fields
+                for key in ['source', 'script_path', 'vmcp_id']:
+                    if key in original_meta and key not in tool_meta:
+                        tool_meta[key] = original_meta[key]
 
-        # Get keywords from custom tool config and append to description
-        keywords = custom_tool.get("keywords", [])
-        description = custom_tool.get("description", "")
-
-        # Append keywords to description if they exist
-        if keywords:
-            keywords_str = ", ".join(keywords) if isinstance(keywords, list) else str(keywords)
-            description = f"{description} [Keywords: {keywords_str}]"
-
-        title = custom_tool.get('name')
-
-        # Preserve original meta fields (especially 'source' for sandbox_discovered tools)
-        original_meta = custom_tool.get('meta', {})
-        tool_meta = {
-            "type": "custom",
-            "tool_type": tool_type,
-            "vmcp_id": vmcp_id
-        }
-        # Preserve source and other meta fields from original tool
-        if isinstance(original_meta, dict):
-            if 'source' in original_meta:
-                tool_meta['source'] = original_meta['source']
-            if 'script_path' in original_meta:
-                tool_meta['script_path'] = original_meta['script_path']
-            # Preserve any other meta fields
-            for key in ['source', 'script_path', 'vmcp_id']:
-                if key in original_meta and key not in tool_meta:
-                    tool_meta[key] = original_meta[key]
-
-        custom_tool_obj = Tool(
-            name=custom_tool.get("name"),
-            description=description,
-            inputSchema=tool_input_schema,
-            title=title,
-            meta=tool_meta
-        )
-        all_tools.append(custom_tool_obj)
+            custom_tool_obj = Tool(
+                name=custom_tool.get("name"),
+                description=description,
+                inputSchema=tool_input_schema,
+                title=title,
+                meta=tool_meta
+            )
+            all_tools.append(custom_tool_obj)
 
     # Log operation if callback provided
     if user_id and log_vmcp_operation:
