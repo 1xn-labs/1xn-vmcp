@@ -1,0 +1,24 @@
+# HTTP/Network
+httpx[socks]
+requests
+aiohttp
+
+# Data Processing
+pandas
+numpy
+
+# Web Scraping & Parsing
+beautifulsoup4
+lxml
+
+# Data Formats
+pyyaml
+python-dotenv
+
+# Utilities
+pydantic
+jinja2
+markdown
+pillow
+openpyxl
+

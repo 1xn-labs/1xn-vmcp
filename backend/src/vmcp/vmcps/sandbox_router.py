@@ -5,13 +5,20 @@ Provides API endpoints for managing per-vMCP sandbox environments.
 """
 
 import os
+import json
+import asyncio
+import struct
+import fcntl
+import termios
+import select
 from pathlib import Path
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, WebSocket, WebSocketDisconnect, Query
 from pydantic import BaseModel
 
 from vmcp.storage.dummy_user import UserContext, get_user_context
-from vmcp.vmcps.sandbox_service import get_sandbox_service, SandboxService
+from vmcp.vmcps.sandbox_service import get_sandbox_service
+from vmcp.vmcps.terminal_session_manager import get_terminal_session_manager
 from vmcp.utilities.logging import get_logger
 
 logger = get_logger(__name__)
@@ -133,8 +140,7 @@ async def enable_sandbox(
                 logger.info(f"Sandbox directory exists but venv missing, creating venv and installing packages for {vmcp_id}")
                 # Create venv and install packages
                 sandbox_path = sandbox_service.get_sandbox_path(vmcp_id)
-                venv_path = sandbox_path / ".venv"
-                success = sandbox_service._create_venv_with_packages(venv_path, sandbox_path, vmcp_id)
+                success = sandbox_service._setup_venv_and_packages(sandbox_path, vmcp_id)
                 if not success:
                     raise HTTPException(
                         status_code=500,
@@ -835,4 +841,267 @@ async def delete_sandbox_file(
             status_code=500,
             detail=f"Error deleting file: {str(e)}"
         )
+
+
+@router.websocket("/terminal")
+async def terminal_websocket(
+    websocket: WebSocket,
+    vmcp_id: str,
+    token: Optional[str] = Query(None),
+):
+    """
+    WebSocket endpoint for terminal sessions.
+    Creates or reconnects to a persistent PTY session in the sandbox environment.
+    
+    Args:
+        websocket: WebSocket connection
+        vmcp_id: The vMCP ID
+        token: Authentication token from query parameter
+    """
+    await websocket.accept()
+    
+    session_manager = get_terminal_session_manager()
+    session = None
+    
+    try:
+        # Get user context from token
+        # For OSS mode, use dummy user if token is 'local-token' or None
+        if token == 'local-token' or token is None:
+            user_context = UserContext()
+        else:
+            # In production, validate token and create user context
+            # For now, use dummy user
+            user_context = UserContext(token=token)
+        
+        sandbox_service = get_sandbox_service()
+        if not sandbox_service.sandbox_exists(vmcp_id):
+            await websocket.close(code=1008, reason="Sandbox not found")
+            return
+        
+        sandbox_path = sandbox_service.get_sandbox_path(vmcp_id)
+        
+        # Get or create persistent terminal session
+        session = await session_manager.get_or_create_session(
+            vmcp_id=vmcp_id,
+            user_id=user_context.user_id,
+            sandbox_path=str(sandbox_path)
+        )
+        
+        # Check if this is a reconnection before registering
+        was_reconnecting = session.active_connections > 0
+        
+        # Register this connection
+        session_manager.register_connection(session.session_id)
+        
+        master_fd = session.master_fd
+        
+        # On reconnection, quickly drain buffered data to restore terminal state
+        # Read synchronously before starting async loop for instant restoration
+        if was_reconnecting:
+            try:
+                # Read buffered data in tight loop for fast restoration
+                buffered_data = []
+                for _ in range(100):  # Read many times to drain buffer
+                    ready, _, _ = select.select([master_fd], [], [], 0)
+                    if not ready:
+                        break
+                    try:
+                        data = os.read(master_fd, 131072)  # Large chunks
+                        if data:
+                            buffered_data.append(data)
+                        else:
+                            break
+                    except OSError:
+                        break
+                
+                # Send all buffered data at once for speed
+                if buffered_data:
+                    await websocket.send_bytes(b''.join(buffered_data))
+                
+                # Trigger a refresh for programs like vi (Ctrl+L equivalent)
+                # This helps restore display without corrupting it
+                os.write(master_fd, b'\x0c')  # Form feed (Ctrl+L) - standard terminal refresh
+                
+            except Exception as e:
+                logger.debug(f"Error restoring terminal state on reconnection: {e}")
+        
+        # Flag to track if we should continue
+        should_continue = True
+        
+        # Start tasks for reading from PTY and writing to WebSocket
+        async def read_from_pty():
+            nonlocal should_continue
+            
+            # Main read loop - optimized for maximum responsiveness
+            consecutive_empty_reads = 0
+            while should_continue:
+                try:
+                    # Check if websocket is still connected
+                    if websocket.client_state.name != 'CONNECTED':
+                        should_continue = False
+                        break
+                    
+                    # Use select with minimal timeout for responsiveness
+                    ready, _, _ = select.select([master_fd], [], [], 0.001)  # 1ms timeout
+                    if ready:
+                        try:
+                            data = os.read(master_fd, 131072)  # Large buffer for throughput
+                            if data:
+                                consecutive_empty_reads = 0
+                                try:
+                                    await websocket.send_bytes(data)
+                                    # Continue immediately if there might be more data
+                                    continue
+                                except (WebSocketDisconnect, RuntimeError):
+                                    should_continue = False
+                                    break
+                        except OSError:
+                            pass
+                    
+                    # Very short sleep when idle to avoid busy-waiting
+                    consecutive_empty_reads += 1
+                    if consecutive_empty_reads > 10:
+                        await asyncio.sleep(0.0005)  # 0.5ms sleep when truly idle
+                        consecutive_empty_reads = 0
+                        
+                except (WebSocketDisconnect, RuntimeError):
+                    # WebSocket disconnected
+                    should_continue = False
+                    break
+                except Exception as e:
+                    logger.error(f"Error reading from PTY: {e}")
+                    should_continue = False
+                    break
+        
+        async def write_to_pty():
+            nonlocal should_continue
+            while should_continue:
+                try:
+                    # Check if websocket is still connected before trying to receive
+                    if websocket.client_state.name != 'CONNECTED':
+                        should_continue = False
+                        break
+                    
+                    message = await websocket.receive()
+                    
+                    # Handle binary data (raw terminal input)
+                    if 'bytes' in message:
+                        bytes_data = message['bytes']
+                        # Ensure bytes_data is actually bytes
+                        if isinstance(bytes_data, bytes):
+                            os.write(master_fd, bytes_data)
+                        elif isinstance(bytes_data, (str, int)):
+                            # Convert to bytes if needed
+                            if isinstance(bytes_data, str):
+                                os.write(master_fd, bytes_data.encode())
+                            else:
+                                # Shouldn't happen, but handle gracefully
+                                logger.warning(f"Unexpected bytes type: {type(bytes_data)}")
+                                continue
+                        else:
+                            logger.warning(f"Unexpected bytes data type: {type(bytes_data)}")
+                            continue
+                    
+                    # Handle text data (JSON messages or raw text)
+                    elif 'text' in message:
+                        text_data = message['text']
+                        if not isinstance(text_data, str):
+                            logger.warning(f"Unexpected text type: {type(text_data)}")
+                            continue
+                        
+                        try:
+                            data = json.loads(text_data)
+                            # Ensure data is a dict before calling .get()
+                            if isinstance(data, dict):
+                                if data.get('type') == 'resize':
+                                    # Handle terminal resize
+                                    rows = data.get('rows', 24)
+                                    cols = data.get('cols', 80)
+                                    winsize = struct.pack('HHHH', rows, cols, 0, 0)
+                                    fcntl.ioctl(master_fd, termios.TIOCSWINSZ, winsize)
+                                elif 'input' in data:
+                                    input_str = data.get('input', '')
+                                    if isinstance(input_str, str):
+                                        os.write(master_fd, input_str.encode())
+                            else:
+                                # Not a dict, treat as raw input
+                                os.write(master_fd, text_data.encode())
+                        except json.JSONDecodeError:
+                            # Not JSON, treat as raw input
+                            os.write(master_fd, text_data.encode())
+                except WebSocketDisconnect:
+                    should_continue = False
+                    break
+                except RuntimeError as e:
+                    # RuntimeError can occur when trying to receive after disconnect
+                    if "disconnect" in str(e).lower() or "receive" in str(e).lower():
+                        should_continue = False
+                        break
+                    logger.error(f"Error writing to PTY: {e}")
+                    should_continue = False
+                    break
+                except Exception as e:
+                    logger.error(f"Error writing to PTY: {e}")
+                    should_continue = False
+                    break
+        
+        # On reconnection, create a task to flush and trigger prompt refresh
+        # This runs concurrently with read/write loops, matching first-connection flow
+        async def reconnect_flush_and_prompt():
+            if was_reconnecting:
+                # Small delay to let read loop start first
+                await asyncio.sleep(0.01)
+                try:
+                    # Quick flush of any buffered data
+                    flushed_chunks = []
+                    for _ in range(50):  # Quick drain
+                        ready, _, _ = select.select([master_fd], [], [], 0)
+                        if not ready:
+                            break
+                        try:
+                            data = os.read(master_fd, 131072)
+                            if data:
+                                flushed_chunks.append(data)
+                            else:
+                                break
+                        except OSError:
+                            break
+                    
+                    # Send flushed data if any
+                    if flushed_chunks:
+                        await websocket.send_bytes(b''.join(flushed_chunks))
+                    
+                    # Trigger prompt refresh - read loop will handle reading it naturally
+                    os.write(master_fd, b'\r\n')
+                except Exception as e:
+                    logger.debug(f"Error triggering prompt refresh: {e}")
+        
+        try:
+            # Run all tasks concurrently
+            # Read loop starts immediately (like first connection), so prompt appears smoothly
+            tasks = [
+                read_from_pty(),
+                write_to_pty(),
+            ]
+            if was_reconnecting:
+                tasks.append(reconnect_flush_and_prompt())
+            
+            await asyncio.gather(*tasks, return_exceptions=True)
+        finally:
+            # Unregister connection (but don't close session - it persists)
+            if session:
+                session_manager.unregister_connection(session.session_id)
+                    
+    except WebSocketDisconnect:
+        logger.info(f"WebSocket disconnected for vMCP {vmcp_id}")
+        if session:
+            session_manager.unregister_connection(session.session_id)
+    except Exception as e:
+        logger.error(f"Error in terminal WebSocket for vMCP {vmcp_id}: {e}", exc_info=True)
+        if session:
+            session_manager.unregister_connection(session.session_id)
+        try:
+            await websocket.close(code=1011, reason=f"Server error: {str(e)}")
+        except Exception:
+            pass
 

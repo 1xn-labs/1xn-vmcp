@@ -7,7 +7,6 @@ associated with the current sandbox (detected from .vmcp-config.json).
 
 import json
 import sys
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -60,6 +59,55 @@ def main_callback(
         vmcp-sdk list-prompts        # List prompts in the sandbox's vMCP
         vmcp-sdk list-resources      # List resources in the sandbox's vMCP
     """
+
+
+@app.command()
+def help():
+    """
+    Show help information and available commands for vmcp-sdk-cli.
+    
+    Example:
+        vmcp-sdk-cli help
+    """
+    console.print("\n[bold cyan]vMCP SDK CLI - Help[/bold cyan]\n")
+    
+    console.print("[bold]Overview:[/bold]")
+    console.print("  The vMCP SDK CLI provides commands to interact with your vMCP (Virtual MCP Server)")
+    console.print("  from within a sandbox environment. The vMCP is automatically detected from")
+    console.print("  .vmcp-config.json in the current sandbox directory.\n")
+    
+    console.print("[bold]Available Commands:[/bold]\n")
+    
+    commands_table = Table(show_header=True, header_style="bold cyan", box=None)
+    commands_table.add_column("Command", style="cyan", width=20)
+    commands_table.add_column("Description", style="white")
+    
+    commands_table.add_row("help", "Show this help message")
+    commands_table.add_row("list-tools", "List all tools available in the vMCP")
+    commands_table.add_row("list-prompts", "List all prompts available in the vMCP")
+    commands_table.add_row("list-resources", "List all resources available in the vMCP")
+    commands_table.add_row("call-tool", "Call a tool with arguments")
+    
+    console.print(commands_table)
+    console.print()
+    
+    console.print("[bold]Usage Examples:[/bold]\n")
+    console.print("  [cyan]vmcp-sdk-cli help[/cyan]")
+    console.print("    Show this help message\n")
+    console.print("  [cyan]vmcp-sdk-cli list-tools[/cyan]")
+    console.print("    List all available tools (MCP server tools and sandbox-discovered tools)\n")
+    console.print("  [cyan]vmcp-sdk-cli list-prompts[/cyan]")
+    console.print("    List all prompts in the current vMCP\n")
+    console.print("  [cyan]vmcp-sdk-cli list-resources[/cyan]")
+    console.print("    List all resources in the current vMCP\n")
+    console.print("  [cyan]vmcp-sdk-cli call-tool --tool tool_name --payload '{\"arg\": \"value\"}'[/cyan]")
+    console.print("    Call a tool with JSON payload\n")
+    
+    console.print("[bold]Getting Help:[/bold]")
+    console.print("  Use [cyan]--help[/cyan] or [cyan]-h[/cyan] with any command for detailed information")
+    console.print("  Example: [cyan]vmcp-sdk-cli list-tools --help[/cyan]\n")
+    
+    console.print("[bold yellow]Note:[/bold yellow] Make sure you're in a sandbox directory with .vmcp-config.json\n")
 
 
 @app.command()

@@ -10,13 +10,14 @@ resolution-markers = [
 
 [[package]]
 name = "1xn-vmcp"
-version = "0.6.1"
+version = "0.6.3"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
     { name = "alembic" },
     { name = "apscheduler" },
     { name = "asyncpg" },
+    { name = "click" },
     { name = "fastapi" },
     { name = "httpx" },
     { name = "jinja2" },
@@ -76,6 +77,7 @@ requires-dist = [
     { name = "apscheduler", specifier = ">=3.10.0" },
     { name = "asyncpg", specifier = ">=0.29.0,<1.0.0" },
     { name = "black", marker = "extra == 'dev'", specifier = ">=23.12.0" },
+    { name = "click", specifier = ">=8.0" },
     { name = "fastapi", specifier = ">=0.104.0,<1.0.0" },
     { name = "httpx", specifier = ">=0.25.0,<1.0.0" },
     { name = "jinja2", specifier = ">=3.1.2,<4.0.0" },

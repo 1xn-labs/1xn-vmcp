@@ -1,6 +1,5 @@
 import asyncio
 import os
-import subprocess
 from pathlib import Path
 from sandbox_runtime import SandboxManager
 from sandbox_runtime.config.schemas import SandboxRuntimeConfig
@@ -64,10 +63,14 @@ async def execute_bash(command: str, timeout: int = 30):
     os.chdir(str(SANDBOX_DIR))
 
     try:
+        # Prepend virtual environment activation to every command
+        # This ensures the venv is activated for all bash commands
+        activated_command = f"source .venv/bin/activate && {command}"
+        
         # Wrap command with sandbox restrictions
         # Mount sandbox directory as /root so it appears as /root/ to the LLM
         sandboxed_command = await SandboxManager.wrap_with_sandbox(
-            command,
+            activated_command,
             bin_shell="bash",
             sandbox_dir=str(SANDBOX_DIR)
         )

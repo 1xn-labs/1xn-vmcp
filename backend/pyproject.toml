@@ -4,9 +4,9 @@ build-backend = "hatchling.build"
 
 [project]
 name = "1xn-vmcp"
-version = "0.6.1"
+version = "0.6.4"
 description = "v(irtual)MCP - Extend, Compose, Customize MCP servers"
-readme = "../README.md"
+readme = "README.md"
 requires-python = ">=3.10,<3.14"
 license = {text = "MIT"}
 authors = [
@@ -57,6 +57,9 @@ dependencies = [
     "pandas>=2.0.0",
     "pytz>=2023.3",
     "apscheduler>=3.10.0",
+    # Dependencies from sandbox-runtime-py (bundled in this package)
+    # Only click is actually used in sandbox_runtime code
+    "click>=8.0",
 ]
 
 [project.optional-dependencies]
@@ -74,6 +77,7 @@ dev = [
 [project.scripts]
 vmcp = "vmcp.cli.main:app"
 vmcp-postgres = "vmcp.scripts.postgres_setup:main"
+vmcp-sdk-cli = "vmcp_sdk.cli.main:main"
 
 [project.urls]
 Homepage = "https://1xn.ai"
@@ -82,16 +86,21 @@ Repository = "https://github.com/1xn-labs/1xn-vmcp"
 Issues = "https://github.com/1xn-labs/1xn-vmcp/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/vmcp", "src/vmcp_sdk", "src/sandbox-runtime-py", "mcp_server", "test_server"]
+# Include main packages
+packages = ["src/vmcp", "src/vmcp_sdk"]
+# Note: sandbox_runtime is nested, so we handle it via force-include to map correctly
 
 [tool.hatch.build.targets.wheel.force-include]
 "./public/frontend" = "vmcp/public/frontend"
+# Map sandbox_runtime from nested location to correct package path
+# This ensures "from sandbox_runtime import ..." works
+"src/sandbox-runtime-py/sandbox_runtime" = "sandbox_runtime"
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "/backend",
-    "/README.md",
-    "/LICENSE",
+    "src",
+    "README.md",
+    "LICENSE",
 ]
 
 [tool.hatch.build.targets.sdist.force-include]

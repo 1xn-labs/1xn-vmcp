@@ -3,13 +3,27 @@ Sandbox Service for vMCP
 
 Manages per-vMCP sandbox environments with isolated Python virtual environments.
 Each sandbox is stored at ~/.vmcp/{vmcp_id}/ with its own uv virtual environment.
+
+Architecture:
+- Uses uv (host) to create and manage virtual environments
+- Each sandbox has a pyproject.toml file for package management
+- vmcp package is installed from TestPyPI (includes vmcp-sdk, vmcp-sdk-cli, vmcp)
+- Default packages are installed from PyPI
+- pip is available in venv so 'pip install' commands work within the sandbox
+
+Host vs Venv Operations:
+- uv command: Always uses host uv (found via PATH or ~/.local/bin/uv)
+- venv creation: Uses host uv to create venv
+- package installation: Uses host uv to install packages into venv
+- pip commands: When executed in sandbox, use venv pip (installed via ensurepip)
 """
 
 import os
-import subprocess
 import shutil
+import subprocess
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
+
 from vmcp.utilities.logging import get_logger
 
 logger = get_logger(__name__)
@@ -34,30 +48,6 @@ class SandboxService:
             logger.error(f"Failed to load prompt from {prompt_path}: {e}")
             return ""
 
-    def _load_default_packages(self) -> List[str]:
-        packages_path = self._config_dir / "default_packages.txt"
-        packages = []
-        try:
-            if not packages_path.exists():
-                logger.warning(f"Default packages file not found at {packages_path}")
-                return []
-            
-            content = packages_path.read_text(encoding="utf-8")
-            for line in content.splitlines():
-                line = line.strip()
-                # Skip comments and empty lines
-                if not line or line.startswith("#"):
-                    continue
-                # Split inline comments
-                if "#" in line:
-                    line = line.split("#", 1)[0].strip()
-                if line:
-                    packages.append(line)
-            return packages
-        except Exception as e:
-            logger.error(f"Failed to load default packages from {packages_path}: {e}")
-            return []
-    
     # Setup prompt for progressive discovery mode (with CLI)
     @property
     def SETUP_PROMPT_PROGRESSIVE_DISCOVERY(self) -> str:
@@ -155,12 +145,15 @@ class SandboxService:
         # If no config provided, default to False
         return False
     
-    def _find_uv_command(self) -> Optional[str]:
+    def _find_uv_command(self) -> str:
         """
         Find the uv command to use.
         
         Returns:
-            Path to uv command or None
+            Path to uv command
+            
+        Raises:
+            RuntimeError: If uv is not found
         """
         # Check system PATH
         if shutil.which("uv"):
@@ -169,21 +162,82 @@ class SandboxService:
         local_uv = Path.home() / ".local" / "bin" / "uv"
         if local_uv.exists():
             return str(local_uv)
-        return None
+        raise RuntimeError(
+            "uv is required but not found. Please install uv: "
+            "curl -LsSf https://astral.sh/uv/install.sh | sh"
+        )
     
-    def _get_project_root(self) -> Path:
+    def _get_venv_python(self, venv_path: Path) -> Path:
         """
-        Get the project root directory.
+        Get the Python executable path in the virtual environment.
         
+        Args:
+            venv_path: Path to the venv directory
+            
         Returns:
-            Path to project root
+            Path to Python executable
+            
+        Raises:
+            RuntimeError: If Python executable not found
         """
-        # Assume we're in oss/backend/src/vmcp/vmcps/
-        # Go up to oss/backend/
-        current = Path(__file__).resolve()
-        # oss/backend/src/vmcp/vmcps/sandbox_service.py
-        # -> oss/backend/
-        return current.parent.parent.parent.parent
+        # Try Unix path first
+        venv_python = venv_path / "bin" / "python"
+        if venv_python.exists():
+            return venv_python
+        
+        # Try Windows path
+        venv_python = venv_path / "Scripts" / "python.exe"
+        if venv_python.exists():
+            return venv_python
+        
+        raise RuntimeError(f"Python executable not found in venv: {venv_path}")
+    
+    def _create_pyproject_toml(self, sandbox_path: Path) -> None:
+        """
+        Create pyproject.toml file in sandbox directory.
+        
+        Args:
+            sandbox_path: Path to sandbox directory
+        """
+        template_path = self._config_dir / "pyproject.toml.template"
+        target_path = sandbox_path / "pyproject.toml"
+        
+        if template_path.exists():
+            template_content = template_path.read_text(encoding="utf-8")
+            target_path.write_text(template_content, encoding="utf-8")
+            logger.info(f"Created pyproject.toml in sandbox: {target_path}")
+        else:
+            logger.warning(f"pyproject.toml template not found at {template_path}, creating minimal version")
+            # Create minimal pyproject.toml
+            minimal_content = """[project]
+name = "vmcp-sandbox"
+version = "0.1.0"
+description = "vMCP Sandbox Environment"
+requires-python = ">=3.10,<3.14"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+"""
+            target_path.write_text(minimal_content, encoding="utf-8")
+            logger.info(f"Created minimal pyproject.toml in sandbox: {target_path}")
+    
+    def _create_requirements_txt(self, sandbox_path: Path) -> None:
+        """
+        Create requirements.txt file in sandbox directory.
+        
+        Args:
+            sandbox_path: Path to sandbox directory
+        """
+        template_path = self._config_dir / "requirements.txt.template"
+        target_path = sandbox_path / "requirements.txt"
+        
+        if template_path.exists():
+            template_content = template_path.read_text(encoding="utf-8")
+            target_path.write_text(template_content, encoding="utf-8")
+            logger.info(f"Created requirements.txt in sandbox: {target_path}")
+        else:
+            logger.warning(f"requirements.txt template not found at {template_path}")
     
     def _create_sandbox_config(self, sandbox_path: Path, vmcp_id: str) -> None:
         """
@@ -227,7 +281,7 @@ class SandboxService:
                 target_script.chmod(0o755)
                 logger.info(f"Preloaded list_tools.py to {target_script}")
             else:
-                logger.debug(f"list_tools.py already exists in sandbox, skipping")
+                logger.debug("list_tools.py already exists in sandbox, skipping")
         except Exception as e:
             logger.warning(f"Failed to preload list_tools.py: {e}")
     
@@ -264,14 +318,11 @@ class SandboxService:
             logger.warning(f"Error reading sandbox config: {e}")
             return None
     
-    # Default packages to install in all sandboxes
-    @property
-    def DEFAULT_SANDBOX_PACKAGES(self) -> List[str]:
-        return self._load_default_packages()
 
-    def _ensure_pip_installed(self, venv_python: Path) -> bool:
+    def _ensure_pip_in_venv(self, venv_python: Path) -> bool:
         """
         Ensure pip is installed in the virtual environment.
+        This allows 'pip install' commands to work within the venv.
         
         Args:
             venv_python: Path to the Python executable in the venv
@@ -292,7 +343,7 @@ class SandboxService:
                 return True
             
             # If pip is not available, install it using ensurepip
-            logger.info("Installing pip in virtual environment")
+            logger.info("Installing pip in virtual environment (venv)")
             result = subprocess.run(
                 [str(venv_python), "-m", "ensurepip", "--upgrade"],
                 capture_output=True,
@@ -301,69 +352,129 @@ class SandboxService:
             )
             
             if result.returncode != 0:
-                logger.error(f"Failed to install pip: {result.stderr}")
+                logger.error(f"Failed to install pip in venv: {result.stderr}")
                 return False
             
-            logger.info("Successfully installed pip in virtual environment")
+            logger.info("Successfully installed pip in virtual environment (venv)")
             return True
             
         except subprocess.TimeoutExpired:
-            logger.error("Timeout installing pip")
+            logger.error("Timeout installing pip in venv")
             return False
         except Exception as e:
-            logger.error(f"Error ensuring pip is installed: {e}", exc_info=True)
+            logger.error(f"Error ensuring pip is installed in venv: {e}", exc_info=True)
             return False
 
-    def _install_default_packages(self, venv_python: Path, uv_cmd: Optional[str] = None) -> bool:
+    def _sync_packages_from_requirements(self, sandbox_path: Path, uv_cmd: str, venv_python: Path) -> bool:
         """
-        Install default packages in the sandbox virtual environment.
+        Install packages from requirements.txt using uv pip install.
         
         Args:
-            venv_python: Path to the Python executable in the venv
-            uv_cmd: Optional uv command path
+            sandbox_path: Path to sandbox directory containing requirements.txt
+            uv_cmd: uv command path (from host)
+            venv_python: Path to Python executable in venv
             
         Returns:
             True if successful, False otherwise
         """
         try:
-            if not self.DEFAULT_SANDBOX_PACKAGES:
-                return True
+            requirements_path = sandbox_path / "requirements.txt"
+            if not requirements_path.exists():
+                logger.warning(f"requirements.txt not found at {requirements_path}, skipping package installation")
+                return True  # Not an error if requirements.txt doesn't exist
             
-            logger.info(f"Installing default packages: {', '.join(self.DEFAULT_SANDBOX_PACKAGES)}")
+            logger.info("Installing packages from requirements.txt using uv pip install")
             
-            if uv_cmd:
-                result = subprocess.run(
-                    [uv_cmd, "pip", "install"] + self.DEFAULT_SANDBOX_PACKAGES + ["--python", str(venv_python)],
-                    capture_output=True,
-                    text=True,
-                    timeout=300
-                )
-            else:
-                result = subprocess.run(
-                    [str(venv_python), "-m", "pip", "install"] + self.DEFAULT_SANDBOX_PACKAGES,
-                    capture_output=True,
-                    text=True,
-                    timeout=300
-                )
+            # Install from requirements.txt
+            result = subprocess.run(
+                [
+                    uv_cmd, "pip", "install",
+                    "--python", str(venv_python),
+                    "-r", str(requirements_path)
+                ],
+                capture_output=True,
+                text=True,
+                timeout=300
+            )
             
             if result.returncode != 0:
-                logger.error(f"Failed to install default packages: {result.stderr}")
+                logger.error(f"Failed to install packages from requirements.txt: {result.stderr}")
                 return False
             
-            logger.info("Installed default packages")
+            logger.info("Successfully installed packages from requirements.txt")
             return True
             
         except subprocess.TimeoutExpired:
-            logger.error("Timeout installing default packages")
+            logger.error("Timeout installing packages from requirements.txt")
             return False
         except Exception as e:
-            logger.error(f"Error installing default packages: {e}", exc_info=True)
+            logger.error(f"Error installing packages from requirements.txt: {e}", exc_info=True)
+            return False
+    
+    def _install_vmcp_from_testpypi(self, venv_python: Path, uv_cmd: str) -> bool:
+        """
+        Install 1xn-vmcp package from TestPyPI into the virtual environment.
+        This installs the latest version of 1xn-vmcp (which includes vmcp, vmcp_sdk, and vmcp-sdk-cli).
+        
+        Args:
+            venv_python: Path to the Python executable in the venv
+            uv_cmd: uv command path (from host)
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            logger.info("Installing latest 1xn-vmcp package from TestPyPI into venv")
+            
+            # Use uv (host) to install from TestPyPI into venv
+            # Use --index-url for TestPyPI (primary) and --extra-index-url for PyPI (for dependencies)
+            # --index-strategy unsafe-best-match allows checking all indexes to find the latest version
+            # --no-cache ensures we get the latest version from TestPyPI, not a cached one
+            # --upgrade ensures we upgrade to the latest version if already installed
+            # This ensures 1xn-vmcp comes from TestPyPI (where it exists), while dependencies come from PyPI
+            # uv pip install --no-cache --upgrade --index-strategy unsafe-best-match --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --python <venv_python> 1xn-vmcp
+            result = subprocess.run(
+                [
+                    uv_cmd, "pip", "install",
+                    "--no-cache",
+                    "--upgrade",
+                    "--index-strategy", "unsafe-best-match",
+                    "--index-url", "https://test.pypi.org/simple/",
+                    "--extra-index-url", "https://pypi.org/simple/",
+                    "--python", str(venv_python),
+                    "1xn-vmcp"
+                ],
+                capture_output=True,
+                text=True,
+                timeout=300
+            )
+            
+            if result.returncode != 0:
+                logger.error(f"Failed to install 1xn-vmcp from TestPyPI: {result.stderr}")
+                return False
+            
+            logger.info("Successfully installed latest 1xn-vmcp package from TestPyPI into venv")
+            return True
+            
+        except subprocess.TimeoutExpired:
+            logger.error("Timeout installing 1xn-vmcp from TestPyPI")
+            return False
+        except Exception as e:
+            logger.error(f"Error installing 1xn-vmcp from TestPyPI: {e}", exc_info=True)
             return False
     
     def create_sandbox(self, vmcp_id: str) -> bool:
         """
         Create sandbox directory and uv virtual environment.
-        Install required packages following Makefile pattern.
+        
+        Process:
+        1. Create sandbox directory
+        2. Create pyproject.toml template
+        3. Create virtual environment using uv (host)
+        4. Ensure pip is available in venv
+        5. Install 1xn-vmcp package from TestPyPI into venv
+        6. Run uv sync to install dependencies from pyproject.toml
+        7. Create sandbox config and preload scripts
         
         Args:
             vmcp_id: The vMCP ID
@@ -372,109 +483,48 @@ class SandboxService:
             True if successful, False otherwise
         """
         try:
+            # Find uv command (required, will raise if not found)
+            uv_cmd = self._find_uv_command()
+            
+            # Create sandbox directory
             sandbox_path = self.get_sandbox_path(vmcp_id)
             sandbox_path.mkdir(parents=True, exist_ok=True)
             logger.info(f"Created sandbox directory: {sandbox_path}")
             
-            venv_path = sandbox_path / ".venv"
+            # Create requirements.txt template (pyproject.toml not needed anymore)
+            self._create_requirements_txt(sandbox_path)
             
-            # Create virtual environment
-            uv_cmd = self._find_uv_command()
-            if uv_cmd:
-                logger.info(f"Using uv to create venv: {uv_cmd}")
-                result = subprocess.run(
-                    [uv_cmd, "venv", str(venv_path)],
-                    capture_output=True,
-                    text=True,
-                    timeout=60
-                )
-                if result.returncode != 0:
-                    logger.error(f"Failed to create venv with uv: {result.stderr}")
-                    return False
-            else:
-                logger.info("Using python3 -m venv (uv not found)")
-                result = subprocess.run(
-                    ["python3", "-m", "venv", str(venv_path)],
-                    capture_output=True,
-                    text=True,
-                    timeout=60
-                )
-                if result.returncode != 0:
-                    logger.error(f"Failed to create venv: {result.stderr}")
-                    return False
-
+            # Create virtual environment using uv (host)
+            venv_path = sandbox_path / ".venv"
+            logger.info(f"Creating virtual environment using uv (host): {uv_cmd}")
+            result = subprocess.run(
+                [uv_cmd, "venv", str(venv_path)],
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
+            if result.returncode != 0:
+                logger.error(f"Failed to create venv with uv: {result.stderr}")
+                return False
             logger.info(f"Created virtual environment: {venv_path}")
             
-            # Get project root
-            project_root = self._get_project_root()
-            venv_python = venv_path / "bin" / "python"
-            if not venv_python.exists():
-                # Try Windows path
-                venv_python = venv_path / "Scripts" / "python.exe"
+            # Get Python executable in venv
+            venv_python = self._get_venv_python(venv_path)
             
-            if not venv_python.exists():
-                logger.error(f"Python executable not found in venv: {venv_path}")
-                return False
-            
-            # Ensure pip is installed in the virtual environment
-            if not self._ensure_pip_installed(venv_python):
+            # Ensure pip is installed in venv (so 'pip install' commands work in venv)
+            if not self._ensure_pip_in_venv(venv_python):
                 logger.error("Failed to ensure pip is installed in venv")
                 return False
             
-            # Install sandbox-runtime-py
-            sandbox_runtime_path = project_root / "src" / "sandbox-runtime-py"
-            if not sandbox_runtime_path.exists():
-                logger.error(f"sandbox-runtime-py not found at: {sandbox_runtime_path}")
+            # Install 1xn-vmcp package from TestPyPI into venv
+            # This installs 1xn-vmcp (which includes vmcp, vmcp_sdk, and vmcp-sdk-cli)
+            if not self._install_vmcp_from_testpypi(venv_python, uv_cmd):
+                logger.error("Failed to install 1xn-vmcp from TestPyPI")
                 return False
             
-            logger.info(f"Installing sandbox-runtime-py from {sandbox_runtime_path}")
-            if uv_cmd:
-                result = subprocess.run(
-                    [uv_cmd, "pip", "install", "-e", str(sandbox_runtime_path), "--python", str(venv_python)],
-                    capture_output=True,
-                    text=True,
-                    timeout=300
-                )
-            else:
-                result = subprocess.run(
-                    [str(venv_python), "-m", "pip", "install", "-e", str(sandbox_runtime_path)],
-                    capture_output=True,
-                    text=True,
-                    timeout=300
-                )
-            
-            if result.returncode != 0:
-                logger.error(f"Failed to install sandbox-runtime-py: {result.stderr}")
-                return False
-            
-            logger.info("Installed sandbox-runtime-py")
-            
-            # Install vmcp package
-            logger.info(f"Installing vmcp package from {project_root}")
-            if uv_cmd:
-                result = subprocess.run(
-                    [uv_cmd, "pip", "install", "-e", str(project_root), "--python", str(venv_python)],
-                    capture_output=True,
-                    text=True,
-                    timeout=300
-                )
-            else:
-                result = subprocess.run(
-                    [str(venv_python), "-m", "pip", "install", "-e", str(project_root)],
-                    capture_output=True,
-                    text=True,
-                    timeout=300
-                )
-            
-            if result.returncode != 0:
-                logger.error(f"Failed to install vmcp: {result.stderr}")
-                return False
-            
-            logger.info("Installed vmcp package")
-            
-            # Install default packages
-            if not self._install_default_packages(venv_python, uv_cmd):
-                logger.warning("Failed to install default packages, but continuing...")
+            # Install packages from requirements.txt
+            if not self._sync_packages_from_requirements(sandbox_path, uv_cmd, venv_python):
+                logger.warning("Failed to install packages from requirements.txt, but continuing...")
             
             # Create sandbox config file with vmcp_id
             self._create_sandbox_config(sandbox_path, vmcp_id)
@@ -485,6 +535,9 @@ class SandboxService:
             logger.info(f"✅ Sandbox created successfully: {sandbox_path}")
             return True
             
+        except RuntimeError as e:
+            logger.error(f"Configuration error: {e}")
+            return False
         except subprocess.TimeoutExpired:
             logger.error("Timeout creating sandbox")
             return False
@@ -492,120 +545,59 @@ class SandboxService:
             logger.error(f"Error creating sandbox: {e}", exc_info=True)
             return False
     
-    def _create_venv_with_packages(self, venv_path: Path, sandbox_path: Path, vmcp_id: Optional[str] = None) -> bool:
+    def _setup_venv_and_packages(self, sandbox_path: Path, vmcp_id: str) -> bool:
         """
-        Create virtual environment and install required packages.
+        Setup virtual environment and install packages in an existing sandbox directory.
+        This is used when sandbox directory exists but venv needs to be created.
         
         Args:
-            venv_path: Path to the venv directory
-            sandbox_path: Path to the sandbox directory
+            sandbox_path: Path to existing sandbox directory
+            vmcp_id: The vMCP ID
             
         Returns:
             True if successful, False otherwise
         """
         try:
-            # Create virtual environment
+            # Find uv command (required, will raise if not found)
             uv_cmd = self._find_uv_command()
-            if uv_cmd:
-                logger.info(f"Using uv to create venv: {uv_cmd}")
-                result = subprocess.run(
-                    [uv_cmd, "venv", str(venv_path)],
-                    capture_output=True,
-                    text=True,
-                    timeout=60
-                )
-                if result.returncode != 0:
-                    logger.error(f"Failed to create venv with uv: {result.stderr}")
-                    return False
-            else:
-                logger.info("Using python3 -m venv (uv not found)")
-                result = subprocess.run(
-                    ["python3", "-m", "venv", str(venv_path)],
-                    capture_output=True,
-                    text=True,
-                    timeout=60
-                )
-                if result.returncode != 0:
-                    logger.error(f"Failed to create venv: {result.stderr}")
-                    return False
             
+            # Create requirements.txt if it doesn't exist (pyproject.toml not needed)
+            requirements_path = sandbox_path / "requirements.txt"
+            if not requirements_path.exists():
+                self._create_requirements_txt(sandbox_path)
+            
+            # Create virtual environment using uv (host)
+            venv_path = sandbox_path / ".venv"
+            logger.info(f"Creating virtual environment using uv (host): {uv_cmd}")
+            result = subprocess.run(
+                [uv_cmd, "venv", str(venv_path)],
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
+            if result.returncode != 0:
+                logger.error(f"Failed to create venv with uv: {result.stderr}")
+                return False
             logger.info(f"Created virtual environment: {venv_path}")
             
-            # Get project root
-            project_root = self._get_project_root()
-            venv_python = venv_path / "bin" / "python"
-            if not venv_python.exists():
-                # Try Windows path
-                venv_python = venv_path / "Scripts" / "python.exe"
+            # Get Python executable in venv
+            venv_python = self._get_venv_python(venv_path)
             
-            if not venv_python.exists():
-                logger.error(f"Python executable not found in venv: {venv_path}")
-                return False
-            
-            # Ensure pip is installed in the virtual environment
-            if not self._ensure_pip_installed(venv_python):
+            # Ensure pip is installed in venv
+            if not self._ensure_pip_in_venv(venv_python):
                 logger.error("Failed to ensure pip is installed in venv")
                 return False
             
-            # Install sandbox-runtime-py
-            sandbox_runtime_path = project_root / "src" / "sandbox-runtime-py"
-            if not sandbox_runtime_path.exists():
-                logger.error(f"sandbox-runtime-py not found at: {sandbox_runtime_path}")
+            # Install vmcp package from TestPyPI into venv
+            if not self._install_vmcp_from_testpypi(venv_python, uv_cmd):
+                logger.error("Failed to install vmcp from TestPyPI")
                 return False
             
-            logger.info(f"Installing sandbox-runtime-py from {sandbox_runtime_path}")
-            if uv_cmd:
-                result = subprocess.run(
-                    [uv_cmd, "pip", "install", "-e", str(sandbox_runtime_path), "--python", str(venv_python)],
-                    capture_output=True,
-                    text=True,
-                    timeout=300
-                )
-            else:
-                result = subprocess.run(
-                    [str(venv_python), "-m", "pip", "install", "-e", str(sandbox_runtime_path)],
-                    capture_output=True,
-                    text=True,
-                    timeout=300
-                )
+            # Install packages from requirements.txt
+            if not self._sync_packages_from_requirements(sandbox_path, uv_cmd, venv_python):
+                logger.warning("Failed to install packages from requirements.txt, but continuing...")
             
-            if result.returncode != 0:
-                logger.error(f"Failed to install sandbox-runtime-py: {result.stderr}")
-                return False
-            
-            logger.info("Installed sandbox-runtime-py")
-            
-            # Install vmcp package
-            logger.info(f"Installing vmcp package from {project_root}")
-            if uv_cmd:
-                result = subprocess.run(
-                    [uv_cmd, "pip", "install", "-e", str(project_root), "--python", str(venv_python)],
-                    capture_output=True,
-                    text=True,
-                    timeout=300
-                )
-            else:
-                result = subprocess.run(
-                    [str(venv_python), "-m", "pip", "install", "-e", str(project_root)],
-                    capture_output=True,
-                    text=True,
-                    timeout=300
-                )
-            
-            if result.returncode != 0:
-                logger.error(f"Failed to install vmcp: {result.stderr}")
-                return False
-            
-            logger.info("Installed vmcp package")
-            
-            # Install default packages
-            if not self._install_default_packages(venv_python, uv_cmd):
-                logger.warning("Failed to install default packages, but continuing...")
-            
-            # Create sandbox config file with vmcp_id if it doesn't exist
-            if vmcp_id is None:
-                # Extract vmcp_id from sandbox_path (it's the directory name)
-                vmcp_id = sandbox_path.name
+            # Ensure config file exists
             config_path = sandbox_path / ".vmcp-config.json"
             if not config_path.exists():
                 self._create_sandbox_config(sandbox_path, vmcp_id)
@@ -613,14 +605,19 @@ class SandboxService:
             # Preload list_tools.py script if it doesn't exist
             self._preload_list_tools_script(sandbox_path)
             
+            logger.info(f"✅ Virtual environment setup successfully in: {sandbox_path}")
             return True
             
+        except RuntimeError as e:
+            logger.error(f"Configuration error: {e}")
+            return False
         except subprocess.TimeoutExpired:
-            logger.error("Timeout creating venv with packages")
+            logger.error("Timeout setting up venv")
             return False
         except Exception as e:
-            logger.error(f"Error creating venv with packages: {e}", exc_info=True)
+            logger.error(f"Error setting up venv: {e}", exc_info=True)
             return False
+    
     
     def delete_sandbox(self, vmcp_id: str) -> bool:
         """
@@ -826,7 +823,7 @@ class SandboxService:
         
         # Select prompt based on progressive discovery setting
         if progressive_discovery_enabled:
-            prompt = self.SETUP_PROMPT_SDK_ONLY #to self.SETUP_PROMPT_PROGRESSIVE_DISCOVERY
+            prompt = self.SETUP_PROMPT_SDK_ONLY  # TODO: Change to SETUP_PROMPT_PROGRESSIVE_DISCOVERY when ready
         else:
             prompt = self.SETUP_PROMPT_SDK_ONLY
         
@@ -999,8 +996,8 @@ class SandboxToolRegistry:
             return None
     
     def register_tool_metadata(
-        self, 
-        tool_name: str, 
+        self,
+        tool_name: str,
         name: Optional[str] = None,
         description: Optional[str] = None
     ) -> bool:

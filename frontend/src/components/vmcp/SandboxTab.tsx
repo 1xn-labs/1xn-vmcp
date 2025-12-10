@@ -1,6 +1,6 @@
 // components/vmcp/SandboxTab.tsx
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -10,9 +10,11 @@ import { useToast } from '@/hooks/use-toast';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import FileTree from './FileTree';
 import CodeEditor from './CodeEditor';
+import Terminal from './Terminal';
 import EmptySandboxState from './EmptySandboxState';
 import { getFileIcon } from '@/utils/fileIcons';
 import { Trash2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface SandboxTabProps {
   vmcpConfig: VMCPConfig;
@@ -38,19 +40,44 @@ export default function SandboxTab({ vmcpConfig, vmcpId, isRemoteVMCP = false, o
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState('files');
   const { success: showSuccess, error: showError } = useToast();
 
-  // Load files
-  const loadFiles = useCallback(async () => {
+  // Load files with lazy loading support
+  const loadFiles = useCallback(async (path: string = '', updateTree: boolean = true) => {
     try {
       setLoadingFiles(true);
       const accessToken = localStorage.getItem('access_token') || (import.meta.env.VITE_VMCP_OSS_BUILD === 'true' ? 'local-token' : undefined);
-      const result = await apiClient.listSandboxFiles(vmcpId, '', accessToken);
+      const result = await apiClient.listSandboxFiles(vmcpId, path, accessToken);
 
       if (result.success && result.data) {
         // Transform API response to properly typed FileNode array
         const typedFiles = result.data.map(transformToFileNode);
-        setFiles(typedFiles);
+        
+        if (updateTree) {
+          if (path === '') {
+            // Root level - replace all files
+            setFiles(typedFiles);
+          } else {
+            // Update specific path in tree (for lazy loading)
+            const updateFileTreeAtPath = (nodes: FileNode[], targetPath: string, newChildren: FileNode[]): FileNode[] => {
+              return nodes.map(node => {
+                if (node.path === targetPath && node.type === 'directory') {
+                  return { ...node, children: newChildren };
+                }
+                if (node.children) {
+                  return { ...node, children: updateFileTreeAtPath(node.children, targetPath, newChildren) };
+                }
+                return node;
+              });
+            };
+            
+            setFiles(prevFiles => updateFileTreeAtPath(prevFiles, path, typedFiles));
+          }
+        } else {
+          // Just return the files without updating state (for lazy loading)
+          return typedFiles;
+        }
       }
     } catch (error) {
       console.error('Error loading files:', error);
@@ -174,11 +201,14 @@ export default function SandboxTab({ vmcpConfig, vmcpId, isRemoteVMCP = false, o
     }
   }, [selectedFile, loadFileContent]);
 
-  // Initial load
+  // Initial load - only load files if folder exists
   useEffect(() => {
     loadSandboxStatus();
     loadProgressiveDiscoveryStatus();
   }, [loadSandboxStatus, loadProgressiveDiscoveryStatus]);
+
+  // Memoize file tree to prevent unnecessary re-renders
+  const memoizedFiles = useMemo(() => files, [files]);
 
   // Handle toggle sandbox (enable/disable)
   const handleToggleSandbox = async (checked: boolean) => {
@@ -504,29 +534,43 @@ export default function SandboxTab({ vmcpConfig, vmcpId, isRemoteVMCP = false, o
         </div>
       </div>
 
-      {/* Main content: File tree + Editor - Takes remaining height, scrollable */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        <FileTree
-          files={files}
-          selectedPath={selectedFile}
-          onSelect={setSelectedFile}
-          onDelete={handleFileDelete}
-          onUpload={handleFileUpload}
-          onCreateFile={handleCreateFile}
-          onCreateFolder={handleCreateFolder}
-          loading={loadingFiles}
-        />
-        <CodeEditor
-          filePath={selectedFile}
-          content={fileContent}
-          onChange={setFileContent}
-          onSave={handleSaveFile}
-          saving={saving}
-          loading={loadingFileContent}
-          readOnly={isRemoteVMCP}
-          onCursorChange={handleCursorChange}
-        />
-      </div>
+      {/* Main content: Tabs for Files and Terminal */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
+        <TabsList className="mx-4 mt-2 mb-0">
+          <TabsTrigger value="files">Files</TabsTrigger>
+          <TabsTrigger value="terminal">Terminal</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="files" className="flex flex-1 min-h-0 mt-0 overflow-hidden">
+          <div className="flex flex-1 min-h-0 overflow-hidden">
+            <FileTree
+              files={memoizedFiles}
+              selectedPath={selectedFile}
+              onSelect={setSelectedFile}
+              onDelete={handleFileDelete}
+              onUpload={handleFileUpload}
+              onCreateFile={handleCreateFile}
+              onCreateFolder={handleCreateFolder}
+              loading={loadingFiles}
+            />
+            <CodeEditor
+              filePath={selectedFile}
+              content={fileContent}
+              onChange={setFileContent}
+              onSave={handleSaveFile}
+              saving={saving}
+              loading={loadingFileContent}
+              readOnly={isRemoteVMCP}
+              onCursorChange={handleCursorChange}
+            />
+          </div>
+        </TabsContent>
+        
+        {/* Terminal - always mounted but hidden when not active to preserve WebSocket connection */}
+        <div className={activeTab === 'terminal' ? 'flex flex-1 min-h-0 mt-0 p-4 overflow-hidden' : 'hidden'}>
+          <Terminal vmcpId={vmcpId} className="h-full" />
+        </div>
+      </Tabs>
 
       {/* Status Bar - Fixed at bottom, spans full width */}
       <div className="flex-shrink-0 border-t border-border px-4 py-0.5 flex items-center justify-between bg-muted/50 text-xs text-muted-foreground h-6">
