@@ -15,11 +15,12 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, TypedDict
+from typing import Any, TypedDict, Annotated
 
 import aiohttp  # type: ignore[import-untyped]
 import pandas as pd  # type: ignore[import-untyped]
 import pytz  # type: ignore[import-untyped]
+import base64
 from mcp.server.fastmcp import Context, FastMCP, Image
 from mcp.server.fastmcp.prompts import base
 from mcp.types import (
@@ -30,9 +31,12 @@ from mcp.types import (
     ResourceTemplateReference,
     SamplingMessage,
     TextContent,
+    ImageContent,
+    CallToolResult
 )
 from PIL import Image as PILImage  # type: ignore[import-untyped]
 from pydantic import BaseModel, Field
+from typing import Annotated
 
 logger = logging.getLogger(__name__)
 
@@ -152,6 +156,44 @@ def get_settings() -> str:
 }"""
 
 
+@mcp.resource("file://1xn_logo_ico_small.png")
+def file1xn_logo_ico_small() -> Image:
+    """Return the `file1xn_logo_ico_small.png` image file as an MCP Image resource."""
+    try:
+        file_path = os.path.join(os.path.dirname(__file__), "1xn_logo_ico_small.png")
+        with open(file_path, "rb") as fh:
+            data = fh.read()
+        return Image(data=data, format="png")
+    except FileNotFoundError:
+        logger.warning("1xn_logo_ico_small.png not found next to all_feature_server.py")
+        return Image(data=b"", format="png")
+
+
+@mcp.tool()
+def get_1xn_logo() -> Annotated[CallToolResult, :
+    """Return text and the `1xn_logo_ico_small.png` image .
+    """
+    try:
+        file_path = os.path.join(os.path.dirname(__file__), "1xn_logo_ico_small.png")
+        with open(file_path, "rb") as fh:
+            data = fh.read()
+        b64 = base64.b64encode(data).decode("ascii")
+
+        return CallToolResult(
+            content=[
+                TextContent(type="text", text="1xn Logo:"),
+                ImageContent(type="image", data=b64, mimeType="image/png"),
+                TextContent(type="text", text="1xn Icon:"),
+
+            ]
+        )
+    except FileNotFoundError:
+        return CallToolResult(
+            content=[TextContent(type="text", text="1xn Logo FIle: (not found)")],
+            structuredContent={"text": "1xn Logo FIle: (not found)"},
+        )
+
+
 @mcp.tool()
 def add_numbers(a: int, b: int) -> int:
     """Add two numbers together."""
@@ -269,7 +311,7 @@ async def handle_completion(
 
     return None
 
-@mcp.tool()
+@mcp.tool(structured_output=False)
 def hello(name: str = "World") -> str:
     """Say hello to someone."""
     return f"Hello, {name}!"
@@ -385,10 +427,57 @@ class WeatherData(BaseModel):
     condition: str
     wind_speed: float
 
+@mcp.tool()
+async def get_weather_from_location(lat: float, lng: float) -> WeatherData:
+    """Get weather for a city - returns structured data."""
+    try:
+
+        # Call Open-Meteo API with more weather parameters
+        api_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lng}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code"
+        logger.info(f"🔍 Calling Open-Meteo API: {api_url}")
+        async with aiohttp.ClientSession() as session:
+            async with session.get(api_url) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    current = data['current']
+
+                    # Extract weather data
+                    temperature = float(current.get('temperature_2m', 25.0))
+                    humidity = float(current.get('relative_humidity_2m', 50.0))
+                    wind_speed = float(current.get('wind_speed_10m', 5.0))
+                    weather_code = current.get('weather_code', 0)
+
+                    # Convert weather code to condition
+                    condition = _weather_code_to_condition(weather_code)
+                    logger.info(f"🔍 Weather data: {temperature}, {humidity}, {condition}, {wind_speed}")
+                    return WeatherData(
+                        temperature=temperature,
+                        humidity=humidity,
+                        condition=condition,
+                        wind_speed=wind_speed,
+                    )
+                else:
+                    # Return default weather data when API fails
+                    return WeatherData(
+                        temperature=25.0,
+                        humidity=50.0,
+                        condition="unknown",
+                        wind_speed=5.0,
+                    )
+
+    except Exception:
+        # Return default weather data for any errors
+        return WeatherData(
+            temperature=25.0,
+            humidity=50.0,
+            condition="unknown",
+            wind_speed=5.0,
+        )
+
 
 @mcp.tool()
 async def get_weather_structured(city: str) -> WeatherData:
-    """Get weather for a city - returns structured data."""
+    """Get weather for a city - returns structured data"""
     try:
         # Load cached cities data
         df = _load_cities_data()
@@ -648,13 +737,37 @@ async def get_weather_json(json_data: dict[str, Any]) -> str:
 
 
 # Lists and other types are wrapped automatically
-@mcp.tool()
+@mcp.tool(structured_output=False)
 def list_cities() -> list[str]:
     """Get a list of cities"""
     return ["London", "Paris", "Tokyo"]
     # Returns: {"result": ["London", "Paris", "Tokyo"]}
 
 
+@mcp.tool(structured_output=True)
+def list_cities_structured() -> Annotated[CallToolResult, list[str]]:
+    """Get a list of cities - returns structured data"""
+
+    return CallToolResult(
+        content=[TextContent(type="text", text="London, Paris, Tokyo, Pune")],
+        structuredContent={ "result": ["London", "Paris","Tokyo", "Pune"] },
+        _meta={"internal": "metadata"},
+    )
+    # return ["London", "Paris", "Tokyo"]
+    # Returns: {"result": ["London", "Paris", "Tokyo"]}
+
+@mcp.tool(structured_output=False)
+def string_cities() -> str:
+    """Get a list of cities"""
+    return  '''
+            [
+                {"name": "London", "country": "United Kingdom", "language": "English"},
+                {"name": "Paris", "country": "France", "language": "French"},
+                {"name": "Tokyo", "country": "Japan", "language": "Japanese"}
+            ]
+            '''
+
+    # Returns: {"result": ["London", "Paris", "Tokyo"]}
 
 @mcp.tool()
 async def long_running_task(task_name: str, ctx: Context, steps: int = 5) -> str:
