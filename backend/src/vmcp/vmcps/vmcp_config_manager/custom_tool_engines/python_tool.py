@@ -331,6 +331,7 @@ if 'main' in locals() and callable(main):
     try:
         # Get function signature to properly map arguments
         import inspect
+        import asyncio
         sig = inspect.signature(main)
         param_names = list(sig.parameters.keys())
 
@@ -340,7 +341,13 @@ if 'main' in locals() and callable(main):
             if param_name in arguments:
                 filtered_args[param_name] = arguments[param_name]
 
-        result = main(**filtered_args)
+        # Check if main is async
+        if inspect.iscoroutinefunction(main):
+            # Execute async main
+            result = asyncio.run(main(**filtered_args))
+        else:
+            # Execute sync main
+            result = main(**filtered_args)
         print(json.dumps({{"success": True, "result": result}}))
     except Exception as e:
         print(json.dumps({{"success": False, "error": str(e)}}))

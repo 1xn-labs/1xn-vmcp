@@ -13,6 +13,8 @@ from vmcp.vmcps.vmcp_config_manager.config_core import VMCPConfigManager
 from vmcp.vmcps.models import VMCPToolCallRequest
 
 from .schema import create_function_with_signature, normalize_name
+from vmcp.utilities.logging import get_logger
+logger = get_logger("1xN_vMCP_SDK_CLIENT")
 
 
 class VMCPClient:
@@ -165,8 +167,10 @@ class VMCPClient:
                 implementation=tool_impl
             )
 
+            logger.debug(f"Created typed function for tool: {normalized_name}")
             self._typed_functions[normalized_name] = typed_func
             # Also store by original name for lookup
+            logger.debug(f"Stored typed function for tool: {tool_name}")
             self._typed_functions[tool_name] = typed_func
         
         self._tools_loaded = True

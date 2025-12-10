@@ -48,12 +48,17 @@ class SandboxService:
             logger.error(f"Failed to load prompt from {prompt_path}: {e}")
             return ""
 
-    # Setup prompt for progressive discovery mode (with CLI)
+    # Setup prompt for progressive discovery mode only (PD enabled, sandbox disabled)
+    @property
+    def SETUP_PROMPT_PD_ONLY(self) -> str:
+        return self._load_prompt("prompt_pd_only.md")
+
+    # Setup prompt for progressive discovery mode with sandbox (PD enabled, sandbox enabled)
     @property
     def SETUP_PROMPT_PROGRESSIVE_DISCOVERY(self) -> str:
         return self._load_prompt("prompt_progressive_discovery.md")
 
-    # Setup prompt for SDK-only mode (without CLI)
+    # Setup prompt for SDK-only mode (sandbox enabled, PD disabled)
     @property
     def SETUP_PROMPT_SDK_ONLY(self) -> str:
         return self._load_prompt("prompt_sdk_only.md")
@@ -529,9 +534,6 @@ build-backend = "hatchling.build"
             # Create sandbox config file with vmcp_id
             self._create_sandbox_config(sandbox_path, vmcp_id)
             
-            # Preload list_tools.py script
-            self._preload_list_tools_script(sandbox_path)
-            
             logger.info(f"✅ Sandbox created successfully: {sandbox_path}")
             return True
             
@@ -601,9 +603,6 @@ build-backend = "hatchling.build"
             config_path = sandbox_path / ".vmcp-config.json"
             if not config_path.exists():
                 self._create_sandbox_config(sandbox_path, vmcp_id)
-            
-            # Preload list_tools.py script if it doesn't exist
-            self._preload_list_tools_script(sandbox_path)
             
             logger.info(f"✅ Virtual environment setup successfully in: {sandbox_path}")
             return True
@@ -804,28 +803,43 @@ build-backend = "hatchling.build"
         Get sandbox setup prompt to inject into vMCP.
         
         Returns different prompts based on configuration:
-        - If progressive discovery is enabled: Returns prompt with CLI instructions
-        - Otherwise: Returns SDK-only prompt
+        - PD enabled + sandbox disabled: Returns PD-only prompt
+        - PD enabled + sandbox enabled: Returns progressive discovery prompt (with sandbox)
+        - Sandbox enabled (PD disabled): Returns SDK-only prompt
         
         Args:
             vmcp_id: The vMCP ID
-            vmcp_config: Optional vMCP config to check progressive discovery flag
+            vmcp_config: Optional vMCP config to check progressive discovery and sandbox flags
             
         Returns:
             Setup prompt text
         """
         # Check if progressive discovery is enabled
         progressive_discovery_enabled = False
+        sandbox_enabled = False
         if vmcp_config:
             metadata = getattr(vmcp_config, 'metadata', {}) or {}
             if isinstance(metadata, dict):
                 progressive_discovery_enabled = metadata.get('progressive_discovery_enabled', False) is True
+                sandbox_enabled = metadata.get('sandbox_enabled', False) is True
         
-        # Select prompt based on progressive discovery setting
-        if progressive_discovery_enabled:
-            prompt = self.SETUP_PROMPT_SDK_ONLY  # TODO: Change to SETUP_PROMPT_PROGRESSIVE_DISCOVERY when ready
-        else:
+        # Also check sandbox status using is_enabled method
+        if not sandbox_enabled and vmcp_config:
+            sandbox_enabled = self.is_enabled(vmcp_id, vmcp_config)
+        
+        # Select prompt based on configuration
+        if progressive_discovery_enabled and not sandbox_enabled:
+            # PD enabled, sandbox disabled
+            prompt = self.SETUP_PROMPT_PD_ONLY
+        elif progressive_discovery_enabled and sandbox_enabled:
+            # PD enabled, sandbox enabled
+            prompt = self.SETUP_PROMPT_PROGRESSIVE_DISCOVERY
+        elif sandbox_enabled:
+            # Sandbox enabled, PD disabled
             prompt = self.SETUP_PROMPT_SDK_ONLY
+        else:
+            # Neither enabled - return empty or default (shouldn't happen in practice)
+            prompt = ""
         
         return prompt.replace("{vmcp_id}", vmcp_id)
 

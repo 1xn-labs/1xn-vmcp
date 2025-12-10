@@ -85,45 +85,6 @@ execute_bash(command=".venv/bin/python -c \"print('Hello, World!')\"")
 # Run a Python script
 execute_bash(command=".venv/bin/python script.py")
 
-CREATING DYNAMIC TOOLS:
-You can create new tools on the fly by saving Python scripts to the `vmcp_tools/` directory. These tools are automatically discovered and made available via the SDK.
-
-1. Create a Python script in `vmcp_tools/`:
-   - Must have a `main()` function with type hints for arguments
-   - Must have a docstring describing what the tool does
-   - Example:
-     execute_bash(command="mkdir -p vmcp_tools")
-     execute_bash(command="cat > vmcp_tools/my_tool.py << 'EOF'
-     def main(name: str, count: int = 1):
-         \"\"\"Greet a person multiple times.\"\"\"
-         return f'Hello {name}! ' * count
-     EOF")
-
-2. Verify the tool is available:
-   - Run `vmcp_sdk.list_tools()` to see the new tool (it will appear as `my_tool`)
-   - Or use the preloaded script: `execute_bash(command=".venv/bin/python list_tools.py")`
-   - The list_tools.py script will show the new tool in the "🏖️  SANDBOX TOOLS" section with detailed information
-
-3. Use the tool:
-   - Call it like any other SDK tool: `vmcp_sdk.my_tool(name="World", count=3)`
-
-WORKFLOW PATTERNS:
-
-1. Create Python script file, then run it:
-   # Create script
-   execute_bash(command="cat > script.py << 'EOF'\\nimport vmcp_sdk\\nresult = vmcp_sdk.some_tool()\\nprint(result)\\nEOF")
-   
-   # Run script
-   execute_bash(command=".venv/bin/python script.py")
-
-CRITICAL RULES:
-- NEVER try to execute bash or python commands directly
-- ALWAYS use execute_bash for shell commands
-- For Python code, create a script file and run it with execute_bash: execute_bash(command=".venv/bin/python script.py")
-- The sandbox Python is at .venv/bin/python
-- All file operations must go through execute_bash
-- Files are created in ~/.vmcp/{vmcp_id}
-
 ================================================================================
 vMCP SDK ARCHITECTURE
 ================================================================================
@@ -179,19 +140,7 @@ You do NOT need to specify the vMCP name or ID - it's handled automatically.
 
 2. Explore tools in the current vMCP:
 
-   Option A - Using the preloaded list_tools.py script (RECOMMENDED for comprehensive discovery):
-   ```bash
-   # Run the preloaded script for detailed tool information
-   execute_bash(command=".venv/bin/python list_tools.py")
-   ```
-   This provides:
-   - Complete list of all MCP servers with connection status and authorization links
-   - All custom tools with detailed schemas
-   - All sandbox tools (dynamically discovered)
-   - Organized, formatted output with tool categories
-   - Summary statistics
-
-   Option B - Using SDK programmatically:
+   Using SDK programmatically:
    ```python
    # List all tools
    tools = vmcp_sdk.list_tools()
@@ -324,19 +273,190 @@ WORKFLOW EXAMPLES
    ```
 
 ================================================================================
+CREATING AND TESTING DYNAMIC TOOLS
+================================================================================
+
+You can create new tools on the fly by saving Python scripts to the `vmcp_tools/` directory. These tools are automatically discovered and made available via the SDK.
+
+CREATING A DYNAMIC TOOL:
+
+1. Create a Python script in `vmcp_tools/`:
+   - Must have a `main()` function with type hints for arguments
+   - Can be either synchronous (`def main(...)`) or asynchronous (`async def main(...)`)
+   - Must have a docstring describing what the tool does
+   - Example (synchronous):
+     ```bash
+     # Create the directory
+     execute_bash(command="mkdir -p vmcp_tools")
+     
+     # Create the tool file
+     execute_bash(command="cat > vmcp_tools/my_tool.py << 'EOF'
+     def main(name: str, count: int = 1):
+         \"\"\"Greet a person multiple times.\"\"\"
+         return f'Hello {name}! ' * count
+     EOF")
+     ```
+     
+   - Example (asynchronous with asyncio):
+     ```bash
+     execute_bash(command="cat > vmcp_tools/async_tool.py << 'EOF'
+     import asyncio
+     
+     async def main(url: str):
+         \"\"\"Fetch data from a URL asynchronously.\"\"\"
+         import httpx
+         async with httpx.AsyncClient() as client:
+             response = await client.get(url)
+             return response.text
+     EOF")
+     ```
+
+2. The tool will be automatically discovered and made available
+
+VERIFYING A NEW TOOL:
+
+After creating a dynamic tool, verify it appears in the tools list using vmcp_sdk.list_tools():
+
+1. Create a Python script to check tools:
+   ```bash
+   execute_bash(command="cat > check_tools.py << 'EOF'
+   import vmcp_sdk
+   tools = vmcp_sdk.list_tools()
+   for tool in tools:
+       print(f\"Tool: {tool.get('name')}\")
+   EOF")
+   ```
+
+2. Run the script:
+   ```bash
+   execute_bash(command=".venv/bin/python check_tools.py")
+   ```
+
+3. Use the tool:
+   - Call it like any other SDK tool: `vmcp_sdk.my_tool(name="World", count=3)`
+
+COMPLETE EXAMPLE: Creating and Testing a Dynamic Tool
+
+```bash
+# Step 1: Create the tool directory
+execute_bash(command="mkdir -p vmcp_tools")
+
+# Step 2: Create a calculator tool
+execute_bash(command="cat > vmcp_tools/calculator.py << 'EOF'
+def main(operation: str, a: float, b: float):
+    \"\"\"Perform basic math operations.\"\"\"
+    if operation == 'add':
+        return a + b
+    elif operation == 'subtract':
+        return a - b
+    elif operation == 'multiply':
+        return a * b
+    elif operation == 'divide':
+        if b == 0:
+            return 'Error: Division by zero'
+        return a / b
+    else:
+        return 'Error: Unknown operation'
+EOF")
+
+# Step 3: Verify the tool appears using vmcp_sdk.list_tools()
+execute_bash(command="cat > verify_tool.py << 'EOF'
+import vmcp_sdk
+tools = vmcp_sdk.list_tools()
+tool_names = [t.get('name') for t in tools]
+if 'calculator' in tool_names:
+    print('✅ Tool found!')
+    # Get tool details
+    tool = next(t for t in tools if t.get('name') == 'calculator')
+    print(f\"Description: {tool.get('description')}\")
+else:
+    print('❌ Tool not found')
+EOF")
+
+execute_bash(command=".venv/bin/python verify_tool.py")
+
+# Step 4: Use the tool in a Python script
+execute_bash(command="cat > test_calculator.py << 'EOF'
+import vmcp_sdk
+result = vmcp_sdk.calculator(operation='add', a=10, b=5)
+print(f'Result: {result}')
+EOF")
+
+execute_bash(command=".venv/bin/python test_calculator.py")
+```
+
+================================================================================
+WORKFLOW PATTERNS
+================================================================================
+
+1. Create Python script file, then run it:
+   ```bash
+   # Create script
+   execute_bash(command="cat > script.py << 'EOF'
+   import vmcp_sdk
+   result = vmcp_sdk.some_tool()
+   print(result)
+   EOF")
+   
+   # Run script
+   execute_bash(command=".venv/bin/python script.py")
+   ```
+
+2. Create dynamic tool, verify, then use:
+   ```bash
+   # Step 1: Create tool file
+   execute_bash(command="mkdir -p vmcp_tools")
+   execute_bash(command="cat > vmcp_tools/my_tool.py << 'EOF'
+   def main(param: str):
+       return f'Result: {param}'
+   EOF")
+   
+   # Step 2: Verify tool appears using vmcp_sdk.list_tools()
+   execute_bash(command="cat > check_tool.py << 'EOF'
+   import vmcp_sdk
+   tools = vmcp_sdk.list_tools()
+   tool_names = [t.get('name') for t in tools]
+   print('Available tools:', tool_names)
+   EOF")
+   execute_bash(command=".venv/bin/python check_tool.py")
+   
+   # Step 3: Use the tool
+   execute_bash(command="cat > use_tool.py << 'EOF'
+   import vmcp_sdk
+   result = vmcp_sdk.my_tool(param='test')
+   print(result)
+   EOF")
+   execute_bash(command=".venv/bin/python use_tool.py")
+   ```
+
+================================================================================
+CRITICAL RULES
+================================================================================
+
+- NEVER try to execute bash or python commands directly
+- ALWAYS use execute_bash for shell commands
+- For Python code, create a script file and run it with execute_bash: execute_bash(command=".venv/bin/python script.py")
+- The sandbox Python is at .venv/bin/python
+- All file operations must go through execute_bash
+- Files are created in ~/.vmcp/{vmcp_id}
+- Tools are automatically listed and available via vmcp_sdk
+- Use vmcp_sdk.list_tools() to verify new dynamic tools appear after creation
+
+================================================================================
 IMPORTANT NOTES FOR CODING AGENTS
 ================================================================================
 
 1. Always use execute_bash for shell commands and Python execution
-3. Use the SDK (vmcp_sdk) for programmatic workflows and automation
-4. The SDK is pre-installed in the sandbox - no installation needed
-5. Tool names are normalized: "AllFeature_get_weather" → "all_feature_get_weather"
-6. Access tools directly on vmcp_sdk module - no need to specify vMCP name
-7. The vMCP is automatically detected from .vmcp-config.json in the sandbox
-8. Tools are lazy-loaded - they're created when first accessed
-9. Results are dictionaries - always check structure before accessing
-10. Create reusable scripts in ~/.vmcp/{vmcp_id} for future use
-11. Test tools individually before combining them into workflows
+2. Use the SDK (vmcp_sdk) for programmatic workflows and automation
+3. The SDK is pre-installed in the sandbox - no installation needed
+4. Tool names are normalized: "AllFeature_get_weather" → "all_feature_get_weather"
+5. Access tools directly on vmcp_sdk module - no need to specify vMCP name
+6. The vMCP is automatically detected from .vmcp-config.json in the sandbox
+7. Tools are lazy-loaded - they're created when first accessed
+8. Results are dictionaries - always check structure before accessing
+9. Create reusable scripts in ~/.vmcp/{vmcp_id} for future use
+10. Test tools individually before combining them into workflows
+11. Use vmcp_sdk.list_tools() to verify dynamic tools after creation
 
 ================================================================================
 TROUBLESHOOTING
@@ -361,7 +481,6 @@ If you encounter issues:
    - The vMCP is automatically detected - no need to specify it manually
 
 4. Tool not accessible:
-   - Use list_tools.py for comprehensive overview: `execute_bash(command=".venv/bin/python list_tools.py")`
    - Check tool name normalization (camelCase → snake_case)
    - List tools programmatically: `vmcp_sdk.list_tools()` to see exact names
    - Access tools directly on vmcp_sdk: `vmcp_sdk.tool_name()` or `getattr(vmcp_sdk, "tool_name")`
@@ -372,19 +491,23 @@ If you encounter issues:
    - Check result.get("isError") for error details
    - If error mentions missing package, install it first
 
+6. Dynamic tool not appearing:
+   - After creating a tool in vmcp_tools/, use vmcp_sdk.list_tools() to verify it appears
+   - Check that the tool has a main() function with proper type hints
+   - Both sync (`def main(...)`) and async (`async def main(...)`) functions are supported
+   - Verify the tool has a docstring
+
 ================================================================================
 
 Remember: You are a coding agent. 
 
 WORKFLOW RECOMMENDATION:
 1. Discover all tools first:
-   - Run `execute_bash(command=".venv/bin/python list_tools.py")` for comprehensive tool discovery
-   - This shows all MCP servers, custom tools, and sandbox tools with detailed information
-   - Check MCP server status and authorization links if needed
+   - Use `vmcp_sdk.list_tools()` to see all available tools
+   - This shows all MCP servers, custom tools, and sandbox tools
 
 2. After creating dynamic tools:
-   - Run `execute_bash(command=".venv/bin/python list_tools.py")` to verify the new tool appears
-   - Check the "🏖️  SANDBOX TOOLS" section for your newly created tool
+   - Use `vmcp_sdk.list_tools()` to verify the new tool appears
 
 3. Use execute_bash to run Python scripts for SDK automation:
    - Create Python scripts with vmcp_sdk imports
@@ -392,4 +515,4 @@ WORKFLOW RECOMMENDATION:
    - Combine multiple tools into reusable scripts
    - Save scripts in ~/.vmcp/{vmcp_id} for future use
 
-The list_tools.py script is your comprehensive discovery tool - use it to understand all available tools before building workflows!
+Use vmcp_sdk.list_tools() to discover and verify all available tools!

@@ -948,6 +948,8 @@ class VMCPConfigManager:
         Returns:
             Dict[str, Any] with tool execution results
         """
+        logger.debug(f"Calling tool: {vmcp_tool_call_request.tool_name}")
+        logger.debug(f"Arguments: {vmcp_tool_call_request.arguments}")
         return await execution_core.call_tool(
             storage=self.storage,
             mcp_client_manager=self.mcp_client_manager,

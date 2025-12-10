@@ -196,13 +196,17 @@ async def call_tool(
                         tool_original_name = _original_tool
                         break
 
-                tool_override_data = server_tool_overrides[tool_original_name]
-                if "widget_id" in tool_override_data and tool_override_data["widget_id"]:
-                    logger.info("Widget tool override detected but widgets are not supported in OSS version")
-                    # Skip widget loading - widgets not supported in OSS
-                    widget_meta = {}
+                # Only check for tool override if the tool exists in overrides
+                if tool_original_name in server_tool_overrides:
+                    tool_override_data = server_tool_overrides[tool_original_name]
+                    if "widget_id" in tool_override_data and tool_override_data["widget_id"]:
+                        logger.info("Widget tool override detected but widgets are not supported in OSS version")
+                        # Skip widget loading - widgets not supported in OSS
+                        widget_meta = {}
+                    else:
+                        logger.info(f"🔍 VMCP Config Manager: No tool overrides found for server '{server_name}'")
                 else:
-                    logger.info(f"🔍 VMCP Config Manager: No tool overrides found for server '{server_name}'")
+                    logger.info(f"🔍 VMCP Config Manager: Tool '{tool_original_name}' not found in tool overrides for server '{server_name}'")
 
             # Execute the tool call via MCP client manager
             result = await mcp_client_manager.call_tool(

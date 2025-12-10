@@ -292,10 +292,14 @@ def call_tool(
         # Use the typed function if available
         tool_func = client.get_tool_function(tool_name)
         if tool_func:
+            console.print(f"Calling tool function: {tool_name}")
+            console.print(f"[yellow]Arguments: {arguments}[/yellow]")
             result = tool_func(**arguments)
         else:
             # Fallback to direct call
             from vmcp.vmcps.models import VMCPToolCallRequest
+            console.print(f"Call tool directly: {tool_name}")
+            console.print(f"[yellow]Arguments: {arguments}[/yellow]")
             request = VMCPToolCallRequest(
                 tool_name=tool_name,
                 arguments=arguments
@@ -306,9 +310,27 @@ def call_tool(
                 return_metadata=False
             ))
         
+        # Check if result indicates an error
+        is_error = False
+        if isinstance(result, dict):
+            is_error = result.get('isError', False)
+        elif hasattr(result, 'isError'):
+            is_error = result.isError
+        
         # Print result
-        console.print("[green]Tool executed successfully![/green]")
-        console.print(json.dumps(result, indent=2))
+        if is_error:
+            console.print("[red]Tool execution failed![/red]")
+            # Extract error message from content if available
+            if isinstance(result, dict):
+                content = result.get('content', [])
+                if content and isinstance(content, list) and len(content) > 0:
+                    error_text = content[0].get('text', '') if isinstance(content[0], dict) else str(content[0])
+                    if error_text:
+                        console.print(f"[red]{error_text}[/red]")
+        else:
+            console.print("[green]Tool executed successfully![/green]")
+        
+        console.print(json.dumps(result, indent=2, default=str))
         
     except Exception as e:
         console.print(f"[red]Error calling tool: {e}[/red]")

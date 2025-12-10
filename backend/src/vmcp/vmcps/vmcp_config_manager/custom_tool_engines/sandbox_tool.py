@@ -94,12 +94,14 @@ async def execute_sandbox_discovered_tool(
         # ------------------------------------------------------------------
         # This runs INSIDE the sandbox environment (bubwrap).
         # It needs to load args, import the tool script, and call main().
+        # Supports both sync and async main() functions.
         inner_code = f"""
 import sys
 import json
 import inspect
 import pathlib
 import os
+import asyncio
 
 # Add sandbox path to sys.path so we can import the tool
 sandbox_path_str = '{sandbox_dir_str}'
@@ -134,8 +136,13 @@ if main and callable(main):
         # Filter args
         filtered = {{k:v for k,v in args.items() if k in params}}
         
-        # Execute
-        res = main(**filtered)
+        # Check if main is async
+        if inspect.iscoroutinefunction(main):
+            # Execute async main
+            res = asyncio.run(main(**filtered))
+        else:
+            # Execute sync main
+            res = main(**filtered)
         print(json.dumps({{'success': True, 'result': res}}))
     except Exception as e:
         print(json.dumps({{'success': False, 'error': f'Tool execution error: {{e}}'}}))
