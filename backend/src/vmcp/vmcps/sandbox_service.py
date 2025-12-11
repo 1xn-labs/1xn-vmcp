@@ -324,13 +324,14 @@ build-backend = "hatchling.build"
             return None
     
 
-    def _ensure_pip_in_venv(self, venv_python: Path) -> bool:
+    def _ensure_pip_in_venv(self, venv_python: Path, uv_cmd: str) -> bool:
         """
         Ensure pip is installed in the virtual environment.
         This allows 'pip install' commands to work within the venv.
         
         Args:
             venv_python: Path to the Python executable in the venv
+            uv_cmd: Path to uv command for installing pip
             
         Returns:
             True if pip is available, False otherwise
@@ -347,20 +348,24 @@ build-backend = "hatchling.build"
                 logger.debug("pip is already available in venv")
                 return True
             
-            # If pip is not available, install it using ensurepip
-            logger.info("Installing pip in virtual environment (venv)")
+            # Install pip using uv pip install (works even when ensurepip is unavailable)
+            logger.info("Installing pip in virtual environment using uv pip install")
             result = subprocess.run(
-                [str(venv_python), "-m", "ensurepip", "--upgrade"],
+                [
+                    uv_cmd, "pip", "install",
+                    "--python", str(venv_python),
+                    "pip"
+                ],
                 capture_output=True,
                 text=True,
                 timeout=60
             )
             
             if result.returncode != 0:
-                logger.error(f"Failed to install pip in venv: {result.stderr}")
+                logger.error(f"Failed to install pip using uv: {result.stderr}")
                 return False
             
-            logger.info("Successfully installed pip in virtual environment (venv)")
+            logger.info("Successfully installed pip in virtual environment using uv")
             return True
             
         except subprocess.TimeoutExpired:
@@ -517,7 +522,7 @@ build-backend = "hatchling.build"
             venv_python = self._get_venv_python(venv_path)
             
             # Ensure pip is installed in venv (so 'pip install' commands work in venv)
-            if not self._ensure_pip_in_venv(venv_python):
+            if not self._ensure_pip_in_venv(venv_python, uv_cmd):
                 logger.error("Failed to ensure pip is installed in venv")
                 return False
             
@@ -586,7 +591,7 @@ build-backend = "hatchling.build"
             venv_python = self._get_venv_python(venv_path)
             
             # Ensure pip is installed in venv
-            if not self._ensure_pip_in_venv(venv_python):
+            if not self._ensure_pip_in_venv(venv_python, uv_cmd):
                 logger.error("Failed to ensure pip is installed in venv")
                 return False
             
