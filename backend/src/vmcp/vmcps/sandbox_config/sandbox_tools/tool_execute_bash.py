@@ -69,8 +69,9 @@ async def execute_bash(command: str, timeout: int = 30):
         
         # Wrap command with sandbox restrictions
         # Mount sandbox directory as /root so it appears as /root/ to the LLM
+        activated_cmd = f"source .venv/bin/activate && {command}"
         sandboxed_command = await SandboxManager.wrap_with_sandbox(
-            activated_command,
+            activated_cmd,
             bin_shell="bash",
             sandbox_dir=str(SANDBOX_DIR)
         )
