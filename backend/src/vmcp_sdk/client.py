@@ -195,21 +195,8 @@ class VMCPClient:
         if not self.vmcp_id:
             raise VMCPNotFoundError("No vMCP specified")
         
-        tools = await self.manager.tools_list()
-        
-        # Check if progressive discovery is enabled - if so, filter tools
-        vmcp_config = self.manager.load_vmcp_config(self.vmcp_id)
-        progressive_discovery_enabled = False
-        if vmcp_config:
-            metadata = getattr(vmcp_config, 'metadata', {}) or {}
-            if isinstance(metadata, dict):
-                progressive_discovery_enabled = metadata.get('progressive_discovery_enabled', False) is True
-        
-        # If progressive discovery is enabled, only expose PD tools
-        if progressive_discovery_enabled:
-            # Filter to only tools_list, tool_detail, upload_prompt
-            pd_tool_names = ['tools_list', 'tool_detail', 'upload_prompt']
-            tools = [t for t in tools if t.name in pd_tool_names]
+        tools = await self.manager.tools_list(bypass_pd_filter=True)
+        logger.debug(f"[vmcp_sdk.client] Tools: {tools}")
         
         # Convert Tool objects to dicts
         self._tools_cache = []
