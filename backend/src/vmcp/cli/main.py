@@ -90,7 +90,14 @@ def run(
 
             # Handle PostgreSQL connection string format
             if db_url.startswith("postgresql://"):
-                engine = create_engine(db_url.replace("postgresql://", "postgresql+psycopg2://"))
+                # Try psycopg2 first (if available), otherwise let SQLAlchemy auto-detect
+                try:
+                    import psycopg2  # noqa: F401
+                    engine = create_engine(db_url.replace("postgresql://", "postgresql+psycopg2://"))
+                except ImportError:
+                    # psycopg2 not available - let SQLAlchemy try to auto-detect
+                    # This will fail with a helpful error if no driver is available
+                    engine = create_engine(db_url)
             else:
                 engine = create_engine(db_url)
 
@@ -103,6 +110,11 @@ def run(
                 console.print("[green]✓[/green] Database connected!")
         except Exception as e:
             console.print(f"[red]✗[/red] Database connection failed: {e}")
+            if "postgresql" in str(db_url).lower() and "No module named 'psycopg2'" in str(e):
+                console.print("\n[yellow]PostgreSQL driver not found. Install it with:[/yellow]")
+                console.print("  pip install '1xn-vmcp[postgres]'")
+                console.print("\n[yellow]Or install psycopg2-binary directly:[/yellow]")
+                console.print("  pip install psycopg2-binary")
             console.print("\n[yellow]To use PostgreSQL instead of SQLite:[/yellow]")
             console.print("  docker run -d --name vmcp-postgres \\")
             console.print("    -e POSTGRES_USER=vmcp \\")

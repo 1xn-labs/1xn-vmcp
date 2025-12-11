@@ -34,9 +34,21 @@ def _ensure_db_directory():
 # Ensure directory exists before creating engine
 _ensure_db_directory()
 
+# Normalize PostgreSQL URL to use psycopg2 if available
+def _normalize_database_url(url: str) -> str:
+    """Normalize database URL, preferring psycopg2 for PostgreSQL if available."""
+    if url.startswith("postgresql://") and not url.startswith("postgresql+psycopg2://"):
+        try:
+            import psycopg2  # type: ignore  # noqa: F401
+            return url.replace("postgresql://", "postgresql+psycopg2://")
+        except ImportError:
+            # psycopg2 not available, use URL as-is (SQLAlchemy will handle error)
+            return url
+    return url
+
 # Create engine
 engine = create_engine(
-    settings.database_url,
+    _normalize_database_url(settings.database_url),
     echo=settings.database_echo,
     pool_pre_ping=True,
     pool_size=10,
