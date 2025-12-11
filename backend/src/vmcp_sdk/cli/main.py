@@ -399,8 +399,19 @@ def call_tool(
 
         # Print result
         console.print("[green]Tool executed successfully![/green]")
-        result = output.result
-        console.print(json.dumps(result, indent=2))
+        
+        # Display full content (includes print statements from the tool)
+        if output.content:
+            for content_item in output.content:
+                if hasattr(content_item, 'text'):
+                    console.print(content_item.text)
+                else:
+                    console.print(str(content_item))
+        
+        # Also show structured result if available and different from content
+        if output.result is not None and output.structuredContent:
+            console.print("\n[dim]Structured Result:[/dim]")
+            console.print(json.dumps(output.result, indent=2))
 
     except VMCPToolNotFoundError as e:
         console.print(f"[red]Tool {tool_name} not found[/red]")
