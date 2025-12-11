@@ -179,77 +179,38 @@ else:
                 
                 stdout, stderr = await process.communicate()
                 
-                # Parse result
+                # Parse result - just return stdout as-is
                 stdout_str = stdout.decode("utf-8", errors="replace")
                 stderr_str = stderr.decode("utf-8", errors="replace")
                 
-                # Try to parse JSON result
-                try:
-                    lines = stdout_str.strip().split('\n')
-                    result_data = None
-                    for line in reversed(lines):
-                        try:
-                            potential_json = json.loads(line)
-                            if isinstance(potential_json, dict) and 'success' in potential_json:
-                                result_data = potential_json
-                                break
-                        except json.JSONDecodeError:
-                            continue
-                    
-                    if result_data:
-                        if result_data.get('success'):
-                            content = TextContent(
-                                type="text",
-                                text=json.dumps(result_data.get('result', {})),
-                                annotations=None,
-                                _meta=None
-                            )
-                            return CallToolResult(
-                                content=[content],
-                                structuredContent=result_data.get('result'),
-                                isError=False
-                            ) if not tool_as_prompt else GetPromptResult(
-                                description="Tool executed successfully",
-                                messages=[PromptMessage(role="user", content=content)]
-                            )
-                        else:
-                            error_content = TextContent(
-                                type="text",
-                                text=f"Tool execution failed: {result_data.get('error', 'Unknown error')}",
-                                annotations=None,
-                                _meta=None
-                            )
-                            return CallToolResult(
-                                content=[error_content],
-                                structuredContent=None,
-                                isError=True
-                            )
-                    else:
-                        # No JSON found, return raw output
-                        content = TextContent(
-                            type="text",
-                            text=stdout_str if stdout_str else stderr_str,
-                            annotations=None,
-                            _meta=None
-                        )
-                        return CallToolResult(
-                            content=[content],
-                            structuredContent=None,
-                            isError=process.returncode != 0
-                        )
-                        
-                except Exception as e:
-                    error_content = TextContent(
-                        type="text",
-                        text=f"Failed to parse tool result: {e}\nStdout: {stdout_str}\nStderr: {stderr_str}",
-                        annotations=None,
-                        _meta=None
+                # Combine stdout and stderr if both exist
+                if stdout_str and stderr_str:
+                    result_text = f"{stdout_str}\n\nStderr: {stderr_str}"
+                elif stdout_str:
+                    result_text = stdout_str
+                elif stderr_str:
+                    result_text = stderr_str
+                else:
+                    result_text = ""
+                
+                content = TextContent(
+                    type="text",
+                    text=result_text,
+                    annotations=None,
+                    _meta=None
+                )
+                
+                if tool_as_prompt:
+                    return GetPromptResult(
+                        description="Tool executed successfully",
+                        messages=[PromptMessage(role="user", content=content)]
                     )
-                    return CallToolResult(
-                        content=[error_content],
-                        structuredContent=None,
-                        isError=True
-                    )
+                
+                return CallToolResult(
+                    content=[content],
+                    structuredContent=None,
+                    isError=process.returncode != 0
+                )
                     
             finally:
                 # Always restore CWD
@@ -393,39 +354,17 @@ if __name__ == "__main__":
             if any(pattern.lower() in stderr_str.lower() for pattern in sandbox_violation_patterns):
                 stderr_str = f"⚠️ SANDBOX RESTRICTION: {stderr_str}"
 
-            # Parse result
-            try:
-                # The output might contain mixed stdout from the script, but we printed json at the end
-                # Try to find the last JSON object
-                lines = stdout_str.strip().split('\n')
-                result_data = None
-                for line in reversed(lines):
-                    try:
-                        potential_json = json.loads(line)
-                        if isinstance(potential_json, dict) and 'success' in potential_json:
-                            result_data = potential_json
-                            break
-                    except json.JSONDecodeError:
-                        continue
-                
-                if result_data:
-                    if result_data.get('success', False):
-                        result_text = json.dumps(result_data.get('result', ''), indent=2)
-                        is_error = False
-                    else:
-                        result_text = f"Error: {result_data.get('error', 'Unknown error')}"
-                        is_error = True
-                else:
-                    # Fallback if we couldn't find the known JSON structure
-                    result_text = stdout_str if stdout_str else stderr_str
-                    is_error = process.returncode != 0
-            except Exception:
-                result_text = stdout_str if stdout_str else stderr_str
-                is_error = process.returncode != 0
-
-            if stderr_str and not is_error:
-                # Append stderr only if it's not the main error source
-                result_text = f"{result_text}\n\nStderr: {stderr_str}"
+            # Just return stdout as-is, combine with stderr if needed
+            if stdout_str and stderr_str:
+                result_text = f"{stdout_str}\n\nStderr: {stderr_str}"
+            elif stdout_str:
+                result_text = stdout_str
+            elif stderr_str:
+                result_text = stderr_str
+            else:
+                result_text = ""
+            
+            is_error = process.returncode != 0
 
             text_content = TextContent(
                 type="text",
