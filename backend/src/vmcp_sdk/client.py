@@ -6,15 +6,21 @@ typed Python functions from tool schemas.
 """
 
 import asyncio
+import json
 from typing import Any, Dict, List, Optional
 
 from vmcp.storage.dummy_user import UserContext
 from vmcp.vmcps.vmcp_config_manager.config_core import VMCPConfigManager
 from vmcp.vmcps.models import VMCPToolCallRequest
+from mcp.types import CallToolResult, TextContent
 
 from .schema import create_function_with_signature, normalize_name
 from vmcp.utilities.logging import get_logger
 logger = get_logger("1xN_vMCP_SDK_CLIENT")
+
+class SdkCallToolResult(CallToolResult):
+    "SDK response to a tool call"
+    result: dict[str, Any] | list[str] | None = None
 
 
 class VMCPClient:
@@ -58,6 +64,8 @@ class VMCPClient:
                 "client_id": "vmcp_sdk"
             }
         )
+
+        self._vmcpconfig = self.manager.load_vmcp_config()
         
         # Cache for tools and typed functions
         self._tools_cache: Optional[List[Dict[str, Any]]] = None
@@ -124,27 +132,60 @@ class VMCPClient:
             # Use a factory function to properly capture the tool_name
             def make_tool_impl(original_name: str):
                 """Create a tool implementation function."""
-                async def async_impl(**kwargs):
+                async def async_impl(**kwargs) -> SdkCallToolResult:
+                    #print("SDK: Calling tool - ", original_name)
                     request = VMCPToolCallRequest(
                         tool_name=original_name,
                         arguments=kwargs,
                         skip_sandbox=True  # SDK calls are always from within sandbox, skip nested sandboxing
                     )
-                    result = await self.manager.call_tool(
+                    mcp_result:CallToolResult = await self.manager.call_tool(
                         request,
                         connect_if_needed=True,
                         return_metadata=False
                     )
+                    #print("SDK: Result Type - ", type(result))
+                    print("SDK: Result - ", mcp_result.model_dump_json())
 
                     # Extract result data
-                    if isinstance(result, dict):
+                    if isinstance(mcp_result, CallToolResult):
+                        #print("Is Dict")
+                        # Return all kinds of outputs in result.result
+                        result = SdkCallToolResult(content=mcp_result.content, 
+                                                   structuredContent=mcp_result.structuredContent, 
+                                                   isError=mcp_result.isError,
+                                                   result=None)
+
+                        structured = result.structuredContent
+
+                         # Extract content if not structured output
+                        if not structured:
+                            content = result.content[0]
+                            if isinstance(content, TextContent):
+                                # Check if the first element's text response is actually a valid json
+                                text_data = content.text
+                                if text_data:
+                                    try:
+                                        parsed_json = json.loads(text_data)
+                                        #print("Is Json")
+                                        result.result = parsed_json
+                                    except (json.JSONDecodeError, TypeError):
+                                        # Not valid JSON, combine text from all content elements as JSON array
+                                        all_texts = [item.text for item in result.content if isinstance(item, TextContent)]
+                                        result.result = all_texts if len(all_texts) else {}
+                        else:
+                            # Return the structured data as the tool call result 
+                            #print("Is Structured")
+                            result.result = structured
+
                         return result
-                    elif hasattr(result, 'model_dump'):
-                        return result.model_dump()
-                    elif hasattr(result, 'dict'):
-                        return result.dict()
+                    elif hasattr(mcp_result, 'model_dump'):
+                        print("returning model_dump")
+                        return mcp_result.model_dump()
+                    elif hasattr(mcp_result, 'dict'):
+                        return mcp_result.dict()
                     else:
-                        return {"result": str(result)}
+                        return {"result": str(mcp)}
 
                 # Wrap in sync function for compatibility
                 def sync_wrapper(**kwargs):
@@ -270,7 +311,8 @@ class VMCPClient:
         """Dynamically access tool functions."""
         # Ensure tools are loaded
         asyncio.run(self._load_tools())
-        
+        # Should we do this to account for model errors? 
+        name = name.lower().replace(".", "_")
         # Check if it's a tool function
         if name in self._typed_functions:
             return self._typed_functions[name]
@@ -281,35 +323,35 @@ class VMCPClient:
         
         # Check if it might be an MCP server tool (format: ServerName_tool_name)
         # This allows calling MCP tools even when progressive discovery hides them from the tools list
-        if '_' in name:
-            # Try to create a dynamic function for MCP server tools
-            def make_mcp_tool_impl(tool_name: str):
-                """Create a tool implementation function for MCP server tools."""
-                async def async_impl(**kwargs):
-                    request = VMCPToolCallRequest(
-                        tool_name=tool_name,
-                        arguments=kwargs
-                    )
-                    result = await self.manager.call_tool(
-                        request,
-                        connect_if_needed=True,
-                        return_metadata=False
-                    )
-                    # Extract result data
-                    if isinstance(result, dict):
-                        return result
-                    elif hasattr(result, 'model_dump'):
-                        return result.model_dump()
-                    elif hasattr(result, 'dict'):
-                        return result.dict()
-                    else:
-                        return {"result": str(result)}
+        # if '_' in name:
+        #     # Try to create a dynamic function for MCP server tools
+        #     def make_mcp_tool_impl(tool_name: str):
+        #         """Create a tool implementation function for MCP server tools."""
+        #         async def async_impl(**kwargs):
+        #             request = VMCPToolCallRequest(
+        #                 tool_name=tool_name,
+        #                 arguments=kwargs
+        #             )
+        #             result = await self.manager.call_tool(
+        #                 request,
+        #                 connect_if_needed=True,
+        #                 return_metadata=False
+        #             )
+        #             # Extract result data
+        #             if isinstance(result, dict):
+        #                 return result
+        #             elif hasattr(result, 'model_dump'):
+        #                 return result.model_dump()
+        #             elif hasattr(result, 'dict'):
+        #                 return result.dict()
+        #             else:
+        #                 return {"result": str(result)}
                 
-                # Wrap in sync function for compatibility
-                def sync_wrapper(**kwargs):
-                    return asyncio.run(async_impl(**kwargs))
+        #         # Wrap in sync function for compatibility
+        #         def sync_wrapper(**kwargs):
+        #             return asyncio.run(async_impl(**kwargs))
                 
-                return sync_wrapper
+        #         return sync_wrapper
             
             # Return a generic function that accepts any kwargs
             # This allows calling MCP tools even without type information
