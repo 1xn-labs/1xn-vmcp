@@ -170,7 +170,7 @@ def file1xn_logo_ico_small() -> Image:
 
 
 @mcp.tool()
-def get_1xn_logo() -> Annotated[CallToolResult, :
+def get_1xn_logo() -> CallToolResult:
     """Return text and the `1xn_logo_ico_small.png` image .
     """
     try:
@@ -429,7 +429,11 @@ class WeatherData(BaseModel):
 
 @mcp.tool()
 async def get_weather_from_location(lat: float, lng: float) -> WeatherData:
-    """Get weather for a city - returns structured data."""
+    """Get weather for a city - returns structured data
+
+    Args:
+        lat: Latitude of the location 
+        lng: Longitude of the location"""
     try:
 
         # Call Open-Meteo API with more weather parameters
