@@ -15,8 +15,25 @@ Example:
 
 from .active_vmcp import ActiveVMCPManager
 from .client import VMCPClient, SdkCallToolResult
-
-
+from .exceptions import (
+    VMCPError,
+    VMCPNotFoundError,
+    VMCPToolNotFoundError,
+    VMCPToolExecutionError,
+    VMCPConnectionError,
+    VMCPConfigurationError,
+)
 
 # Expose main functions and classes
-__all__ = ["VMCPClient", "ActiveVMCPManager", "SdkCallToolResult"]
+__all__ = [
+    "VMCPClient",
+    "ActiveVMCPManager",
+    "SdkCallToolResult",
+    # Exceptions
+    "VMCPError",
+    "VMCPNotFoundError",
+    "VMCPToolNotFoundError",
+    "VMCPToolExecutionError",
+    "VMCPConnectionError",
+    "VMCPConfigurationError",
+]

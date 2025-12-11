@@ -6,14 +6,20 @@ associated with the current sandbox (detected from .vmcp-config.json).
 """
 
 import json
+import logging
 import sys
+import asyncio
 
 import typer
 from rich.console import Console
 from rich.table import Table
 
-from ..client import VMCPClient, SdkCallToolResult
-from vmcp_sdk import VMCPClient
+from ..client import VMCPClient
+from ..exceptions import (
+    VMCPNotFoundError,
+    VMCPToolNotFoundError,
+    VMCPToolExecutionError,
+)
 
 app = typer.Typer(
     name="vmcp",
@@ -23,6 +29,9 @@ app = typer.Typer(
 )
 
 console = Console()
+
+# Global flag for debug mode
+_debug_mode = False
 
 
 def _run_async(coro):
@@ -35,31 +44,50 @@ def _get_client():
     """Get VMCPClient for the current sandbox's vMCP."""
     try:
         client = VMCPClient()  # Auto-detects from sandbox config
-        if not client.vmcp_id:
-            console.print("[red]Error: No vMCP found. Ensure you're in a sandbox directory with .vmcp-config.json[/red]")
-            sys.exit(1)
         return client
+    except VMCPNotFoundError as e:
+        console.print(f"[red]Error: {e}[/red]")
+        console.print("[yellow]Hint: Make sure you're in a sandbox directory with .vmcp-config.json[/yellow]")
+        sys.exit(1)
     except Exception as e:
-        console.print(f"[red]Error initializing vMCP client: {e}[/red]")
-        console.print("[yellow]Make sure you're in a sandbox directory with .vmcp-config.json[/yellow]")
+        console.print(f"[red]Unexpected error initializing vMCP client: {e}[/red]")
+        console.print("[yellow]Please check your vMCP configuration[/yellow]")
         sys.exit(1)
 
 
 @app.callback()
 def main_callback(
     ctx: typer.Context,
+    debug: bool = typer.Option(False, "--debug", help="Enable debug logging for SDK operations"),
 ):
     """
     vMCP SDK - Command line interface for Virtual MCP Servers.
-    
+
     This CLI works with the vMCP associated with the current sandbox.
     The vMCP is automatically detected from .vmcp-config.json in the sandbox directory.
-    
+
     Example:
         vmcp_sdk_cli list-tools          # List tools in the sandbox's vMCP
         vmcp_sdk_cli list-prompts        # List prompts in the sandbox's vMCP
         vmcp_sdk_cli list-resources      # List resources in the sandbox's vMCP
+        vmcp_sdk_cli --debug list-tools  # List tools with debug logging enabled
     """
+    global _debug_mode
+    _debug_mode = debug
+
+    # Configure SDK logging if --debug flag is set
+    if debug:
+        sdk_logger = logging.getLogger('vmcp_sdk')
+        sdk_logger.setLevel(logging.DEBUG)
+        sdk_logger.propagate = False  # Don't propagate to root logger
+        # Add a console handler if none exists
+        if not sdk_logger.handlers:
+            handler = logging.StreamHandler(sys.stderr)
+            handler.setLevel(logging.DEBUG)
+            formatter = logging.Formatter('[%(name)s] %(levelname)s: %(message)s')
+            handler.setFormatter(formatter)
+            sdk_logger.addHandler(handler)
+        console.print("[dim]Debug logging enabled for SDK[/dim]")
 
 @app.command()
 def show_vmcp():
@@ -333,6 +361,54 @@ def list_resources():
         sys.exit(1)
 
 
+async def async_test_sdk():
+    # async def add_tool():
+    #     # Auto-detect vMCP from sandbox config
+    #     client = VMCPClient()
+
+    #     async with VMCPClient() as client:
+    #         # Tools are auto-loaded when entering context
+    #         result = await client.allfeature_add_numbers(a=5, b=3)
+    #         print(f"5 + 3 = {result.value}")
+    #     # Auto cleanup when exiting context
+
+    # asyncio.run(add_tool())
+    try:
+        async with _get_client() as client:
+            console.print(f"[green]Executing tool 'allfeature_get_user(user_id=\"Amit\")'...[/green]")
+
+            output = await client.allfeature_get_user(user_id="Amit")
+            # Check for errors
+            if output.isError:
+                console.print(f"[red]Tool execution failed![/red]")
+                console.print(f"[red]Error: {output.content}[/red]")
+                sys.exit(1)
+
+            # Print result
+            console.print("[green]Tool executed successfully![/green]")
+            result = output.result
+            console.print(json.dumps(result, indent=2))
+
+    except VMCPToolNotFoundError as e:
+        console.print(f"[red]Tool not found: {e}[/red]")
+        if e.available_tools:
+            console.print(f"[yellow]Available tools: {', '.join(e.available_tools)}...[/yellow]")
+        sys.exit(1)
+    except VMCPToolExecutionError as e:
+        console.print(f"[red]Tool execution error: {e}[/red]")
+        sys.exit(1)
+    except Exception as e:
+        console.print(f"[red]Unexpected error calling tool: {e}[/red]")
+        sys.exit(1)
+
+@app.command()
+def test_sdk():
+    "Test the SDK"
+    asyncio.run(async_test_sdk())
+
+
+
+
 @app.command()
 def call_tool(
     tool_name: str = typer.Option(..., "--tool", "-t", help="Name of the tool to call"),
@@ -340,7 +416,7 @@ def call_tool(
 ):
     """
     Call a tool in the sandbox's vMCP.
-    
+
     Example:
         vmcp_sdk_cli call-tool --tool all_feature_add_numbers --payload '{"a": 5, "b": 3}'
     """
@@ -351,35 +427,39 @@ def call_tool(
         except json.JSONDecodeError as e:
             console.print(f"[red]Invalid JSON payload: {e}[/red]")
             sys.exit(1)
-        
-        # Call tool
+
+        # Get client and tool function
         client = _get_client()
-        tool_func = client.get_tool_function(tool_name)
-        # tool_func = getattr(VMCPClient(), tool_name, None)
-        if tool_func:
-            console.print("[green]Tool executing via SDK...[/green]")
-            output = tool_func(**arguments)
-            result = output.result
-        else:
-            raise ValueError(f"Tool name {tool_name} not found!")
+        tool_func = client.__getattr__(tool_name)
+
+        if not tool_func:
+            raise VMCPToolNotFoundError(tool_name=tool_name)
+
+        # Execute tool (now async)
+        console.print(f"[green]Executing tool '{tool_name}'...[/green]")
+        output = _run_async(tool_func(**arguments))
+
+        # Check for errors
+        if output.isError:
+            console.print(f"[red]Tool execution failed![/red]")
+            console.print(f"[red]Error: {output.content}[/red]")
+            sys.exit(1)
 
         # Print result
-        if is_error:
-            console.print("[red]Tool execution failed![/red]")
-            # Extract error message from content if available
-            if isinstance(result, dict):
-                content = result.get('content', [])
-                if content and isinstance(content, list) and len(content) > 0:
-                    error_text = content[0].get('text', '') if isinstance(content[0], dict) else str(content[0])
-                    if error_text:
-                        console.print(f"[red]{error_text}[/red]")
-        else:
-            console.print("[green]Tool executed successfully![/green]")
-        
-        console.print(json.dumps(result, indent=2, default=str))
-        
+        console.print("[green]Tool executed successfully![/green]")
+        result = output.result
+        console.print(json.dumps(result, indent=2))
+
+    except VMCPToolNotFoundError as e:
+        console.print(f"[red]Tool {tool_name} not found[/red]")
+        if e.available_tools:
+            console.print(f"[yellow]Available tools: {', '.join(e.available_tools)}...[/yellow]")
+        sys.exit(1)
+    except VMCPToolExecutionError as e:
+        console.print(f"[red]Tool execution error: {e}[/red]")
+        sys.exit(1)
     except Exception as e:
-        console.print(f"[red]Error calling tool: {e}[/red]")
+        console.print(f"[red]Unexpected error calling tool: {e}[/red]")
         sys.exit(1)
 
 
