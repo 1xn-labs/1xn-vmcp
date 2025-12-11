@@ -361,54 +361,6 @@ def list_resources():
         sys.exit(1)
 
 
-async def async_test_sdk():
-    # async def add_tool():
-    #     # Auto-detect vMCP from sandbox config
-    #     client = VMCPClient()
-
-    #     async with VMCPClient() as client:
-    #         # Tools are auto-loaded when entering context
-    #         result = await client.allfeature_add_numbers(a=5, b=3)
-    #         print(f"5 + 3 = {result.value}")
-    #     # Auto cleanup when exiting context
-
-    # asyncio.run(add_tool())
-    try:
-        async with _get_client() as client:
-            console.print(f"[green]Executing tool 'allfeature_get_user(user_id=\"Amit\")'...[/green]")
-
-            output = await client.allfeature_get_user(user_id="Amit")
-            # Check for errors
-            if output.isError:
-                console.print(f"[red]Tool execution failed![/red]")
-                console.print(f"[red]Error: {output.content}[/red]")
-                sys.exit(1)
-
-            # Print result
-            console.print("[green]Tool executed successfully![/green]")
-            result = output.result
-            console.print(json.dumps(result, indent=2))
-
-    except VMCPToolNotFoundError as e:
-        console.print(f"[red]Tool not found: {e}[/red]")
-        if e.available_tools:
-            console.print(f"[yellow]Available tools: {', '.join(e.available_tools)}...[/yellow]")
-        sys.exit(1)
-    except VMCPToolExecutionError as e:
-        console.print(f"[red]Tool execution error: {e}[/red]")
-        sys.exit(1)
-    except Exception as e:
-        console.print(f"[red]Unexpected error calling tool: {e}[/red]")
-        sys.exit(1)
-
-@app.command()
-def test_sdk():
-    "Test the SDK"
-    asyncio.run(async_test_sdk())
-
-
-
-
 @app.command()
 def call_tool(
     tool_name: str = typer.Option(..., "--tool", "-t", help="Name of the tool to call"),

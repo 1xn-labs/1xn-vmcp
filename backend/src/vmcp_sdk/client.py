@@ -139,7 +139,7 @@ class VMCPClient:
     typed Python functions for each tool.
     """
     
-    def __init__(self, vmcp_id: Optional[str] = None, user_id: int = 1):
+    def __init__(self, vmcp_id: Optional[str] = None, user_id: str = "1"):
         """
         Initialize the vMCP client.
         
@@ -196,7 +196,6 @@ class VMCPClient:
             raise VMCPNotFoundError("No vMCP specified")
         
         tools = await self.manager.tools_list(bypass_pd_filter=True)
-        logger.debug(f"[vmcp_sdk.client] Tools: {tools}")
         
         # Convert Tool objects to dicts
         self._tools_cache = []
@@ -241,43 +240,40 @@ class VMCPClient:
                     )
                     logger.debug(f"[vmcp_sdk.client] Tool result: {mcp_result.model_dump_json()}")
 
-                    # Extract result data
-                    if isinstance(mcp_result, CallToolResult):
-                        # Return all kinds of outputs in result.result
-                        result = SdkCallToolResult(content=mcp_result.content, 
-                                                   structuredContent=mcp_result.structuredContent, 
-                                                   isError=mcp_result.isError,
-                                                   result=None)
+                    if mcp_result.isError: 
+                        raise VMCPToolExecutionError(
+                            tool_name=original_name,
+                            message=mcp_result.content[0].text,
+                            result=self
+                        )
+                    # Extract result data. Return all kinds of outputs in result.result
+                    result = SdkCallToolResult(content=mcp_result.content, 
+                                                structuredContent=mcp_result.structuredContent, 
+                                                isError=mcp_result.isError,
+                                                result=None)
 
-                        structured = result.structuredContent
+                    structured = result.structuredContent
 
-                         # Extract content if not structured output
-                        if not structured:
-                            content = result.content[0]
-                            if isinstance(content, TextContent):
-                                # Check if the first element's text response is actually a valid json
-                                text_data = content.text
-                                if text_data:
-                                    try:
-                                        parsed_json = json.loads(text_data)
-                                        result.result = parsed_json
-                                    except (json.JSONDecodeError, TypeError):
-                                        # Not valid JSON, combine text from all content elements as JSON array
-                                        all_texts = [item.text for item in result.content if isinstance(item, TextContent)]
-                                        result.result = all_texts if len(all_texts) else {}
-                        else:
-                            # Return the structured data as the tool call result
-                            result.result = structured
-
-                        return result
-                    elif hasattr(mcp_result, 'model_dump'):
-                        logger.debug("[vmcp_sdk.client] Returning model_dump fallback")
-                        return mcp_result.model_dump()
-                    elif hasattr(mcp_result, 'dict'):
-                        return mcp_result.dict()
+                        # Extract content if not structured output
+                    if not structured:
+                        content = result.content[0]
+                        if isinstance(content, TextContent):
+                            # Check if the first element's text response is actually a valid json
+                            text_data = content.text
+                            if text_data:
+                                try:
+                                    parsed_json = json.loads(text_data)
+                                    result.result = parsed_json
+                                except (json.JSONDecodeError, TypeError):
+                                    # Not valid JSON, combine text from all content elements as JSON array
+                                    all_texts = [item.text for item in result.content if isinstance(item, TextContent)]
+                                    result.result = all_texts if len(all_texts) else {}
                     else:
-                        return {"result": str(mcp_result)}
+                        # Return the structured data as the tool call result
+                        result.result = structured
 
+                    return result
+                    
                 # Return async function directly (no sync wrapper)
                 return async_impl
 
@@ -299,8 +295,8 @@ class VMCPClient:
             logger.debug(f"Created typed function for tool: {normalized_name}")
             self._typed_functions[normalized_name] = typed_func
             # Also store by original name for lookup
-            logger.debug(f"Stored typed function for tool: {tool_name}")
-            self._typed_functions[tool_name] = typed_func
+            # logger.debug(f"Stored typed function for tool: {tool_name}")
+            # self._typed_functions[tool_name] = typed_func
         
         self._tools_loaded = True
 
