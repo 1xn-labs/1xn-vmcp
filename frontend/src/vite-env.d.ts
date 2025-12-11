@@ -13,3 +13,8 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+// Runtime configuration injected by backend when serving index.html
+interface Window {
+  __BACKEND_URL__?: string
+}

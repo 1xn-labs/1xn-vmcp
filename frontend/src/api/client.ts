@@ -1664,11 +1664,27 @@ class ApiClient {
 
 }
 
-// Get backend URL from environment variables
+// Get backend URL with priority:
+// 1. Runtime config from backend (window.__BACKEND_URL__) - for built/production deployments
+// 2. Build-time env var (VITE_BACKEND_URL) - for development
+// 3. Default to localhost:8000
 // The generated SDK endpoints already include /api/, so base URL should not include it
-const BACKEND_URL =
-  import.meta.env.VITE_BACKEND_URL?.replace(/\/api\/?$/, '') ||
-  'http://localhost:8000';
+const getBackendUrl = (): string => {
+  // Check runtime config first (injected by backend when serving index.html)
+  if (typeof window !== 'undefined' && window.__BACKEND_URL__) {
+    return window.__BACKEND_URL__.replace(/\/api\/?$/, '');
+  }
+  
+  // Fall back to build-time env var (for development)
+  if (import.meta.env.VITE_BACKEND_URL) {
+    return import.meta.env.VITE_BACKEND_URL.replace(/\/api\/?$/, '');
+  }
+  
+  // Default fallback
+  return 'http://localhost:8000';
+};
+
+const BACKEND_URL = getBackendUrl();
 
 // Create and export API client instance
 export const apiClient = new ApiClient(BACKEND_URL);

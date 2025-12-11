@@ -13,7 +13,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from vmcp.config import settings
@@ -262,6 +262,34 @@ else:
 if frontend_dist.exists():
     logger.info(f"[VMCPApiServer] Serving frontend from {frontend_dist}")
 
+    def get_index_html_with_config() -> str:
+        """Read index.html and inject runtime configuration (backend URL)."""
+        index_path = frontend_dist / "index.html"
+        if not index_path.exists():
+            raise HTTPException(status_code=404, detail="index.html not found")
+
+        with open(index_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+
+        # Get backend URL from settings (can be set via VMCP_BASE_URL env var)
+        backend_url = settings.base_url.rstrip("/")
+
+        # Inject script tag before closing </head> or before </body> if no </head>
+        # This sets the backend URL as a global variable that the frontend can read
+        config_script = f'<script>window.__BACKEND_URL__ = "{backend_url}";</script>'
+
+        # Try to inject before </head> first (preferred location)
+        if "</head>" in html_content:
+            html_content = html_content.replace("</head>", f"{config_script}\n</head>")
+        # Fallback to before </body> if no </head> tag
+        elif "</body>" in html_content:
+            html_content = html_content.replace("</body>", f"{config_script}\n</body>")
+        # Last resort: append at the end
+        else:
+            html_content = html_content + config_script
+
+        return html_content
+
     # Serve static assets (CSS, JS, etc.)
     @app.get("/app/assets/{file_path:path}")
     async def serve_assets(file_path: str):
@@ -294,14 +322,14 @@ if frontend_dist.exists():
             file_path = frontend_dist / full_path
             if file_path.is_file():
                 return FileResponse(file_path)
-        # For routes without extension, serve index.html (SPA routing)
-        return FileResponse(frontend_dist / "index.html")
+        # For routes without extension, serve index.html (SPA routing) with injected config
+        return HTMLResponse(content=get_index_html_with_config())
 
     # Serve index.html for /app/ (root of app)
     @app.get("/app/")
     async def serve_app_root():
-        """Serve index.html for app root"""
-        return FileResponse(frontend_dist / "index.html")
+        """Serve index.html for app root with injected config"""
+        return HTMLResponse(content=get_index_html_with_config())
 
     logger.info("[VMCPApiServer] Frontend served at /app with SPA routing")
 else:
