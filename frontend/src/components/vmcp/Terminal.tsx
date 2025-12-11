@@ -63,7 +63,21 @@ export default function Terminal({ vmcpId, className = '' }: TerminalProps) {
         return;
       }
 
-      const baseUrl = import.meta.env.VITE_BACKEND_URL?.replace(/\/api\/?$/, '') || 'http://localhost:8000';
+      // Get backend URL with priority: runtime config > build-time env var > default
+      const getBackendUrl = (): string => {
+        // Check runtime config first (injected by backend when serving index.html)
+        if (typeof window !== 'undefined' && window.__BACKEND_URL__) {
+          return window.__BACKEND_URL__.replace(/\/api\/?$/, '');
+        }
+        // Fall back to build-time env var (for development)
+        if (import.meta.env.VITE_BACKEND_URL) {
+          return import.meta.env.VITE_BACKEND_URL.replace(/\/api\/?$/, '');
+        }
+        // Default fallback
+        return 'http://localhost:8000';
+      };
+      
+      const baseUrl = getBackendUrl();
       const wsUrl = baseUrl.replace('http', 'ws');
       const token = localStorage.getItem('access_token') || (import.meta.env.VITE_VMCP_OSS_BUILD === 'true' ? 'local-token' : undefined);
       
