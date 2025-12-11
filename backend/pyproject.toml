@@ -76,6 +76,7 @@ dev = [
 
 [project.scripts]
 vmcp = "vmcp.cli.main:app"
+vmcp_sdk_cli = "vmcp_sdk.cli.main:app"
 vmcp-postgres = "vmcp.scripts.postgres_setup:main"
 vmcp-sdk-cli = "vmcp_sdk.cli.main:app"
 

@@ -12,7 +12,8 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from ..client import VMCPClient
+from ..client import VMCPClient, SdkCallToolResult
+from vmcp_sdk import VMCPClient
 
 app = typer.Typer(
     name="vmcp",
@@ -55,61 +56,126 @@ def main_callback(
     The vMCP is automatically detected from .vmcp-config.json in the sandbox directory.
     
     Example:
-        vmcp-sdk list-tools          # List tools in the sandbox's vMCP
-        vmcp-sdk list-prompts        # List prompts in the sandbox's vMCP
-        vmcp-sdk list-resources      # List resources in the sandbox's vMCP
+        vmcp_sdk_cli list-tools          # List tools in the sandbox's vMCP
+        vmcp_sdk_cli list-prompts        # List prompts in the sandbox's vMCP
+        vmcp_sdk_cli list-resources      # List resources in the sandbox's vMCP
     """
-
 
 @app.command()
-def help():
+def show_vmcp():
     """
-    Show help information and available commands for vmcp-sdk-cli.
-    
+    Show the current active vMCP info and stats
+
     Example:
-        vmcp-sdk-cli help
+        vmcp_sdk_cli show-vmcp
     """
-    console.print("\n[bold cyan]vMCP SDK CLI - Help[/bold cyan]\n")
-    
-    console.print("[bold]Overview:[/bold]")
-    console.print("  The vMCP SDK CLI provides commands to interact with your vMCP (Virtual MCP Server)")
-    console.print("  from within a sandbox environment. The vMCP is automatically detected from")
-    console.print("  .vmcp-config.json in the current sandbox directory.\n")
-    
-    console.print("[bold]Available Commands:[/bold]\n")
-    
-    commands_table = Table(show_header=True, header_style="bold cyan", box=None)
-    commands_table.add_column("Command", style="cyan", width=20)
-    commands_table.add_column("Description", style="white")
-    
-    commands_table.add_row("help", "Show this help message")
-    commands_table.add_row("list-tools", "List all tools available in the vMCP")
-    commands_table.add_row("list-prompts", "List all prompts available in the vMCP")
-    commands_table.add_row("list-resources", "List all resources available in the vMCP")
-    commands_table.add_row("call-tool", "Call a tool with arguments")
-    
-    console.print(commands_table)
+    client = _get_client()
+    vmcp_config = client._vmcpconfig
+
+    if not vmcp_config:
+        console.print("[yellow]No vMCP configuration found.[/yellow]")
+        return
+
+    # Basic Info Section
+    console.print("\n[bold cyan]═══════════════════════════════════════════════════════════[/bold cyan]")
+    console.print("[bold cyan]                    vMCP Configuration                      [/bold cyan]")
+    console.print("[bold cyan]═══════════════════════════════════════════════════════════[/bold cyan]\n")
+
+    info_table = Table(show_header=False, box=None, padding=(0, 2))
+    info_table.add_column("Property", style="bold yellow", width=25)
+    info_table.add_column("Value", style="white")
+
+    info_table.add_row("vMCP ID", vmcp_config.id or "N/A")
+    info_table.add_row("Name", vmcp_config.name or "N/A")
+    info_table.add_row("Description", vmcp_config.description or "N/A")
+    info_table.add_row("User ID", vmcp_config.user_id or "N/A")
+
+    console.print(info_table)
     console.print()
-    
-    console.print("[bold]Usage Examples:[/bold]\n")
-    console.print("  [cyan]vmcp-sdk-cli help[/cyan]")
-    console.print("    Show this help message\n")
-    console.print("  [cyan]vmcp-sdk-cli list-tools[/cyan]")
-    console.print("    List all available tools (MCP server tools and sandbox-discovered tools)\n")
-    console.print("  [cyan]vmcp-sdk-cli list-prompts[/cyan]")
-    console.print("    List all prompts in the current vMCP\n")
-    console.print("  [cyan]vmcp-sdk-cli list-resources[/cyan]")
-    console.print("    List all resources in the current vMCP\n")
-    console.print("  [cyan]vmcp-sdk-cli call-tool --tool tool_name --payload '{\"arg\": \"value\"}'[/cyan]")
-    console.print("    Call a tool with JSON payload\n")
-    
-    console.print("[bold]Getting Help:[/bold]")
-    console.print("  Use [cyan]--help[/cyan] or [cyan]-h[/cyan] with any command for detailed information")
-    console.print("  Example: [cyan]vmcp-sdk-cli list-tools --help[/cyan]\n")
-    
-    console.print("[bold yellow]Note:[/bold yellow] Make sure you're in a sandbox directory with .vmcp-config.json\n")
 
+    # Feature flags section - highlighted
+    metadata = vmcp_config.metadata if hasattr(vmcp_config, 'metadata') else {}
+    if isinstance(metadata, dict):
+        sandbox_enabled = metadata.get('sandbox_enabled', False) is True
+        progressive_discovery_enabled = metadata.get('progressive_discovery_enabled', False) is True
 
+        console.print("[bold cyan]Features:[/bold cyan]")
+        features_table = Table(show_header=False, box=None, padding=(0, 2))
+        features_table.add_column("Feature", style="bold yellow", width=30)
+        features_table.add_column("Status", style="white")
+
+        # Highlight enabled features
+        sandbox_status = "[bold green]✓ ENABLED[/bold green]" if sandbox_enabled else "[dim red]✗ Disabled[/dim red]"
+        progressive_status = "[bold green]✓ ENABLED[/bold green]" if progressive_discovery_enabled else "[dim red]✗ Disabled[/dim red]"
+
+        features_table.add_row("Sandbox Mode", sandbox_status)
+        features_table.add_row("Progressive Discovery", progressive_status)
+
+        console.print(features_table)
+        console.print()
+
+    # Stats Section
+    console.print("[bold cyan]Stats:[/bold cyan]")
+    stats_table = Table(show_header=False, box=None, padding=(0, 2))
+    stats_table.add_column("Metric", style="bold green", width=30)
+    stats_table.add_column("Count", style="white", justify="right")
+
+    # Count selected servers
+    selected_servers = []
+    if hasattr(vmcp_config, 'vmcp_config') and vmcp_config.vmcp_config:
+        selected_servers = vmcp_config.vmcp_config.get('selected_servers', []) if isinstance(vmcp_config.vmcp_config, dict) else getattr(vmcp_config.vmcp_config, 'selected_servers', [])
+    stats_table.add_row("Selected MCP Servers", str(len(selected_servers)))
+
+    # Count custom items
+    stats_table.add_row("Custom Prompts", str(len(vmcp_config.custom_prompts or [])))
+    stats_table.add_row("Custom Tools", str(len(vmcp_config.custom_tools or [])))
+    stats_table.add_row("Custom Resources", str(len(vmcp_config.custom_resources or [])))
+    stats_table.add_row("Custom Resource Templates", str(len(vmcp_config.custom_resource_templates or [])))
+    stats_table.add_row("Custom Resource URIs", str(len(vmcp_config.custom_resource_uris or [])))
+    stats_table.add_row("Environment Variables", str(len(vmcp_config.environment_variables or [])))
+    stats_table.add_row("Uploaded Files", str(len(vmcp_config.uploaded_files or [])))
+    stats_table.add_row("Custom Context Items", str(len(vmcp_config.custom_context or [])))
+    stats_table.add_row("Custom Widgets", str(len(vmcp_config.custom_widgets or [])))
+
+    console.print(stats_table)
+    console.print()
+
+    # System Prompt Info
+    if vmcp_config.system_prompt:
+        console.print("[bold cyan]System Prompt:[/bold cyan]")
+        sp = vmcp_config.system_prompt
+        sp_text = sp.get('text', '') if isinstance(sp, dict) else getattr(sp, 'text', '')
+        sp_vars = sp.get('variables', []) if isinstance(sp, dict) else getattr(sp, 'variables', [])
+
+        # Truncate long system prompts
+        if len(sp_text) > 200:
+            console.print(f"  {sp_text[:200]}... [dim](truncated)[/dim]")
+        else:
+            console.print(f"  {sp_text}")
+
+        if sp_vars:
+            console.print(f"  [dim]Variables: {len(sp_vars)}[/dim]")
+        console.print()
+
+    # Selected Servers Details
+    if selected_servers:
+        console.print("[bold cyan]Selected MCP Servers:[/bold cyan]")
+        servers_table = Table(show_header=True, header_style="bold magenta")
+        servers_table.add_column("Server Name", style="cyan")
+        servers_table.add_column("Server ID", style="yellow")
+        servers_table.add_column("Transport", style="green")
+
+        for server in selected_servers:
+            server_name = server.get('name', 'N/A') if isinstance(server, dict) else getattr(server, 'name', 'N/A')
+            server_id = server.get('server_id', 'N/A') if isinstance(server, dict) else getattr(server, 'id', 'N/A')
+            transport = server.get('transport_type', 'N/A') if isinstance(server, dict) else getattr(server, 'transport_type', 'N/A')
+            servers_table.add_row(server_name, server_id, transport)
+
+        console.print(servers_table)
+        console.print()
+
+    console.print("[bold cyan]═══════════════════════════════════════════════════════════[/bold cyan]\n")
+    
 @app.command()
 def list_tools():
     """
@@ -117,7 +183,7 @@ def list_tools():
     Includes MCP server tools and sandbox-discovered tools.
     
     Example:
-        vmcp-sdk list-tools
+        vmcp_sdk_cli list-tools
     """
     try:
         client = _get_client()
@@ -196,7 +262,7 @@ def list_prompts():
     List all prompts available in the sandbox's vMCP.
     
     Example:
-        vmcp-sdk list-prompts
+        vmcp_sdk_cli list-prompts
     """
     try:
         client = _get_client()
@@ -231,7 +297,7 @@ def list_resources():
     List all resources available in the sandbox's vMCP.
     
     Example:
-        vmcp-sdk list-resources
+        vmcp_sdk_cli list-resources
     """
     try:
         client = _get_client()
@@ -270,13 +336,13 @@ def list_resources():
 @app.command()
 def call_tool(
     tool_name: str = typer.Option(..., "--tool", "-t", help="Name of the tool to call"),
-    payload: str = typer.Option(..., "--payload", "-p", help="JSON payload with tool arguments"),
+    payload: str = typer.Option({}, "--payload", "-p", help="JSON payload with tool arguments"),
 ):
     """
     Call a tool in the sandbox's vMCP.
     
     Example:
-        vmcp-sdk call-tool --tool all_feature_add_numbers --payload '{"a": 5, "b": 3}'
+        vmcp_sdk_cli call-tool --tool all_feature_add_numbers --payload '{"a": 5, "b": 3}'
     """
     try:
         # Parse payload
@@ -288,35 +354,15 @@ def call_tool(
         
         # Call tool
         client = _get_client()
-        
-        # Use the typed function if available
         tool_func = client.get_tool_function(tool_name)
+        # tool_func = getattr(VMCPClient(), tool_name, None)
         if tool_func:
-            console.print(f"Calling tool function: {tool_name}")
-            console.print(f"[yellow]Arguments: {arguments}[/yellow]")
-            result = tool_func(**arguments)
+            console.print("[green]Tool executing via SDK...[/green]")
+            output = tool_func(**arguments)
+            result = output.result
         else:
-            # Fallback to direct call
-            from vmcp.vmcps.models import VMCPToolCallRequest
-            console.print(f"Call tool directly: {tool_name}")
-            console.print(f"[yellow]Arguments: {arguments}[/yellow]")
-            request = VMCPToolCallRequest(
-                tool_name=tool_name,
-                arguments=arguments
-            )
-            result = _run_async(client.manager.call_tool(
-                request,
-                connect_if_needed=True,
-                return_metadata=False
-            ))
-        
-        # Check if result indicates an error
-        is_error = False
-        if isinstance(result, dict):
-            is_error = result.get('isError', False)
-        elif hasattr(result, 'isError'):
-            is_error = result.isError
-        
+            raise ValueError(f"Tool name {tool_name} not found!")
+
         # Print result
         if is_error:
             console.print("[red]Tool execution failed![/red]")
