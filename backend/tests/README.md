@@ -26,18 +26,44 @@ This test suite provides comprehensive coverage for:
 
 ### Required Services
 
-Before running tests, ensure all required services are running:
+Before running tests, ensure all required services are running.
+
+#### Option 1: Automated Setup (Recommended)
+
+Use the provided scripts to start/stop all test servers:
+
+```bash
+cd tests
+
+# Start all servers (backend, MCP, HTTP test server)
+./start_test_servers.sh
+
+# In another terminal, run tests
+pytest
+
+# Stop all servers when done
+./stop_test_servers.sh
+```
+
+The `start_test_servers.sh` script will:
+- Start vMCP Backend Server on port 8000
+- Start MCP Test Servers on port 8001
+- Start Test HTTP Server on port 8002
+- Save PIDs for cleanup
+- Log output to `/tmp/*.log`
+
+#### Option 2: Manual Setup
 
 1. **vMCP Backend Server** (port 8000)
    ```bash
-   cd oss/backend
+   cd backend
    python -m uvicorn src.vmcp.main:app --reload --port 8000
    ```
 
 2. **MCP Test Servers** (port 8001)
    ```bash
-   cd oss/backend
-   python -m mcp_server.start_mcp_servers
+   cd backend
+   python tests/mcp_server/start_mcp_servers.py
    ```
    This starts:
    - Everything MCP Server: `http://localhost:8001/everything/mcp`
@@ -45,8 +71,8 @@ Before running tests, ensure all required services are running:
 
 3. **Test HTTP Server** (port 8002)
    ```bash
-   cd oss/backend
-   python -m test_server.test_http_server
+   cd backend
+   python tests/test_server/test_http_server.py
    ```
 
 ### Dependencies
@@ -255,6 +281,24 @@ Tests collection import functionality:
 - ✅ List imported tools
 
 **Markers**: `collection_tool`, `integration`
+
+### Suite 11: vMCP SDK (`test_11_vmcp_sdk.py`)
+
+Tests the async Python SDK for programmatic tool access:
+- ✅ Basic SDK usage with context manager
+- ✅ Tool chaining (location → weather)
+- ✅ Parallel execution with `asyncio.gather()`
+- ✅ Array operations
+- ✅ `VMCPToolNotFoundError` with fuzzy matching
+- ✅ `VMCPToolExecutionError` for validation failures
+- ✅ Fuzzy tool name matching
+- ✅ Result `.value` property access
+- ✅ Generic exception handling
+- ✅ Context manager cleanup
+- ✅ List tools functionality
+- ✅ Error when accessing tools without loading
+
+**Markers**: `sdk`
 
 ## Writing New Tests
 

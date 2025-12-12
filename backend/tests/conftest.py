@@ -10,8 +10,14 @@ import sys
 import uuid
 import os
 import pytest
+from pathlib import Path
 
 from contextlib import asynccontextmanager
+
+# Add src directory to path for importing project modules (like vmcp_sdk)
+src_dir = Path(__file__).parent.parent / "src"
+if str(src_dir) not in sys.path:
+    sys.path.insert(0, str(src_dir))
 
 
 def get_test_dummy_token():
@@ -264,6 +270,98 @@ def helpers(base_url, auth_headers):
 # ============================================================================
 
 @pytest.fixture(scope="session", autouse=True)
+def setup_test_servers():
+    """Automatically start test servers before tests and stop after"""
+    import subprocess
+    import time
+    import signal
+
+    # Get the backend directory
+    tests_dir = Path(__file__).parent
+    backend_dir = tests_dir.parent
+
+    # Check if servers are already running
+    def port_in_use(port):
+        import socket
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            return s.connect_ex(('localhost', port)) == 0
+
+    servers_already_running = all(port_in_use(p) for p in [8000, 8001, 8002])
+
+    if servers_already_running:
+        print("\n" + "=" * 80)
+        print("🔄 Test servers already running, skipping auto-start")
+        print("=" * 80 + "\n")
+        yield
+        return
+
+    print("\n" + "=" * 80)
+    print("🚀 Starting test servers automatically...")
+    print("=" * 80)
+
+    processes = []
+
+    try:
+        # Start backend server
+        print("Starting vMCP Backend Server (port 8000)...")
+        backend_proc = subprocess.Popen(
+            ["uv", "run", "vmcp", "dev"],
+            cwd=backend_dir,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        processes.append(backend_proc)
+        time.sleep(3)
+
+        # Start MCP test servers
+        print("Starting MCP Test Servers (port 8001)...")
+        mcp_proc = subprocess.Popen(
+            ["python", "tests/mcp_server/start_mcp_servers.py"],
+            cwd=backend_dir,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        processes.append(mcp_proc)
+        time.sleep(3)
+
+        # Start test HTTP server
+        print("Starting Test HTTP Server (port 8002)...")
+        http_proc = subprocess.Popen(
+            ["python", "tests/test_server/test_http_server.py"],
+            cwd=backend_dir,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        processes.append(http_proc)
+        time.sleep(2)
+
+        # Verify servers started
+        if not all(port_in_use(p) for p in [8000, 8001, 8002]):
+            raise RuntimeError("Failed to start all test servers")
+
+        print("✅ All test servers started successfully")
+        print("=" * 80 + "\n")
+
+        yield
+
+    finally:
+        # Cleanup: stop all servers
+        print("\n" + "=" * 80)
+        print("🛑 Stopping test servers...")
+        print("=" * 80)
+
+        for proc in processes:
+            try:
+                proc.terminate()
+                proc.wait(timeout=5)
+            except:
+                proc.kill()
+
+        print("✅ Test servers stopped")
+        print("=" * 80 + "\n")
+
+
+@pytest.fixture(scope="session", autouse=True)
 def setup_test_environment():
     """Setup test environment and verify configuration"""
     print("\n" + "=" * 80)
@@ -273,14 +371,14 @@ def setup_test_environment():
     print(f"DATABASE_URL: {os.getenv('DATABASE_URL', 'NOT SET')}")
     print(f"VMCP_DATABASE_URL: {os.getenv('VMCP_DATABASE_URL', 'NOT SET')}")
     print("=" * 80 + "\n")
-    
+
     # Verify token is set
     token = get_test_dummy_token()
     assert token, "VMCP_DUMMY_USER_TOKEN must be set"
     print(f"✅ Test token verified: {token[:20]}...")
-    
+
     yield
-    
+
     print("\n" + "=" * 80)
     print("🧪 TEST ENVIRONMENT TEARDOWN")
     print("=" * 80 + "\n")
