@@ -107,7 +107,7 @@ async def lifespan(app: FastAPI):
             logger.info("[VMCPApiServer] Workflow scheduler stopped")
         except Exception as e:
             logger.warning(f"[VMCPApiServer] Error stopping workflow scheduler: {e}")
-        
+
         logger.info("[VMCPApiServer] Shutting down MCP session manager...")
         # Note: stdio cleanup is now handled by VMCPSessionManager.run()
 
@@ -127,6 +127,68 @@ async def lifespan(app: FastAPI):
             except asyncio.CancelledError:
                 pass  # Expected
         logger.info("[VMCPApiServer] MCP session manager shutdown complete")
+
+        # Clean up terminal sessions gracefully (with timeout to avoid hanging)
+        try:
+            from vmcp.vmcps.terminal_session_manager import get_terminal_session_manager
+            terminal_manager = get_terminal_session_manager()
+
+            # Cancel the cleanup task if it's running
+            if terminal_manager._cleanup_task and not terminal_manager._cleanup_task.done():
+                terminal_manager._cleanup_task.cancel()
+                try:
+                    await asyncio.wait_for(terminal_manager._cleanup_task, timeout=0.5)
+                except (asyncio.CancelledError, asyncio.TimeoutError):
+                    pass  # Expected
+
+            # Clean up all active terminal sessions with timeout
+            try:
+                async def cleanup_sessions():
+                    async with terminal_manager._lock:
+                        sessions_to_close = list(terminal_manager._sessions.values())
+                        if sessions_to_close:
+                            logger.info(f"[VMCPApiServer] Cleaning up {len(sessions_to_close)} terminal sessions...")
+                            # Clean up sessions concurrently with timeout per session
+                            cleanup_tasks = []
+                            for session in sessions_to_close:
+                                cleanup_tasks.append(
+                                    asyncio.create_task(terminal_manager._cleanup_session(session))
+                                )
+                            # Wait for all with timeout
+                            if cleanup_tasks:
+                                done, pending = await asyncio.wait(cleanup_tasks, timeout=1.5, return_when=asyncio.ALL_COMPLETED)
+                                # Cancel any pending tasks
+                                for task in pending:
+                                    task.cancel()
+                                # Wait briefly for cancellations
+                                if pending:
+                                    await asyncio.wait(pending, timeout=0.1)
+                            terminal_manager._sessions.clear()
+                            terminal_manager._session_keys.clear()
+                            logger.info("[VMCPApiServer] Terminal sessions cleaned up")
+
+                await asyncio.wait_for(cleanup_sessions(), timeout=2.0)
+            except asyncio.TimeoutError:
+                logger.warning("[VMCPApiServer] Terminal session cleanup timed out, forcing shutdown")
+                # Force clear sessions even if cleanup didn't complete
+                try:
+                    async with terminal_manager._lock:
+                        terminal_manager._sessions.clear()
+                        terminal_manager._session_keys.clear()
+                except Exception:
+                    pass  # Ignore lock errors during forced shutdown
+        except Exception as e:
+            logger.warning(f"[VMCPApiServer] Error during terminal session cleanup: {e}")
+
+        # Clean up sandbox resources (with timeout)
+        try:
+            from sandbox_runtime import SandboxManager
+            await asyncio.wait_for(SandboxManager.reset(), timeout=2.0)
+            logger.info("[VMCPApiServer] Sandbox resources cleaned up")
+        except asyncio.TimeoutError:
+            logger.warning("[VMCPApiServer] Sandbox cleanup timed out")
+        except Exception as e:
+            logger.warning(f"[VMCPApiServer] Error during sandbox cleanup: {e}")
 
 
 # Use custom lifespan management for MCP session

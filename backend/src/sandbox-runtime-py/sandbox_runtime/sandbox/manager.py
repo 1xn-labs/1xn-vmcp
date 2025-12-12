@@ -2,7 +2,6 @@
 
 import asyncio
 import copy
-import signal
 import subprocess
 from pathlib import Path
 from typing import Any, Callable, Optional
@@ -67,22 +66,43 @@ _sandbox_violation_store = SandboxViolationStore()
 
 
 def _register_cleanup() -> None:
-    """Register cleanup handlers for process exit."""
+    """Register cleanup handlers for process exit.
+    
+    Note: Signal handlers are NOT registered here to avoid interfering with
+    FastAPI/uvicorn's signal handling. Cleanup should be handled by the
+    application's lifespan shutdown handler instead.
+    """
     global _cleanup_registered
     if _cleanup_registered:
         return
 
+    # Only register atexit handler as a fallback for non-FastAPI contexts
+    # Signal handlers are skipped to let FastAPI handle SIGINT/SIGTERM properly
     def cleanup_handler():
         try:
-            asyncio.run(reset())
+            # Check if there's already an event loop running
+            try:
+                loop = asyncio.get_running_loop()
+                # If we're in an async context, skip - let app handle it
+                if loop.is_running():
+                    log_for_debugging("Cleanup skipped - event loop is running (cleanup should be handled by app shutdown)", {"level": "debug"})
+                    return
+            except RuntimeError:
+                # No event loop running, safe to use asyncio.run()
+                pass
+
+            # Only use asyncio.run() if no event loop exists
+            try:
+                asyncio.run(reset())
+            except RuntimeError as e:
+                # Event loop already exists - this is expected in some contexts
+                # The app's lifespan handler should handle cleanup instead
+                log_for_debugging(f"Cleanup skipped - event loop conflict (expected during app shutdown): {e}", {"level": "debug"})
         except Exception as e:
             log_for_debugging(f"Cleanup failed in register_cleanup {e}", {"level": "error"})
 
-    signal.signal(signal.SIGINT, lambda s, f: cleanup_handler())
-    signal.signal(signal.SIGTERM, lambda s, f: cleanup_handler())
-    # Note: atexit might be better for exit handler, but signal handlers work too
+    # Only register atexit, NOT signal handlers (let FastAPI handle signals)
     import atexit
-
     atexit.register(cleanup_handler)
     _cleanup_registered = True
 

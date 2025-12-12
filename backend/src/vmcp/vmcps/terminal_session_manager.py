@@ -18,6 +18,8 @@ from typing import Dict, Optional, Tuple
 from uuid import uuid4
 
 from vmcp.utilities.logging import get_logger
+from sandbox_runtime import SandboxManager
+from sandbox_runtime.config.schemas import SandboxRuntimeConfig
 
 logger = get_logger(__name__)
 
@@ -121,6 +123,35 @@ class TerminalSessionManager:
             session_id = str(uuid4())
             logger.info(f"Creating new terminal session {session_id} for vMCP {vmcp_id}")
             
+            # Initialize sandbox config before forking
+            sandbox_dir_str = str(sandbox_path)
+            allow_read_paths = [
+                sandbox_dir_str,
+                "/usr/lib",
+                "/System/Library",
+                "/Library/Frameworks",
+                "/usr/bin",
+                "/bin",
+                "/lib",
+                "/lib64",
+            ]
+            
+            sandbox_config = SandboxRuntimeConfig.from_json({
+                "network": {
+                    "allowedDomains": [],  # Empty = allow all network access
+                    "deniedDomains": []
+                },
+                "filesystem": {
+                    "allowRead": allow_read_paths,
+                    "allowWrite": [sandbox_dir_str],
+                    "denyWrite": []
+                }
+            })
+            
+            # Initialize sandbox (this is async, so we need to await it)
+            # Sandboxing is mandatory - fail if initialization fails
+            await SandboxManager.initialize(sandbox_config)
+            
             # Create PTY
             master_fd, slave_fd = pty.openpty()
             
@@ -151,8 +182,18 @@ class TerminalSessionManager:
                     current_path = os.environ.get('PATH', '')
                     os.environ['PATH'] = f"{venv_bin}:{current_path}"
                 
-                # Start bash shell
-                os.execlp('bash', 'bash')
+                # Wrap bash command with sandbox - sandboxing is mandatory
+                # Use asyncio.run() since we're in a fresh child process
+                sandboxed_cmd = asyncio.run(
+                    SandboxManager.wrap_with_sandbox(
+                        "bash",
+                        bin_shell="bash",
+                        sandbox_dir=sandbox_dir_str
+                    )
+                )
+                # Execute the sandboxed command
+                # The wrapped command will be something like "bwrap ... bash" or "sandbox-exec ... bash"
+                os.execvp('sh', ['sh', '-c', sandboxed_cmd])
             else:
                 # Parent process
                 os.close(slave_fd)
@@ -229,19 +270,40 @@ class TerminalSessionManager:
                 os.close(session.master_fd)
             except OSError:
                 pass
-            
-            # Kill the process
+
+            # Kill the process with timeout to avoid hanging
             try:
-                os.kill(session.pid, 15)  # SIGTERM
-                try:
-                    os.waitpid(session.pid, 0)
-                except ChildProcessError:
-                    pass
+                if session.is_alive():
+                    os.kill(session.pid, 15)  # SIGTERM
+                    # Wait for process with timeout to avoid blocking
+                    try:
+                        # Use asyncio to wait with timeout
+                        import signal as signal_module
+                        for _ in range(10):  # Check up to 10 times (1 second total)
+                            try:
+                                # Non-blocking check if process is still alive
+                                os.kill(session.pid, 0)  # Check if process exists
+                                await asyncio.sleep(0.1)  # Wait 100ms
+                            except ProcessLookupError:
+                                # Process is dead
+                                break
+                            except OSError:
+                                # Process is dead
+                                break
+                        else:
+                            # Process still alive after timeout, force kill
+                            try:
+                                os.kill(session.pid, 9)  # SIGKILL
+                                await asyncio.sleep(0.1)
+                            except (ProcessLookupError, OSError):
+                                pass  # Process already dead
+                    except ChildProcessError:
+                        pass
             except ProcessLookupError:
                 pass  # Process already dead
             except Exception as e:
                 logger.warning(f"Error killing terminal process {session.pid}: {e}")
-            
+
             logger.info(f"Cleaned up terminal session {session.session_id}")
         except Exception as e:
             logger.error(f"Error cleaning up terminal session {session.session_id}: {e}")
