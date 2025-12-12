@@ -293,10 +293,6 @@ class MCPClientManager:
         server_info = [f"{self._server_id_to_name.get(sid, 'unknown')} ({sid})" for sid in self._server_sessions.keys()]
         logger.info(f"[MCPClientManager] Client Stopped, Cleaning ({count} connections): {server_info}")
 
-        # Cancel any pending connection tasks
-        for task in self._session_cleanup_tasks.values():
-            if not task.done():
-                task.cancel()
 
         # Cancel all cleanup tasks (will trigger cleanup in their task context)
         logger.info(f"[MCPClientManager] Cancelling {len(self._session_cleanup_tasks)} cleanup tasks")
@@ -431,7 +427,7 @@ class MCPClientManager:
                     if get_session_id:
                         session_id = get_session_id()
                         if session_id:
-                            logger.debug(f"Session ID: {session_id}")
+                            logger.debug(f"[MCPClientManager DETACHED] Session ID: {session_id}")
                             # Update session ID in config if available
                             if self.config_manager and server_config.server_id:
                                 server_config.session_id = session_id
@@ -441,6 +437,10 @@ class MCPClientManager:
                     # Only assign session after successful initialization
                     self._server_sessions[server_id] = session
                     self._server_id_to_name[server_id] = server_config.name
+
+                    # Give some time for init to complete
+                    # await asyncio.sleep(0.25)
+                    
 
                     # Signal that session is ready
                     session_future.set_result(session)
@@ -455,10 +455,6 @@ class MCPClientManager:
         except asyncio.CancelledError:
             # Task cancelled - contexts will clean up automatically
             logger.info(f"[MCPClientManager DETACHED] Task cancelled for {server_config.name}, contexts cleaning up")
-            # Clean up tracking
-            if server_id in self._server_sessions:
-                # Don't delete here, let disconnect_server handle it or just let it be overwritten
-                pass
             raise  # Re-raise CancelledError
         except ExceptionGroup as eg:
             for e in eg.exceptions:
