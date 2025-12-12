@@ -161,24 +161,62 @@ class VMCPClient:
                 "No vMCP ID found. Ensure you're running in a sandbox directory "
                 "with .vmcp-config.json file, or provide vmcp_id parameter."
             )
-        
+         # Cache for tools and typed functions
+        self._tools_cache: Optional[List[Dict[str, Any]]] = None
+        self._typed_functions: Dict[str, Any] = {}
+        self._tools_loaded = False
+
+    async def __aenter__(self) -> 'VMCPClient':
+        """
+        Async context manager entry.
+
+        Automatically loads tools when entering the context.
+
+        Returns:
+            Self for use in async with statement
+
+        Example:
+            >>> async with VMCPClient() as client:
+            >>>     tools = await client.list_tools()
+        """
         # Initialize manager
         self.manager = VMCPConfigManager(
-            user_id=str(user_id),
+            user_id=self.user_id,
             vmcp_id=self.vmcp_id,
             logging_config={
                 "agent_name": "vmcp_sdk",
                 "agent_id": "vmcp_sdk",
                 "client_id": "vmcp_sdk"
-            }
+            },
+            mcp_keep_alive=True
         )
 
         self._vmcpconfig = self.manager.load_vmcp_config()
         
-        # Cache for tools and typed functions
-        self._tools_cache: Optional[List[Dict[str, Any]]] = None
-        self._typed_functions: Dict[str, Any] = {}
+        await self._load_tools()
+
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> bool:
+        """
+        Async context manager exit.
+
+        Performs cleanup when exiting the context.
+
+        Returns:
+            False to propagate any exceptions
+        """
+        logger.debug("[vmcp_sdk.client] Closing VMCPClient and clearing cache")
+
+        # Stop an MCP server started by the VMCP session
+        await self.manager.mcp_client_manager.stop()
+        # Clear cached data
+        self._tools_cache = None
+        self._typed_functions.clear()
         self._tools_loaded = False
+
+        return False
+    
     
     def _detect_vmcp_id_from_sandbox(self) -> Optional[str]:
         """Detect vmcp_id from sandbox config file."""
@@ -300,46 +338,6 @@ class VMCPClient:
         
         self._tools_loaded = True
 
-    async def __aenter__(self) -> 'VMCPClient':
-        """
-        Async context manager entry.
-
-        Automatically loads tools when entering the context.
-
-        Returns:
-            Self for use in async with statement
-
-        Example:
-            >>> async with VMCPClient() as client:
-            >>>     tools = await client.list_tools()
-        """
-        await self._load_tools()
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> bool:
-        """
-        Async context manager exit.
-
-        Performs cleanup when exiting the context.
-
-        Returns:
-            False to propagate any exceptions
-        """
-        await self.close()
-        return False
-
-    async def close(self) -> None:
-        """
-        Clean up resources and cached data.
-
-        Clears tools cache and typed functions.
-        This method is called automatically when using async context manager.
-        """
-        logger.debug("[vmcp_sdk.client] Closing VMCPClient and clearing cache")
-        # Clear cached data
-        self._tools_cache = None
-        self._typed_functions.clear()
-        self._tools_loaded = False
 
     async def list_tools(self) -> List[Dict[str, Any]]:
         """
@@ -445,17 +443,17 @@ class VMCPClient:
             VMCPToolNotFoundError: If tool is not found
         """
         # Ensure tools are loaded
-        if not self._tools_loaded:
-            try:
-                loop = asyncio.get_running_loop()
-                # If we are in a running loop, we can't use asyncio.run
-                raise RuntimeError(
-                    "Cannot lazy-load tools inside a running event loop. "
-                    "Use 'async with VMCPClient() as client:' or await client.load_tools() first."
-                )
-            except RuntimeError:
-                # No running loop, safe to use asyncio.run
-                asyncio.run(self._load_tools())
+        # if not self._tools_loaded:
+        #     try:
+        #         loop = asyncio.get_running_loop()
+        #         # If we are in a running loop, we can't use asyncio.run
+        #         raise RuntimeError(
+        #             "Cannot lazy-load tools inside a running event loop. "
+        #             "Use 'async with VMCPClient() as client:' or await client.load_tools() first."
+        #         )
+        #     except RuntimeError:
+        #         # No running loop, safe to use asyncio.run
+        #         asyncio.run(self._load_tools())
 
         # logger.debug(f"[vmcp_sdk.client] Accessing tool: {name}")
         # Try exact match first
