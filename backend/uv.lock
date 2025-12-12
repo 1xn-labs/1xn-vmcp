@@ -10,7 +10,7 @@ resolution-markers = [
 
 [[package]]
 name = "1xn-vmcp"
-version = "0.6.9"
+version = "0.6.93"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
@@ -33,7 +33,6 @@ dependencies = [
     { name = "opentelemetry-sdk" },
     { name = "pandas" },
     { name = "pillow" },
-    { name = "psycopg2-binary" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "python-dotenv" },
@@ -58,6 +57,9 @@ dev = [
     { name = "pytest-cov" },
     { name = "pytest-mock" },
     { name = "ruff" },
+]
+postgres = [
+    { name = "psycopg2-binary" },
 ]
 
 [package.dev-dependencies]
@@ -95,7 +97,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.0.0" },
     { name = "pillow", specifier = ">=10.0.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.5.0" },
-    { name = "psycopg2-binary", specifier = ">=2.9.9,<3.0.0" },
+    { name = "psycopg2-binary", marker = "extra == 'postgres'", specifier = ">=2.9.9,<3.0.0" },
     { name = "pydantic", specifier = ">=2.5.0,<3.0.0" },
     { name = "pydantic-settings", specifier = ">=2.1.0,<3.0.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4.3" },
@@ -114,7 +116,7 @@ requires-dist = [
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.24.0,<1.0.0" },
     { name = "websockets", specifier = ">=12.0,<13.0" },
 ]
-provides-extras = ["dev"]
+provides-extras = ["dev", "postgres"]
 
 [package.metadata.requires-dev]
 dev = [
