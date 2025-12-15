@@ -36,10 +36,15 @@ def generate_server_id(server_data: Dict[str, Any]) -> str:
         }
         
         if transport_type == 'stdio':
+            # Handle env_vars: use env_vars if env doesn't exist
+            env_data = server_data.get('env', {})
+            if not env_data and server_data.get('env_vars'):
+                env_data = server_data.get('env_vars', {})
+            
             config_data.update({
                 "command": server_data.get('command', ''),
                 "args": sorted(server_data.get('args', [])) if server_data.get('args', []) else [],
-                "env": dict(sorted(server_data.get('env', {}).items())) if server_data.get('env', {}) else {}
+                "env": dict(sorted(env_data.items())) if env_data and isinstance(env_data, dict) else {}
             })
         else:
             config_data.update({
@@ -56,6 +61,17 @@ def create_mcp_registry_entry(server_data: Dict[str, Any]) -> Dict[str, Any]:
     # Map transport types to standardized format
     transport_type = server_data.get('transport', 'http')
 
+    # Handle env_vars: convert env_vars to env if env_vars exists and env doesn't
+    # The JSON file uses 'env_vars' but the registry config uses 'env'
+    env_data = server_data.get('env', {})
+    if not env_data and server_data.get('env_vars'):
+        # Convert env_vars dict to env
+        env_data = server_data.get('env_vars', {})
+    
+    # Ensure env_data is a dict
+    if not isinstance(env_data, dict):
+        env_data = {}
+
     # Build JSON columns matching production structure
     mcp_registry_config = {
         'transport_type': transport_type,
@@ -64,14 +80,20 @@ def create_mcp_registry_entry(server_data: Dict[str, Any]) -> Dict[str, Any]:
         'favicon_url': server_data.get('favicon_url', ''),
         'command': server_data.get('command'),
         'args': server_data.get('args', []),
-        'env': server_data.get('env', {})
+        'env': env_data
     }
+
+    # Store env_vars in metadata (preserve original format)
+    env_vars_metadata = server_data.get('env_vars', {})
+    # If env_vars is a dict, keep it as dict; if it's a string, keep as string
+    if not isinstance(env_vars_metadata, (dict, str)):
+        env_vars_metadata = {}
 
     server_metadata = {
         'category': server_data.get('category', ''),
         'icon': server_data.get('icon', ''),
         'requiresAuth': server_data.get('requiresAuth', False),
-        'env_vars': server_data.get('env_vars', ''),
+        'env_vars': env_vars_metadata,
         'note': server_data.get('note', ''),
         'enabled': True
     }

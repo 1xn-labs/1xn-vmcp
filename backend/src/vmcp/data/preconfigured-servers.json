@@ -13,9 +13,9 @@
       },
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://github.com&size=64",
       "category": "MCP_Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": true,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "github",
@@ -25,9 +25,9 @@
       "url": "https://api.githubcopilot.com/mcp/",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://github.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": true,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "example",
@@ -37,9 +37,9 @@
       "url": "https://example-server.modelcontextprotocol.io/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://anthropic.ai&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "playwright",
@@ -47,12 +47,32 @@
       "description": "Browser Automation MCP with Playwright",
       "transport": "stdio",
       "command": "npx",
-      "args": ["@playwright/mcp@latest"],
+      "args": [
+        "@playwright/mcp@latest"
+      ],
       "favicon_url": "https://playwright.dev/img/playwright-logo.ico",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
+    },
+    {
+      "id": "llm-mcp",
+      "name": "LlmMcp",
+      "description": "Comprehensive LLM operations server with multi-provider support, structured outputs, text analysis, multimodal capabilities, and advanced reasoning tools",
+      "transport": "stdio",
+      "command": "llm-mcp",
+      "args": [],
+      "favicon_url": "https://1xn.ai/favicon.ico",
+      "category": "AI & LLM",
+      "icon": "🤖",
+      "requiresAuth": true,
+      "env_vars": {
+        "OPENAI_API_KEY": "your_openai_key_here",
+        "ANTHROPIC_API_KEY": "your_anthropic_key_here",
+        "GOOGLE_API_KEY": "your_google_key_here",
+        "LLM_MCP_ENABLED_TOOLS": "llm_call,llm_chat,llm_analyze_text,llm_summarize,llm_analyze_image,llm_analyze_pdf,llm_structured_output,llm_list_models,llm_get_cheapest_model"
+      }
     },
     {
       "id": "everything",
@@ -62,9 +82,9 @@
       "url": "https://1xn.ai/demo_server/everything/mcp",
       "favicon_url": "https://1xn.ai/favicon.ico",
       "category": "MCP Servers",
-      "icon": "\u2601\ufe0f",
+      "icon": "☁️",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "AllFeature",
@@ -74,9 +94,9 @@
       "url": "https://1xn.ai/demo_server/allfeature/mcp",
       "category": "MCP Servers",
       "favicon_url": "https://1xn.ai/favicon.ico",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "asana",
@@ -86,9 +106,11 @@
       "url": "https://mcp.asana.com/sse",
       "category": "Project Management",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://asana.com&size=64",
-      "icon": "\ud83d\udccb",
+      "icon": "📋",
       "requiresAuth": true,
-      "env_vars": "ASANA_ACCESS_TOKEN=your_token_here"
+      "env_vars": {
+        "ASANA_ACCESS_TOKEN": "your_token_here"
+      }
     },
     {
       "id": "atlassian",
@@ -98,9 +120,12 @@
       "url": "https://mcp.atlassian.com/v1/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://atlassian.ai&size=64",
       "category": "Development",
-      "icon": "\u26a1",
+      "icon": "⚡",
       "requiresAuth": true,
-      "env_vars": "ATLASSIAN_API_TOKEN=your_token_here\nATLASSIAN_DOMAIN=your-domain.atlassian.net"
+      "env_vars": {
+        "ATLASSIAN_API_TOKEN": "your_token_here",
+        "ATLASSIAN_DOMAIN": "your-domain.atlassian.net"
+      }
     },
     {
       "id": "cloudflare",
@@ -110,9 +135,12 @@
       "url": "https://mcp.cloudflare.com/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://cloudflare.com&size=64",
       "category": "Cloud Services",
-      "icon": "\u2601\ufe0f",
+      "icon": "☁️",
       "requiresAuth": true,
-      "env_vars": "CLOUDFLARE_API_TOKEN=your_token_here\nCLOUDFLARE_ZONE_ID=your_zone_id",
+      "env_vars": {
+        "CLOUDFLARE_API_TOKEN": "your_token_here",
+        "CLOUDFLARE_ZONE_ID": "your_zone_id"
+      },
       "note": "Visit https://github.com/cloudflare/mcp-server-cloudflare for exact URL"
     },
     {
@@ -123,9 +151,11 @@
       "url": "https://mcp.intercom.com/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://intercom.com&size=64",
       "category": "Customer Support",
-      "icon": "\ud83d\udcac",
+      "icon": "💬",
       "requiresAuth": true,
-      "env_vars": "INTERCOM_ACCESS_TOKEN=your_token_here"
+      "env_vars": {
+        "INTERCOM_ACCESS_TOKEN": "your_token_here"
+      }
     },
     {
       "id": "plaid",
@@ -135,9 +165,13 @@
       "url": "https://api.dashboard.plaid.com/mcp/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://plaid.com&size=64",
       "category": "Finance",
-      "icon": "\ud83c\udfe6",
+      "icon": "🏦",
       "requiresAuth": true,
-      "env_vars": "PLAID_CLIENT_ID=your_client_id\nPLAID_SECRET=your_secret\nPLAID_ENV=sandbox"
+      "env_vars": {
+        "PLAID_CLIENT_ID": "your_client_id",
+        "PLAID_SECRET": "your_secret",
+        "PLAID_ENV": "sandbox"
+      }
     },
     {
       "id": "sentry",
@@ -147,9 +181,12 @@
       "url": "https://mcp.sentry.dev/mcp",
       "favicon_url": "https://mcp.sentry.dev/favicon.ico",
       "category": "Development",
-      "icon": "\ud83d\udc1b",
+      "icon": "🐛",
       "requiresAuth": true,
-      "env_vars": "SENTRY_AUTH_TOKEN=your_token_here\nSENTRY_ORG=your_org_slug"
+      "env_vars": {
+        "SENTRY_AUTH_TOKEN": "your_token_here",
+        "SENTRY_ORG": "your_org_slug"
+      }
     },
     {
       "id": "square",
@@ -159,9 +196,12 @@
       "url": "https://mcp.squareup.com/sse",
       "favicon_url": "https://squareup.com/favicon.ico",
       "category": "Finance",
-      "icon": "\u23f9\ufe0f",
+      "icon": "⏹️",
       "requiresAuth": true,
-      "env_vars": "SQUARE_ACCESS_TOKEN=your_token_here\nSQUARE_APPLICATION_ID=your_app_id"
+      "env_vars": {
+        "SQUARE_ACCESS_TOKEN": "your_token_here",
+        "SQUARE_APPLICATION_ID": "your_app_id"
+      }
     },
     {
       "id": "kite",
@@ -171,9 +211,9 @@
       "url": "https://mcp.kite.trade/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://zerodha.com&size=64",
       "category": "Finance",
-      "icon": "\u26a1",
+      "icon": "⚡",
       "requiresAuth": true,
-      "env_vars": "KITE_API_KEY=your_api_key_here",
+      "env_vars": {},
       "note": "Visit https://mcp.kite.trade/ for exact URL"
     },
     {
@@ -184,9 +224,9 @@
       "url": "https://1xn.ai/mega_server/mcp/gsheets/mcp",
       "favicon_url": "https://www.gstatic.com/images/branding/product/2x/sheets_2020q4_48dp.png",
       "category": "Google Suite",
-      "icon": "\ud83d\udcca",
+      "icon": "📊",
       "requiresAuth": true,
-      "env_vars": "GOOGLE_CLIENT_ID=your_client_id\nGOOGLE_CLIENT_SECRET=your_client_secret"
+      "env_vars": {}
     },
     {
       "id": "gcalendar",
@@ -196,9 +236,9 @@
       "url": "https://1xn.ai/mega_server/mcp/gcalendar/mcp",
       "favicon_url": "https://www.gstatic.com/images/branding/product/2x/calendar_2020q4_48dp.png",
       "category": "Google Suite",
-      "icon": "\ud83d\uddd3\ufe0f",
+      "icon": "🗓️",
       "requiresAuth": true,
-      "env_vars": "GOOGLE_CLIENT_ID=your_client_id\nGOOGLE_CLIENT_SECRET=your_client_secret"
+      "env_vars": {}
     },
     {
       "id": "gdocs",
@@ -208,9 +248,9 @@
       "url": "https://1xn.ai/mega_server/mcp/gdocs/mcp",
       "favicon_url": "https://www.gstatic.com/images/branding/product/2x/docs_2020q4_48dp.png",
       "category": "Google Suite",
-      "icon": "\ud83d\udcdd",
+      "icon": "📝",
       "requiresAuth": true,
-      "env_vars": "GOOGLE_CLIENT_ID=your_client_id\nGOOGLE_CLIENT_SECRET=your_client_secret"
+      "env_vars": {}
     },
     {
       "id": "gdrive",
@@ -220,9 +260,9 @@
       "url": "https://1xn.ai/mega_server/mcp/gdrive/mcp",
       "favicon_url": "https://www.gstatic.com/images/branding/product/2x/drive_2020q4_48dp.png",
       "category": "Google Suite",
-      "icon": "\ud83d\udcbe",
+      "icon": "💾",
       "requiresAuth": true,
-      "env_vars": "GOOGLE_CLIENT_ID=your_client_id\nGOOGLE_CLIENT_SECRET=your_client_secret"
+      "env_vars": {}
     },
     {
       "id": "gslides",
@@ -232,9 +272,9 @@
       "url": "https://1xn.ai/mega_server/mcp/gslides/mcp",
       "favicon_url": "https://www.gstatic.com/images/branding/product/2x/slides_2020q4_48dp.png",
       "category": "Google Suite",
-      "icon": "\ud83c\udfa5",
+      "icon": "🎥",
       "requiresAuth": true,
-      "env_vars": "GOOGLE_CLIENT_ID=your_client_id\nGOOGLE_CLIENT_SECRET=your_client_secret"
+      "env_vars": {}
     },
     {
       "id": "gmail",
@@ -244,9 +284,9 @@
       "url": "https://1xn.ai/mega_server/mcp/gmail/mcp",
       "favicon_url": "https://www.gstatic.com/images/branding/product/2x/gmail_2020q4_48dp.png",
       "category": "Google Suite",
-      "icon": "\ud83d\udce7",
+      "icon": "📧",
       "requiresAuth": true,
-      "env_vars": "GOOGLE_CLIENT_ID=your_client_id\nGOOGLE_CLIENT_SECRET=your_client_secret"
+      "env_vars": {}
     },
     {
       "id": "gforms",
@@ -256,9 +296,9 @@
       "url": "https://1xn.ai/mega_server/mcp/gforms/mcp",
       "favicon_url": "https://www.gstatic.com/images/branding/product/2x/forms_2020q4_48dp.png",
       "category": "Google Suite",
-      "icon": "\ud83d\udcdd",
+      "icon": "📝",
       "requiresAuth": true,
-      "env_vars": "GOOGLE_CLIENT_ID=your_client_id\nGOOGLE_CLIENT_SECRET=your_client_secret"
+      "env_vars": {}
     },
     {
       "id": "fetch",
@@ -268,9 +308,11 @@
       "url": "https://remote.mcpservers.org/fetch/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://fetch.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": true,
-      "env_vars": "FETCH_API_KEY=your_api_key_here"
+      "env_vars": {
+        "FETCH_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "exa",
@@ -280,9 +322,11 @@
       "url": "https://server.smithery.ai/exa/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://exa.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": true,
-      "env_vars": "EXA_API_KEY=your_api_key_here"
+      "env_vars": {
+        "EXA_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "pubmed",
@@ -292,9 +336,11 @@
       "url": "https://server.smithery.ai/@JackKuo666/pubmed-mcp-server/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://pubmed.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": true,
-      "env_vars": "PUBMED_API_KEY=your_api_key_here"
+      "env_vars": {
+        "PUBMED_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "openags",
@@ -304,9 +350,11 @@
       "url": "https://server.smithery.ai/@openags/paper-search-mcp/mcp",
       "favicon_url": "https://openags.org/",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": true,
-      "env_vars": "OPENAGS_API_KEY=your_api_key_here"
+      "env_vars": {
+        "OPENAGS_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "antviz",
@@ -316,9 +364,11 @@
       "url": "https://server.smithery.ai/@antvis/mcp-server-chart/mcp",
       "favicon_url": "https://gw.alipayobjects.com/zos/antfincdn/FLrTNDvlna/antv.png",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": true,
-      "env_vars": "ANTVIZ_API_KEY=your_api_key_here"
+      "env_vars": {
+        "ANTVIZ_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "paperswithcode",
@@ -328,9 +378,11 @@
       "url": "https://server.smithery.ai/@hbg/mcp-paperswithcode/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://paperswithcode.com/&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": true,
-      "env_vars": "PAPERSWITHCODE_API_KEY=your_api_key_here"
+      "env_vars": {
+        "PAPERSWITHCODE_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "reddit",
@@ -340,9 +392,11 @@
       "url": "https://server.smithery.ai/@GridfireAI/reddit-mcp/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://reddit.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": true,
-      "env_vars": "REDDIT_API_KEY=your_api_key_here"
+      "env_vars": {
+        "REDDIT_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "mcpsemanticscholar",
@@ -352,9 +406,11 @@
       "url": "https://server.smithery.ai/@hamid-vakilzadeh/mcpsemanticscholar/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://smithery.ai&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": true,
-      "env_vars": "MCPSEMANTICSCHOLAR_API_KEY=your_api_key_here"
+      "env_vars": {
+        "MCPSEMANTICSCHOLAR_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "knowledge_graph",
@@ -364,9 +420,11 @@
       "url": "https://server.smithery.ai/@jlia0/servers/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://smithery.ai&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": true,
-      "env_vars": "KNOWLEDGE_GRAPH_API_KEY=your_api_key_here"
+      "env_vars": {
+        "KNOWLEDGE_GRAPH_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "dodo_payments",
@@ -376,9 +434,11 @@
       "url": "https://mcp.dodopayments.com/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://dodopayments.com&size=64",
       "category": "Payments",
-      "icon": "\ud83d\udcb3",
+      "icon": "💳",
       "requiresAuth": true,
-      "env_vars": "DODO_PAYMENTS_API_KEY=your_api_key_here"
+      "env_vars": {
+        "DODO_PAYMENTS_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "mercado_libre",
@@ -388,9 +448,11 @@
       "url": "https://mcp.mercadolibre.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://mercadolibre.com&size=64",
       "category": "E-commerce",
-      "icon": "\ud83d\uded2",
+      "icon": "🛒",
       "requiresAuth": true,
-      "env_vars": "MERCADO_LIBRE_API_KEY=your_api_key_here"
+      "env_vars": {
+        "MERCADO_LIBRE_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "mercado_pago",
@@ -400,9 +462,11 @@
       "url": "https://mcp.mercadopago.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://mercadopago.com&size=64",
       "category": "Payments",
-      "icon": "\ud83d\udcb3",
+      "icon": "💳",
       "requiresAuth": true,
-      "env_vars": "MERCADO_PAGO_API_KEY=your_api_key_here"
+      "env_vars": {
+        "MERCADO_PAGO_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "canva",
@@ -412,9 +476,11 @@
       "url": "https://mcp.canva.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://canva.com&size=64",
       "category": "Design",
-      "icon": "\ud83c\udfa8",
+      "icon": "🎨",
       "requiresAuth": true,
-      "env_vars": "CANVA_API_KEY=your_api_key_here"
+      "env_vars": {
+        "CANVA_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "cloudinary",
@@ -424,9 +490,11 @@
       "url": "https://asset-management.mcp.cloudinary.com/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://cloudinary.com&size=64",
       "category": "Media Management",
-      "icon": "\u2601\ufe0f",
+      "icon": "☁️",
       "requiresAuth": true,
-      "env_vars": "CLOUDINARY_API_KEY=your_api_key_here"
+      "env_vars": {
+        "CLOUDINARY_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "wix",
@@ -436,9 +504,11 @@
       "url": "https://mcp.wix.com/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://wix.com&size=64",
       "category": "Web Development",
-      "icon": "\ud83c\udf10",
+      "icon": "🌐",
       "requiresAuth": true,
-      "env_vars": "WIX_API_KEY=your_api_key_here"
+      "env_vars": {
+        "WIX_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "invideo",
@@ -448,9 +518,11 @@
       "url": "https://mcp.invideo.io/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://invideo.io&size=64",
       "category": "Media",
-      "icon": "\ud83c\udfac",
+      "icon": "🎬",
       "requiresAuth": true,
-      "env_vars": "INVIDEO_API_KEY=your_api_key_here"
+      "env_vars": {
+        "INVIDEO_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "netlify",
@@ -460,9 +532,11 @@
       "url": "https://netlify-mcp.netlify.app/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://netlify.com&size=64",
       "category": "Infrastructure",
-      "icon": "\ud83d\ude80",
+      "icon": "🚀",
       "requiresAuth": true,
-      "env_vars": "NETLIFY_API_KEY=your_api_key_here"
+      "env_vars": {
+        "NETLIFY_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "vercel",
@@ -472,9 +546,11 @@
       "url": "https://mcp.vercel.com/",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://vercel.com&size=64",
       "category": "Infrastructure",
-      "icon": "\ud83d\ude80",
+      "icon": "🚀",
       "requiresAuth": true,
-      "env_vars": "VERCEL_API_KEY=your_api_key_here"
+      "env_vars": {
+        "VERCEL_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "stytch",
@@ -484,9 +560,11 @@
       "url": "http://mcp.stytch.dev/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://stytch.com&size=64",
       "category": "Authentication",
-      "icon": "\ud83d\udd10",
+      "icon": "🔐",
       "requiresAuth": true,
-      "env_vars": "STYTCH_API_KEY=your_api_key_here"
+      "env_vars": {
+        "STYTCH_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "neon",
@@ -496,9 +574,11 @@
       "url": "https://mcp.neon.tech/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://neon.tech&size=64",
       "category": "Database",
-      "icon": "\ud83d\uddc4\ufe0f",
+      "icon": "🗄️",
       "requiresAuth": true,
-      "env_vars": "NEON_API_KEY=your_api_key_here"
+      "env_vars": {
+        "NEON_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "prisma_postgres",
@@ -508,9 +588,11 @@
       "url": "https://mcp.prisma.io/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://prisma.io&size=64",
       "category": "Database",
-      "icon": "\ud83d\uddc4\ufe0f",
+      "icon": "🗄️",
       "requiresAuth": true,
-      "env_vars": "PRISMA_API_KEY=your_api_key_here"
+      "env_vars": {
+        "PRISMA_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "grafbase",
@@ -520,9 +602,11 @@
       "url": "https://api.grafbase.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://grafbase.com&size=64",
       "category": "Database",
-      "icon": "\ud83d\uddc4\ufe0f",
+      "icon": "🗄️",
       "requiresAuth": true,
-      "env_vars": "GRAFBASE_API_KEY=your_api_key_here"
+      "env_vars": {
+        "GRAFBASE_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "instantdb",
@@ -532,9 +616,11 @@
       "url": "https://mcp.instantdb.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://instantdb.com&size=64",
       "category": "Database",
-      "icon": "\ud83d\uddc4\ufe0f",
+      "icon": "🗄️",
       "requiresAuth": true,
-      "env_vars": "INSTANTDB_API_KEY=your_api_key_here"
+      "env_vars": {
+        "INSTANTDB_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "zapier",
@@ -544,9 +630,11 @@
       "url": "https://mcp.zapier.com/api/mcp/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://zapier.com&size=64",
       "category": "Automation",
-      "icon": "\u26a1",
+      "icon": "⚡",
       "requiresAuth": true,
-      "env_vars": "ZAPIER_API_KEY=your_api_key_here"
+      "env_vars": {
+        "ZAPIER_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "apify",
@@ -556,9 +644,11 @@
       "url": "https://mcp.apify.com",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://apify.com&size=64",
       "category": "Web Scraping",
-      "icon": "\ud83d\udd77\ufe0f",
+      "icon": "🕷️",
       "requiresAuth": true,
-      "env_vars": "APIFY_API_KEY=your_api_key_here"
+      "env_vars": {
+        "APIFY_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "composio",
@@ -568,9 +658,11 @@
       "url": "https://rube.app/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://rube.app&size=64",
       "category": "Automation",
-      "icon": "\u26a1",
+      "icon": "⚡",
       "requiresAuth": true,
-      "env_vars": "COMPOSIO_API_KEY=your_api_key_here"
+      "env_vars": {
+        "COMPOSIO_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "box",
@@ -580,9 +672,11 @@
       "url": "https://mcp.box.com/",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://box.com&size=64",
       "category": "Document Management",
-      "icon": "\ud83d\udcc1",
+      "icon": "📁",
       "requiresAuth": true,
-      "env_vars": "BOX_API_KEY=your_api_key_here"
+      "env_vars": {
+        "BOX_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "astro_docs",
@@ -592,9 +686,11 @@
       "url": "https://mcp.docs.astro.build/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://astro.build&size=64",
       "category": "Documentation",
-      "icon": "\ud83d\udcda",
+      "icon": "📚",
       "requiresAuth": true,
-      "env_vars": "ASTRO_API_KEY=your_api_key_here"
+      "env_vars": {
+        "ASTRO_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "llm_text",
@@ -604,9 +700,11 @@
       "url": "https://mcp.llmtxt.dev/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://llmtxt.dev&size=64",
       "category": "Documentation",
-      "icon": "\ud83d\udcda",
+      "icon": "📚",
       "requiresAuth": true,
-      "env_vars": "LLM_TEXT_API_KEY=your_api_key_here"
+      "env_vars": {
+        "LLM_TEXT_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "javadocs_dev",
@@ -616,9 +714,11 @@
       "url": "https://www.javadocs.dev/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://javadocs.dev&size=64",
       "category": "Documentation",
-      "icon": "\ud83d\udcda",
+      "icon": "📚",
       "requiresAuth": true,
-      "env_vars": "JAVADOCS_API_KEY=your_api_key_here"
+      "env_vars": {
+        "JAVADOCS_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "deepwiki",
@@ -628,9 +728,11 @@
       "url": "https://mcp.deepwiki.com/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://deepwiki.com&size=64",
       "category": "Documentation",
-      "icon": "\ud83d\udcda",
+      "icon": "📚",
       "requiresAuth": true,
-      "env_vars": "DEEPWIKI_API_KEY=your_api_key_here"
+      "env_vars": {
+        "DEEPWIKI_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "fireflies_ai",
@@ -640,9 +742,11 @@
       "url": "https://api.fireflies.ai/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://fireflies.ai&size=64",
       "category": "Analytics",
-      "icon": "\ud83d\udcca",
+      "icon": "📊",
       "requiresAuth": true,
-      "env_vars": "FIREFLIES_API_KEY=your_api_key_here"
+      "env_vars": {
+        "FIREFLIES_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "globalping",
@@ -652,9 +756,11 @@
       "url": "https://mcp.globalping.dev/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://globalping.io&size=64",
       "category": "Network Tools",
-      "icon": "\ud83c\udf10",
+      "icon": "🌐",
       "requiresAuth": true,
-      "env_vars": "GLOBALPING_API_KEY=your_api_key_here"
+      "env_vars": {
+        "GLOBALPING_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "polar_signals",
@@ -664,9 +770,11 @@
       "url": "https://api.polarsignals.com/api/mcp/",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://polarsignals.com&size=64",
       "category": "Performance Monitoring",
-      "icon": "\ud83d\udcc8",
+      "icon": "📈",
       "requiresAuth": true,
-      "env_vars": "POLAR_SIGNALS_API_KEY=your_api_key_here"
+      "env_vars": {
+        "POLAR_SIGNALS_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "audioscrape",
@@ -676,9 +784,11 @@
       "url": "https://mcp.audioscrape.com",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://audioscrape.com&size=64",
       "category": "Audio Processing",
-      "icon": "\ud83c\udfb5",
+      "icon": "🎵",
       "requiresAuth": true,
-      "env_vars": "AUDIOSCRAPE_API_KEY=your_api_key_here"
+      "env_vars": {
+        "AUDIOSCRAPE_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "carbon_voice",
@@ -688,9 +798,11 @@
       "url": "https://mcp.carbonvoice.app",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://carbonvoice.app&size=64",
       "category": "Voice Processing",
-      "icon": "\ud83c\udfa4",
+      "icon": "🎤",
       "requiresAuth": true,
-      "env_vars": "CARBON_VOICE_API_KEY=your_api_key_here"
+      "env_vars": {
+        "CARBON_VOICE_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "dialer",
@@ -700,9 +812,11 @@
       "url": "https://getdialer.app/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://getdialer.app&size=64",
       "category": "Communication",
-      "icon": "\ud83d\udcde",
+      "icon": "📞",
       "requiresAuth": true,
-      "env_vars": "DIALER_API_KEY=your_api_key_here"
+      "env_vars": {
+        "DIALER_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "listenetic",
@@ -712,9 +826,11 @@
       "url": "https://mcp.listenetic.com/v1/mcp",
       "favicon_url": "https://app.listenetic.com/favicon.ico",
       "category": "Content Management",
-      "icon": "\ud83d\udcdd",
+      "icon": "📝",
       "requiresAuth": true,
-      "env_vars": "LISTENETIC_API_KEY=your_api_key_here"
+      "env_vars": {
+        "LISTENETIC_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "telnyx",
@@ -724,9 +840,11 @@
       "url": "https://api.telnyx.com/v2/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://telnyx.com&size=64",
       "category": "Communication",
-      "icon": "\ud83d\udcde",
+      "icon": "📞",
       "requiresAuth": true,
-      "env_vars": "TELNYX_API_KEY=your_api_key_here"
+      "env_vars": {
+        "TELNYX_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "kollektiv",
@@ -736,9 +854,11 @@
       "url": "https://mcp.thekollektiv.ai/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://thekollektiv.ai&size=64",
       "category": "AI Tools",
-      "icon": "\ud83e\udd16",
+      "icon": "🤖",
       "requiresAuth": true,
-      "env_vars": "KOLLEKTIV_API_KEY=your_api_key_here"
+      "env_vars": {
+        "KOLLEKTIV_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "needle_ai",
@@ -748,9 +868,11 @@
       "url": "https://mcp.needle-ai.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://needle-ai.com&size=64",
       "category": "AI Tools",
-      "icon": "\ud83e\udd16",
+      "icon": "🤖",
       "requiresAuth": true,
-      "env_vars": "NEEDLE_AI_API_KEY=your_api_key_here"
+      "env_vars": {
+        "NEEDLE_AI_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "octagon",
@@ -760,9 +882,11 @@
       "url": "https://mcp.octagonagents.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://octagonagents.com&size=64",
       "category": "AI Tools",
-      "icon": "\ud83e\udd16",
+      "icon": "🤖",
       "requiresAuth": true,
-      "env_vars": "OCTAGON_API_KEY=your_api_key_here"
+      "env_vars": {
+        "OCTAGON_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "pipeboard",
@@ -772,9 +896,11 @@
       "url": "https://mcp.pipeboard.co/meta-ads-mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://pipeboard.co&size=64",
       "category": "Advertising",
-      "icon": "\ud83d\udce2",
+      "icon": "📢",
       "requiresAuth": true,
-      "env_vars": "PIPEBOARD_API_KEY=your_api_key_here"
+      "env_vars": {
+        "PIPEBOARD_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "simplescraper",
@@ -784,9 +910,11 @@
       "url": "https://mcp.simplescraper.io/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://simplescraper.io&size=64",
       "category": "Web Scraping",
-      "icon": "\ud83d\udd77\ufe0f",
+      "icon": "🕷️",
       "requiresAuth": true,
-      "env_vars": "SIMPLESCRAPER_API_KEY=your_api_key_here"
+      "env_vars": {
+        "SIMPLESCRAPER_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "short_io",
@@ -796,9 +924,11 @@
       "url": "https://ai-assistant.short.io/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://short.io&size=64",
       "category": "URL Shortening",
-      "icon": "\ud83d\udd17",
+      "icon": "🔗",
       "requiresAuth": true,
-      "env_vars": "SHORT_IO_API_KEY=your_api_key_here"
+      "env_vars": {
+        "SHORT_IO_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "turkish_technology",
@@ -808,9 +938,11 @@
       "url": "https://mcp.turkishtechlab.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://turkishtechlab.com&size=64",
       "category": "Technology",
-      "icon": "\ud83d\udd27",
+      "icon": "🔧",
       "requiresAuth": true,
-      "env_vars": "TURKISH_TECHNOLOGY_API_KEY=your_api_key_here"
+      "env_vars": {
+        "TURKISH_TECHNOLOGY_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "waystation",
@@ -820,9 +952,11 @@
       "url": "https://waystation.ai/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://waystation.ai&size=64",
       "category": "AI Tools",
-      "icon": "\ud83e\udd16",
+      "icon": "🤖",
       "requiresAuth": true,
-      "env_vars": "WAYSTATION_API_KEY=your_api_key_here"
+      "env_vars": {
+        "WAYSTATION_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "gitmcp",
@@ -832,9 +966,11 @@
       "url": "https://gitmcp.io/docs",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://gitmcp.io&size=64",
       "category": "Development Tools",
-      "icon": "\ud83d\udd27",
+      "icon": "🔧",
       "requiresAuth": true,
-      "env_vars": "GITMCP_API_KEY=your_api_key_here"
+      "env_vars": {
+        "GITMCP_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "dappier",
@@ -844,9 +980,11 @@
       "url": "https://mcp.dappier.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://dappier.com&size=64",
       "category": "AI Tools",
-      "icon": "\ud83e\udd16",
+      "icon": "🤖",
       "requiresAuth": true,
-      "env_vars": "DAPPIER_API_KEY=your_api_key_here"
+      "env_vars": {
+        "DAPPIER_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "openmesh",
@@ -856,9 +994,11 @@
       "url": "https://api.openmesh.dev/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://openmesh.network&size=64",
       "category": "Blockchain",
-      "icon": "\u26d3\ufe0f",
+      "icon": "⛓️",
       "requiresAuth": true,
-      "env_vars": "OPENMESH_API_KEY=your_api_key_here"
+      "env_vars": {
+        "OPENMESH_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "manifold",
@@ -868,9 +1008,11 @@
       "url": "https://api.manifold.markets/v0/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://manifold.markets&size=64",
       "category": "Prediction Markets",
-      "icon": "\ud83d\udcca",
+      "icon": "📊",
       "requiresAuth": true,
-      "env_vars": "MANIFOLD_API_KEY=your_api_key_here"
+      "env_vars": {
+        "MANIFOLD_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "openzeppelin_cairo",
@@ -880,9 +1022,11 @@
       "url": "https://mcp.openzeppelin.com/contracts/cairo/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://openzeppelin.com&size=64",
       "category": "Blockchain",
-      "icon": "\u26d3\ufe0f",
+      "icon": "⛓️",
       "requiresAuth": true,
-      "env_vars": "OPENZEPPELIN_API_KEY=your_api_key_here"
+      "env_vars": {
+        "OPENZEPPELIN_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "hubspot",
@@ -892,9 +1036,11 @@
       "url": "https://app.hubspot.com/mcp/v1/http",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://hubspot.com&size=64",
       "category": "CRM",
-      "icon": "\ud83d\udc65",
+      "icon": "👥",
       "requiresAuth": true,
-      "env_vars": "HUBSPOT_API_KEY=your_api_key_here"
+      "env_vars": {
+        "HUBSPOT_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "close",
@@ -904,9 +1050,11 @@
       "url": "https://mcp.close.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://close.com&size=64",
       "category": "CRM",
-      "icon": "\ud83d\udc65",
+      "icon": "👥",
       "requiresAuth": true,
-      "env_vars": "CLOSE_API_KEY=your_api_key_here"
+      "env_vars": {
+        "CLOSE_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "cloudflare_autorag",
@@ -916,9 +1064,11 @@
       "url": "https://autorag.mcp.cloudflare.com/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://cloudflare.com&size=64",
       "category": "Cloud",
-      "icon": "\u2601\ufe0f",
+      "icon": "☁️",
       "requiresAuth": true,
-      "env_vars": "CLOUDFLARE_API_TOKEN=your_token_here"
+      "env_vars": {
+        "CLOUDFLARE_API_TOKEN": "your_token_here"
+      }
     },
     {
       "id": "cloudflare_graphql",
@@ -928,9 +1078,11 @@
       "url": "https://graphql.mcp.cloudflare.com/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://cloudflare.com&size=64",
       "category": "Cloud",
-      "icon": "\u2601\ufe0f",
+      "icon": "☁️",
       "requiresAuth": true,
-      "env_vars": "CLOUDFLARE_API_TOKEN=your_token_here"
+      "env_vars": {
+        "CLOUDFLARE_API_TOKEN": "your_token_here"
+      }
     },
     {
       "id": "cloudflare_docs",
@@ -940,9 +1092,11 @@
       "url": "https://docs.mcp.cloudflare.com/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://cloudflare.com&size=64",
       "category": "Cloud",
-      "icon": "\u2601\ufe0f",
+      "icon": "☁️",
       "requiresAuth": true,
-      "env_vars": "CLOUDFLARE_API_TOKEN=your_token_here"
+      "env_vars": {
+        "CLOUDFLARE_API_TOKEN": "your_token_here"
+      }
     },
     {
       "id": "cloudflare_workers",
@@ -952,9 +1106,11 @@
       "url": "https://builds.mcp.cloudflare.com/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://cloudflare.com&size=64",
       "category": "Cloud",
-      "icon": "\u2601\ufe0f",
+      "icon": "☁️",
       "requiresAuth": true,
-      "env_vars": "CLOUDFLARE_API_TOKEN=your_token_here"
+      "env_vars": {
+        "CLOUDFLARE_API_TOKEN": "your_token_here"
+      }
     },
     {
       "id": "cloudflare_browser_automation",
@@ -964,9 +1120,11 @@
       "url": "https://browser.mcp.cloudflare.com/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://cloudflare.com&size=64",
       "category": "Cloud",
-      "icon": "\u2601\ufe0f",
+      "icon": "☁️",
       "requiresAuth": true,
-      "env_vars": "CLOUDFLARE_API_TOKEN=your_token_here"
+      "env_vars": {
+        "CLOUDFLARE_API_TOKEN": "your_token_here"
+      }
     },
     {
       "id": "cloudflare_ai_gateway",
@@ -976,19 +1134,21 @@
       "url": "https://ai-gateway.mcp.cloudflare.com/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://cloudflare.com&size=64",
       "category": "Cloud",
-      "icon": "\u2601\ufe0f",
+      "icon": "☁️",
       "requiresAuth": true,
-      "env_vars": "CLOUDFLARE_API_TOKEN=your_token_here"
+      "env_vars": {
+        "CLOUDFLARE_API_TOKEN": "your_token_here"
+      }
     },
     {
-"id":"shadcn_mcp",
-"name":"Shadcn_MCP",
-"description":"Shadcn MCP server",
-"transport":"http",
-"url":"https://www.shadcn.io/api/mcp",
-"favicon_url":"https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://shadcn.io&size=64",
-"category":"UI Components",
-"icon":"\ud83d\udcda"
+      "id": "shadcn_mcp",
+      "name": "Shadcn_MCP",
+      "description": "Shadcn MCP server",
+      "transport": "http",
+      "url": "https://www.shadcn.io/api/mcp",
+      "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://shadcn.io&size=64",
+      "category": "UI Components",
+      "icon": "📚"
     },
     {
       "id": "aws_docs",
@@ -998,9 +1158,11 @@
       "url": "https://knowledge-mcp.global.api.aws",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://aws.com&size=64",
       "category": "Cloud",
-      "icon": "\u2601\ufe0f",
+      "icon": "☁️",
       "requiresAuth": true,
-      "env_vars": "AWS_API_KEY=your_api_key_here"
+      "env_vars": {
+        "AWS_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "kiwi",
@@ -1010,9 +1172,11 @@
       "url": "https://mcp.kiwi.com",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://kiwi.com&size=64",
       "category": "Flights",
-      "icon": "\u2708\ufe0f",
+      "icon": "✈️",
       "requiresAuth": true,
-      "env_vars": "KIWI_API_KEY=your_api_key_here"
+      "env_vars": {
+        "KIWI_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "mimi",
@@ -1022,9 +1186,11 @@
       "url": "https://mimilabs.ai/api/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://mimilabs.ai&size=64",
       "category": "Documentation",
-      "icon": "\ud83d\udcda",
+      "icon": "📚",
       "requiresAuth": true,
-      "env_vars": "MIMI_API_KEY=your_api_key_here"
+      "env_vars": {
+        "MIMI_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "financialdatasets",
@@ -1034,9 +1200,11 @@
       "url": "https://mcp.financialdatasets.ai/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://financialdatasets.ai&size=64",
       "category": "Finance",
-      "icon": "\ud83d\udcb0",
+      "icon": "💰",
       "requiresAuth": true,
-      "env_vars": "FINANCIALDATASETS_API_KEY=your_api_key_here"
+      "env_vars": {
+        "FINANCIALDATASETS_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "hugging_face",
@@ -1046,9 +1214,11 @@
       "url": "https://huggingface.co/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://huggingface.co&size=64",
       "category": "AI/ML Tools",
-      "icon": "\ud83e\udd17",
+      "icon": "🤗",
       "requiresAuth": true,
-      "env_vars": "HUGGING_FACE_API_KEY=your_api_key_here"
+      "env_vars": {
+        "HUGGING_FACE_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "semgrep",
@@ -1058,9 +1228,11 @@
       "url": "https://mcp.semgrep.ai/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://semgrep.ai&size=64",
       "category": "Development Tools",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": true,
-      "env_vars": "SEMGREP_API_KEY=your_api_key_here"
+      "env_vars": {
+        "SEMGREP_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "stripe",
@@ -1070,9 +1242,11 @@
       "url": "https://mcp.stripe.com",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://stripe.com&size=64",
       "category": "Payments",
-      "icon": "\ud83d\udcb3",
+      "icon": "💳",
       "requiresAuth": true,
-      "env_vars": "STRIPE_API_KEY=your_api_key_here"
+      "env_vars": {
+        "STRIPE_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "buildkite",
@@ -1082,9 +1256,9 @@
       "url": "https://mcp.buildkite.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://buildkite.com&size=64",
       "category": "Software Developmenr",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": true,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "cloudflare_workers",
@@ -1094,9 +1268,9 @@
       "url": "https://bindings.mcp.cloudflare.com/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://bindings.cloudflare.com&size=64",
       "category": "Software Development",
-      "icon": "\u26a1",
+      "icon": "⚡",
       "requiresAuth": true,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "cloudflare_observability",
@@ -1106,9 +1280,9 @@
       "url": "https://observability.mcp.cloudflare.com/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://observability.cloudflare.com&size=64",
       "category": "Observability",
-      "icon": "\ud83d\udcca",
+      "icon": "📊",
       "requiresAuth": true,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "cortex",
@@ -1118,9 +1292,11 @@
       "url": "https://mcp.cortex.io/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://cortex.io&size=64",
       "category": "Internal Developer Portal",
-      "icon": "\ud83c\udfe2",
+      "icon": "🏢",
       "requiresAuth": true,
-      "env_vars": "CORTEX_API_KEY=your_api_key_here"
+      "env_vars": {
+        "CORTEX_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "eansearchorg",
@@ -1130,9 +1306,9 @@
       "url": "https://www.ean-search.org/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://ean-search.org&size=64",
       "category": "Product Data",
-      "icon": "\ud83d\udce6",
+      "icon": "📦",
       "requiresAuth": true,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "egnyte",
@@ -1142,9 +1318,9 @@
       "url": "https://mcp-server.egnyte.com/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://mcp-server.egnyte.com&size=64",
       "category": "Document Management",
-      "icon": "\ud83d\udcc1",
+      "icon": "📁",
       "requiresAuth": true,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "findadomain",
@@ -1154,9 +1330,9 @@
       "url": "https://api.findadomain.dev/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://findadomain.dev&size=64",
       "category": "Productivity",
-      "icon": "\u26a1",
+      "icon": "⚡",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "hive_intelligence",
@@ -1166,9 +1342,9 @@
       "url": "https://hiveintelligence.xyz/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://hiveintelligence.xyz&size=64",
       "category": "Crypto",
-      "icon": "\u26d3\ufe0f",
+      "icon": "⛓️",
       "requiresAuth": true,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "indeed",
@@ -1178,9 +1354,9 @@
       "url": "https://mcp.indeed.com/claude/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://indeed.com&size=64",
       "category": "Job Board",
-      "icon": "\ud83d\udcbc",
+      "icon": "💼",
       "requiresAuth": true,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "jam",
@@ -1190,9 +1366,9 @@
       "url": "https://mcp.jam.dev/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://jam.dev&size=64",
       "category": "Software Development",
-      "icon": "\u26a1",
+      "icon": "⚡",
       "requiresAuth": true,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "morningstar",
@@ -1202,9 +1378,9 @@
       "url": "https://mcp.morningstar.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://morningstar.com&size=64",
       "category": "Data Analysis",
-      "icon": "\ud83d\udcca",
+      "icon": "📊",
       "requiresAuth": true,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "mypromindcom",
@@ -1214,19 +1390,19 @@
       "url": "https://www.mypromind.com/interface/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://mypromind.com&size=64",
       "category": "Learning",
-      "icon": "\ud83d\udcda",
+      "icon": "📚",
       "requiresAuth": true,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
-      "id":"context7",
-      "name":"Context7",
-      "description":"Context7 MCP server",
-      "transport":"http",
-      "url":"https://mcp.context7.com/mcp",
-      "favicon_url":"https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://context7.com&size=64",
-      "category":"Learning",
-      "icon":"\ud83d\udcda"
+      "id": "context7",
+      "name": "Context7",
+      "description": "Context7 MCP server",
+      "transport": "http",
+      "url": "https://mcp.context7.com/mcp",
+      "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://context7.com&size=64",
+      "category": "Learning",
+      "icon": "📚"
     },
     {
       "id": "onecontext",
@@ -1236,9 +1412,9 @@
       "url": "https://rag-mcp-2.whatsmcp.workers.dev/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://rag-mcp-2.whatsworkers.dev&size=64",
       "category": "RAG-as-a-Service",
-      "icon": "\ud83e\udd16",
+      "icon": "🤖",
       "requiresAuth": true,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "parallel_task_mcp",
@@ -1248,9 +1424,9 @@
       "url": "https://task-mcp.parallel.ai/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://task-parallel.ai&size=64",
       "category": "Web Research",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": true,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "parallel_search_mcp",
@@ -1260,9 +1436,9 @@
       "url": "https://search-mcp.parallel.ai/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://search-parallel.ai&size=64",
       "category": "Web Search",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": true,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "peekcom",
@@ -1272,9 +1448,9 @@
       "url": "https://mcp.peek.com",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://peek.com&size=64",
       "category": "Other",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "ramp",
@@ -1284,9 +1460,9 @@
       "url": "https://ramp-mcp-remote.ramp.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://ramp-mcp-remote.ramp.com&size=64",
       "category": "Payments",
-      "icon": "\ud83d\udcb3",
+      "icon": "💳",
       "requiresAuth": true,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "supabase",
@@ -1296,9 +1472,9 @@
       "url": "https://mcp.supabase.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://supabase.com&size=64",
       "category": "Database",
-      "icon": "\ud83d\uddc4\ufe0f",
+      "icon": "🗄️",
       "requiresAuth": true,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "thoughtspot",
@@ -1308,9 +1484,9 @@
       "url": "https://agent.thoughtspot.app/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.thoughtspot.com&size=64",
       "category": "Data Analytics",
-      "icon": "\ud83d\udcca",
+      "icon": "📊",
       "requiresAuth": true,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "vibemarketing",
@@ -1320,9 +1496,9 @@
       "url": "https://vibemarketing.ninja/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://vibemarketing.ninja&size=64",
       "category": "Social Media",
-      "icon": "\ud83c\udfac",
+      "icon": "🎬",
       "requiresAuth": true,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "zenable",
@@ -1332,9 +1508,9 @@
       "url": "https://mcp.zenable.app/",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://zenable.app&size=64",
       "category": "Security",
-      "icon": "\ud83d\udd12",
+      "icon": "🔒",
       "requiresAuth": true,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "zine",
@@ -1344,9 +1520,9 @@
       "url": "https://www.zine.ai/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://zine.ai&size=64",
       "category": "Memory",
-      "icon": "\ud83e\udde0",
+      "icon": "🧠",
       "requiresAuth": true,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "context_awesome",
@@ -1356,9 +1532,9 @@
       "url": "https://www.context-awesome.com/api/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://context-awesome.com&size=64",
       "category": "Specialised Dataset",
-      "icon": "\ud83d\udcca",
+      "icon": "📊",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "exa_search",
@@ -1368,9 +1544,9 @@
       "url": "https://mcp.exa.ai/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://exa.ai&size=64",
       "category": "Search",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "hugging_face",
@@ -1380,9 +1556,9 @@
       "url": "https://hf.co/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://hf.co&size=64",
       "category": "Software Development",
-      "icon": "\u26a1",
+      "icon": "⚡",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "remote_mcp",
@@ -1392,9 +1568,9 @@
       "url": "https://mcp.remote-mcp.com",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://remote.com&size=64",
       "category": "MCP Directory",
-      "icon": "\ud83d\udcc2",
+      "icon": "📂",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "openzeppelin_solidity_contracts",
@@ -1404,9 +1580,9 @@
       "url": "https://mcp.openzeppelin.com/contracts/solidity/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://openzeppelin.com&size=64",
       "category": "Software Development",
-      "icon": "\u26a1",
+      "icon": "⚡",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "openzeppelin_stellar_contracts",
@@ -1416,9 +1592,9 @@
       "url": "https://mcp.openzeppelin.com/contracts/stellar/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://openzeppelin.com&size=64",
       "category": "Software Development",
-      "icon": "\u26a1",
+      "icon": "⚡",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "openzeppelin_stylus_contracts",
@@ -1428,9 +1604,9 @@
       "url": "https://mcp.openzeppelin.com/contracts/stylus/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://openzeppelin.com&size=64",
       "category": "Software Development",
-      "icon": "\u26a1",
+      "icon": "⚡",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "zip1io",
@@ -1440,9 +1616,9 @@
       "url": "https://zip1.io/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://zip1.io&size=64",
       "category": "Link shortener",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "customgptai",
@@ -1452,9 +1628,11 @@
       "url": "https://mcp.customgpt.ai",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://customgpt.ai&size=64",
       "category": "RAG-as-a-service",
-      "icon": "\ud83e\udd16",
+      "icon": "🤖",
       "requiresAuth": true,
-      "env_vars": "CUSTOMGPTAI_API_KEY=your_api_key_here"
+      "env_vars": {
+        "CUSTOMGPTAI_API_KEY": "your_api_key_here"
+      }
     },
     {
       "id": "ferryhopper",
@@ -1464,9 +1642,9 @@
       "url": "https://mcp.ferryhopper.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://ferryhopper.com&size=64",
       "category": "Other",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "app_getdialer_dialer",
@@ -1476,9 +1654,9 @@
       "url": "https://getdialer.app/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://getdialer.app&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "md_install_try",
@@ -1488,9 +1666,9 @@
       "url": "https://install.md/mcp/try",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://install.md&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "MCPRegistry",
@@ -1500,11 +1678,11 @@
       "url": "https://registry-mcp.remote-mcp.com",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://registry-mcp.remote-mcp.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
-    { 
+    {
       "id": "Globalping",
       "name": "Globalping",
       "description": "Interact with a global network measurement platform.Run network commands from any point in the world",
@@ -1512,9 +1690,9 @@
       "url": "https://mcp.globalping.io/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.globalping.io&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Kernel",
@@ -1524,9 +1702,9 @@
       "url": "https://mcp.onkernel.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://mcp.onkernel.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "MintMCPGmail",
@@ -1536,9 +1714,9 @@
       "url": "https://gmail.mintmcp.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.mintmcp.com/&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "MintMCPGcal",
@@ -1548,9 +1726,9 @@
       "url": "https://gcal.mintmcp.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.mintmcp.com/&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "MintMCPOutlookEmail",
@@ -1560,9 +1738,9 @@
       "url": "https://outlook-email.mintmcp.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.mintmcp.com/&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "MintMCPOutlookCalendar",
@@ -1572,9 +1750,9 @@
       "url": "https://outlook-calendar.mintmcp.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.mintmcp.com/&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "AlpicTest",
@@ -1584,9 +1762,9 @@
       "url": "https://test.alpic.ai/",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.alpic.ai/&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Minnas",
@@ -1596,9 +1774,9 @@
       "url": "https://api.minnas.io/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://api.minnas.io&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "PGA",
@@ -1608,9 +1786,9 @@
       "url": "https://mcp.pga.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.pga.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Coupler",
@@ -1620,9 +1798,9 @@
       "url": "https://mcp.coupler.io/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.coupler.io&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Rostro",
@@ -1632,9 +1810,9 @@
       "url": "https://proto.rostro.dev/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://rostro.dev&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Ignission",
@@ -1644,9 +1822,9 @@
       "url": "https://mcp.ignission.io/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://mcp.ignission.io&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Mosaique",
@@ -1656,9 +1834,9 @@
       "url": "https://mcp.mosaique.info",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://mosaique.info&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Enigma",
@@ -1668,9 +1846,9 @@
       "url": "https://mcp.enigma.com/http-token",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.enigma.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "KismetTravel",
@@ -1680,9 +1858,9 @@
       "url": "https://mcp.kismet.travel/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://kismet.travel&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "SvelteLLM",
@@ -1692,9 +1870,9 @@
       "url": "https://svelte-llm.stanislav.garden/mcp/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://svelte-llm.stanislav.garden&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Timeslope",
@@ -1702,11 +1880,11 @@
       "description": "Equip AI with tools for researching economic data from Federal Reserve Economic Data (FRED).",
       "transport": "http",
       "url": "https://mcp.timeslope.com/mcp",
-        "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://timeslope.com&size=64",
-        "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://timeslope.com&size=64",
+      "category": "MCP Servers",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "notion",
@@ -1716,9 +1894,9 @@
       "url": "https://mcp.notion.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://notion.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "scorecard",
@@ -1728,9 +1906,9 @@
       "url": "https://mcp.scorecard.io/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://scorecard.io&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "TicketTailor",
@@ -1740,9 +1918,9 @@
       "url": "https://mcp.tickettailor.ai/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.tickettailor.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "JOOQ",
@@ -1752,9 +1930,9 @@
       "url": "https://jooq-mcp.martinelli.ch/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://jooq-mcp.martinelli.ch&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Teamwork",
@@ -1764,9 +1942,9 @@
       "url": "https://mcp.ai.teamwork.com",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.teamwork.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "CompanyLens",
@@ -1776,9 +1954,9 @@
       "url": "https://mcp-company-lens-v1.gepuro.net/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://mcp-company-lens-v1.gepuro.net&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Augments",
@@ -1788,9 +1966,9 @@
       "url": "https://mcp.augments.dev/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://augments.dev&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Nymbo",
@@ -1800,9 +1978,9 @@
       "url": "https://mcp.nymbo.net/gradio_api/mcp/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://nymbo.net&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "ShawndurraniMerchant",
@@ -1812,9 +1990,9 @@
       "url": "https://mcp.shawndurrani.ai/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://mcp.shawndurrani.ai&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Jepto",
@@ -1824,9 +2002,9 @@
       "url": "https://mcp.jepto.com",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://mcp.jepto.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "RitzaDemo",
@@ -1836,9 +2014,9 @@
       "url": "https://mcp.ritzademo.com/mcp/ritza-rzx-our91",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://ritzademo.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "AgilityCMS",
@@ -1848,9 +2026,9 @@
       "url": "https://mcp.agilitycms.com/api/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.agilitycms.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Clockwise",
@@ -1860,9 +2038,9 @@
       "url": "https://mcp.getclockwise.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.getclockwise.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Explorium",
@@ -1872,9 +2050,9 @@
       "url": "https://mcp-github-registry.explorium.ai/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://explorium.ai&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Jinko",
@@ -1884,9 +2062,9 @@
       "url": "https://mcp-remote.jinko.so/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://mcp-remote.jinko.so&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "CloudflareGraphQL",
@@ -1896,9 +2074,9 @@
       "url": "https://graphql.mcp.cloudflare.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.cloudflare.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "1stDibs",
@@ -1908,9 +2086,9 @@
       "url": "https://www.1stdibs.com/soa/mcp/",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://www.1stdibs.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "MCPAnalytics",
@@ -1920,9 +2098,9 @@
       "url": "https://api.mcpanalytics.ai/auth0",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://api.mcpanalytics.ai&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Lingo",
@@ -1932,9 +2110,9 @@
       "url": "https://mcp.lingo.dev/main",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://lingo.dev&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "AppleRAG",
@@ -1944,9 +2122,9 @@
       "url": "https://mcp.apple-rag.com",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://apple-rag.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "DocFork",
@@ -1956,9 +2134,9 @@
       "url": "https://mcp.docfork.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://docfork.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Unblocked",
@@ -1968,9 +2146,9 @@
       "url": "https://getunblocked.com/api/mcpsse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://getunblocked.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "DevCycle",
@@ -1980,9 +2158,9 @@
       "url": "https://mcp.devcycle.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.devcycle.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "ThoughtSpot",
@@ -1992,9 +2170,9 @@
       "url": "https://agent.thoughtspot.app/bearer/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.thoughtspot.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "PromplateHMR",
@@ -2004,9 +2182,9 @@
       "url": "https://promplate.github.io/pyth-on-line/hmr/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://promplate.github.io&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "PromplateHMRDocs",
@@ -2016,9 +2194,9 @@
       "url": "https://pyth-on-line.promplate.dev/hmr/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://promplate.dev&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Vercel",
@@ -2028,9 +2206,9 @@
       "url": "https://mcp.vercel.com",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://vercel.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "NeglectTrade",
@@ -2040,9 +2218,9 @@
       "url": "https://api.neglect.trade/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://api.neglect.trade&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "BallDontLie",
@@ -2052,9 +2230,9 @@
       "url": "https://mcp.balldontlie.io/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.balldontlie.io&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "MyMLH",
@@ -2064,9 +2242,9 @@
       "url": "https://mymlh-mcp.git.ci/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://mymlh-mcp.git.ci&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Snapcall",
@@ -2076,9 +2254,9 @@
       "url": "https://mcp.snapcall.io",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.snapcall.io&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Devopness",
@@ -2088,9 +2266,9 @@
       "url": "https://mcp.devopness.com/mcp/",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.devopness.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "MermaidChart",
@@ -2100,9 +2278,9 @@
       "url": "https://mcp.mermaidchart.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.mermaidchart.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Linear",
@@ -2112,9 +2290,9 @@
       "url": "https://mcp.linear.app/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://linear.app&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "JavelinGuardrails",
@@ -2124,9 +2302,9 @@
       "url": "https://abhijitjavelin.github.io/javelin-guardrails-mcp-server/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://abhijitjavelin.github.io&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Mux",
@@ -2136,9 +2314,9 @@
       "url": "https://mcp.mux.com",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.mux.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Apify",
@@ -2148,9 +2326,9 @@
       "url": "https://mcp.apify.com/",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://apify.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Make",
@@ -2160,9 +2338,9 @@
       "url": "https://mcp.make.com/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.make.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Statsig",
@@ -2172,9 +2350,9 @@
       "url": "https://api.statsig.com/v1/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.statsig.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Driflyte",
@@ -2184,9 +2362,9 @@
       "url": "https://mcp.driflyte.com/openai",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://driflyte.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "KevincoganDemo",
@@ -2196,9 +2374,9 @@
       "url": "https://kevincogan.github.io/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://kevincogan.github.io&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "WordLift",
@@ -2208,9 +2386,9 @@
       "url": "https://mcp.wordlift.io/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.wordlift.io&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "ComposioRube",
@@ -2220,9 +2398,9 @@
       "url": "https://rube.composio.dev/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.composio.dev&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "ProxyLink",
@@ -2232,9 +2410,9 @@
       "url": "https://proxylink-mcp.com",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://proxylink.co&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "GibsonAI",
@@ -2244,9 +2422,9 @@
       "url": "https://mcp.gibsonai.com/",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://gibsonai.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "FindYourFivePM",
@@ -2256,9 +2434,9 @@
       "url": "https://mcp.findyourfivepm.com",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://mcp.findyourfivepm.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "AgentFin",
@@ -2268,9 +2446,9 @@
       "url": "https://agent-fin.biodnd.com/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://agent-fin.biodnd.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "AgentIP",
@@ -2280,9 +2458,9 @@
       "url": "https://agent-ip.biodnd.com/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://agent-ip.biodnd.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "AgentPress",
@@ -2292,9 +2470,9 @@
       "url": "https://agent-press.biodnd.com/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://agent-press.biodnd.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Wix",
@@ -2304,9 +2482,9 @@
       "url": "https://mcp.wix.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://mcp.wix.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Zomato",
@@ -2316,9 +2494,9 @@
       "url": "https://mcp-server.zomato.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.zomato.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Todoist",
@@ -2328,9 +2506,9 @@
       "url": "https://ai.todoist.net/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://todoist.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "RedpandaDocs",
@@ -2340,9 +2518,9 @@
       "url": "https://docs.redpanda.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://docs.redpanda.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Blockscout",
@@ -2352,9 +2530,9 @@
       "url": "https://mcp.blockscout.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.blockscout.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Singular",
@@ -2364,9 +2542,9 @@
       "url": "https://mcp.singular.net/mcp-server/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.singular.net&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "TableAll",
@@ -2376,9 +2554,9 @@
       "url": "https://mcp.tableall.com/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.tableall.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Draup",
@@ -2388,9 +2566,9 @@
       "url": "https://mcp.draup.technology/mcp/",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.draup.technology&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Dreamtap",
@@ -2400,9 +2578,9 @@
       "url": "https://dreamtap.xyz/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://dreamtap.xyz&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "WindowsForum",
@@ -2412,9 +2590,9 @@
       "url": "https://mcp.windowsforum.com",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://mcp.windowsforum.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Foqal",
@@ -2424,9 +2602,9 @@
       "url": "https://support.foqal.io/api/mcp/[YOUR_GENERATED_TOKEN]",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://support.foqal.io&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "TextArtTools",
@@ -2436,9 +2614,9 @@
       "url": "https://mcp.textarttools.com/",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://mcp.textarttools.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "CatchMetrics",
@@ -2448,9 +2626,9 @@
       "url": "https://mcp.catchmetrics.io",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://mcp.catchmetrics.io&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "KlavisStrata",
@@ -2460,9 +2638,9 @@
       "url": "https://strata.klavis.ai/mcp/",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://strata.klavis.ai&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "BrokerChooser",
@@ -2472,9 +2650,9 @@
       "url": "https://mcp.brokerchooser.com/servers/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.brokerchooser.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Axiom",
@@ -2484,9 +2662,9 @@
       "url": "https://mcp.axiom.co/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.axiom.co&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "GitLab",
@@ -2496,9 +2674,9 @@
       "url": "https://gitlab.com/api/v4/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://gitlab.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "JumpCloud",
@@ -2508,9 +2686,9 @@
       "url": "https://mcp.jumpcloud.com/v1",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.jumpcloud.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Pearl",
@@ -2520,9 +2698,9 @@
       "url": "https://mcp.pearl.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.pearl.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Jotform",
@@ -2532,9 +2710,9 @@
       "url": "https://mcp.jotform.com/",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.jotform.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Contraption",
@@ -2544,9 +2722,9 @@
       "url": "https://mcp.contraption.co/",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://mcp.contraption.co&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "LoopTool",
@@ -2556,9 +2734,9 @@
       "url": "https://www.api.looptool.dev/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://www.api.looptool.dev&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "AnotherAI",
@@ -2568,9 +2746,9 @@
       "url": "https://api.anotherai.dev/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://api.anotherai.dev&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "EpidemicSound",
@@ -2580,9 +2758,9 @@
       "url": "https://www.epidemicsound.com/a/mcp-server/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://www.epidemicsound.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Cycloid",
@@ -2592,9 +2770,9 @@
       "url": "https://mcp.cycloid.io/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.cycloid.io&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Figma",
@@ -2604,9 +2782,9 @@
       "url": "https://mcp.figma.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.figma.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "JustCall",
@@ -2616,9 +2794,9 @@
       "url": "https://mcp.justcall.host/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://mcp.justcall.host&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Svelte",
@@ -2628,9 +2806,9 @@
       "url": "https://mcp.svelte.dev/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://svelte.dev&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Vaadin",
@@ -2640,9 +2818,9 @@
       "url": "https://mcp.vaadin.com/docs/",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://vaadin.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Opsera",
@@ -2652,9 +2830,9 @@
       "url": "https://agent.opsera.io/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://agent.opsera.io&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Rotunda",
@@ -2664,9 +2842,9 @@
       "url": "https://rotunda.bullpenstrategygroup.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://rotunda.bullpenstrategygroup.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Meminal",
@@ -2676,9 +2854,9 @@
       "url": "https://meminal.ai/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://meminal.ai&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "EgnyteRemote",
@@ -2688,9 +2866,9 @@
       "url": "https://ptyagiegnyte.github.io/egnyte-remote/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://ptyagiegnyte.github.io&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "GoMarble",
@@ -2700,9 +2878,9 @@
       "url": "https://apps.gomarble.ai/mcp-api/sse",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://apps.gomarble.ai&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Smartling",
@@ -2712,9 +2890,9 @@
       "url": "https://mcp.smartling.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.smartling.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Keboola",
@@ -2724,9 +2902,9 @@
       "url": "https://mcp.us-east4.gcp.keboola.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.keboola.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "UnifiedOffer",
@@ -2736,9 +2914,9 @@
       "url": "https://api.unifiedoffer.com/functions/v1/mcp-http-wrapper",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://api.unifiedoffer.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Generect",
@@ -2748,9 +2926,9 @@
       "url": "https://mcp.generect.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://generect.com/&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "GoogleWorkspaceDeveloperTools",
@@ -2760,9 +2938,9 @@
       "url": "https://workspace-developer.goog/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://developers.google.com/workspace&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "WalletConnectors",
@@ -2772,9 +2950,9 @@
       "url": "https://wallet-connectors.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.wallet-connectors.com/&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "ContinueDocs",
@@ -2784,9 +2962,9 @@
       "url": "https://docs.continue.dev/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://docs.continue.dev&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Amplitude",
@@ -2796,9 +2974,9 @@
       "url": "https://mcp.eu.amplitude.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://amplitude.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Testiny",
@@ -2808,9 +2986,9 @@
       "url": "https://app.testiny.io/api/v1/mcp-server",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.testiny.io/&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "DoubleAgent4",
@@ -2820,9 +2998,9 @@
       "url": "https://agent4.double.finance/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://agent4.double.finance&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Sonatype",
@@ -2832,9 +3010,9 @@
       "url": "https://mcp.seaworthy.sonatype.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.sonatype.com/&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "IOAerospace",
@@ -2844,9 +3022,9 @@
       "url": "https://mcp.io-aerospace.org",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.io-aerospace.org/&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Infobip",
@@ -2856,9 +3034,9 @@
       "url": "https://mcp.infobip.com/search",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.infobip.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Trunk",
@@ -2868,9 +3046,9 @@
       "url": "https://mcp.trunk.io/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://trunk.io&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "PredictLeads",
@@ -2880,9 +3058,9 @@
       "url": "https://mcp.predictleads.com/",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://predictleads.com/&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "DEXPaprika",
@@ -2892,21 +3070,21 @@
       "url": "https://mcp.dexpaprika.com/streamable-http",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://dexpaprika.com/&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "BrickDirectory",
       "name": "BrickDirectory",
-      "description": "Provides data for LEGO sets, minifigures, parts and elements. Not affiliated with LEGO\u00ae Group.",
+      "description": "Provides data for LEGO sets, minifigures, parts and elements. Not affiliated with LEGO® Group.",
       "transport": "http",
       "url": "https://mcp.brick.directory/connect",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://mcp.brick.directory&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Monday",
@@ -2916,9 +3094,9 @@
       "url": "https://mcp.monday.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://monday.com/&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "StreamlineHQ",
@@ -2928,9 +3106,9 @@
       "url": "https://public-api.streamlinehq.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://streamlinehq.com/&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "SharkSalesInfo",
@@ -2940,9 +3118,9 @@
       "url": "https://sharksalesinfo-blip.github.io/mcp-server",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://sharksalesinfo-blip.github.io&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "QualityClouds",
@@ -2952,9 +3130,9 @@
       "url": "https://mcp.qualityclouds.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://qualityclouds.com/&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "DocuSignNavigator",
@@ -2964,9 +3142,9 @@
       "url": "https://docusign-navigator.thisdot.co/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://docusign.com/&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "HelloBasestationPDFKit",
@@ -2976,9 +3154,9 @@
       "url": "https://mcp.hellobasestation.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://hellobasestation.com/&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "ChromaDBRemote",
@@ -2988,9 +3166,9 @@
       "url": "https://meloncafe.github.io/chromadb-remote-mcp/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://meloncafe.github.io&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "UseSideways",
@@ -3000,9 +3178,9 @@
       "url": "https://usesideways.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://usesideways.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "JFrog",
@@ -3012,9 +3190,9 @@
       "url": "https://myPlatform.jfrog.github.io/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://myPlatform.jfrog.github.io&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Medusa",
@@ -3024,9 +3202,9 @@
       "url": "https://docs.medusajs.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://medusajs.com/&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "RemoteCamera",
@@ -3036,9 +3214,9 @@
       "url": "https://www.ai.moda/mcp-servers/remote-camera/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.ai.moda&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Webflow",
@@ -3048,9 +3226,9 @@
       "url": "https://mcp.webflow.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://webflow.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Adspirer",
@@ -3060,9 +3238,9 @@
       "url": "https://mcp.adspirer.com/",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.adspirer.com/&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "RefTools",
@@ -3072,9 +3250,9 @@
       "url": "https://api.ref.tools/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://ref.tools&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "AssetAutoGenerator",
@@ -3084,9 +3262,9 @@
       "url": "https://TranThienTrong.github.io/mcp/asset-auto-generator",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://TranThienTrong.github.io&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Icecat",
@@ -3096,9 +3274,9 @@
       "url": "https://mcp.icecat.biz",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.icecat.biz&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "NewRelic",
@@ -3108,9 +3286,9 @@
       "url": "https://mcp.newrelic.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://newrelic.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "PayPal",
@@ -3120,9 +3298,9 @@
       "url": "https://mcp.paypal.com/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.paypal.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Consulate",
@@ -3132,9 +3310,9 @@
       "url": "https://api.consulatehq.com",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://api.consulatehq.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "iVisa",
@@ -3144,9 +3322,9 @@
       "url": "https://www.ivisa.com/mcp/chatgpt",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://www.ivisa.com&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "AQUAVIEW",
@@ -3156,9 +3334,9 @@
       "url": "https://mcp.aquaview.org/mcp",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.aquaview.org/&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "Postman",
@@ -3168,9 +3346,9 @@
       "url": "https://mcp.eu.postman.com/minimal",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.postman.com/&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     },
     {
       "id": "AlpicEmail",
@@ -3180,9 +3358,9 @@
       "url": "https://node-email-mcp-ead34801.staging.alpic.live",
       "favicon_url": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://node-email-mcp-ead34801.staging.alpic.live&size=64",
       "category": "MCP Servers",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "requiresAuth": false,
-      "env_vars": ""
+      "env_vars": {}
     }
   ]
 }

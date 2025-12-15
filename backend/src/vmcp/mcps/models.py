@@ -163,12 +163,22 @@ class MCPInstallRequest(MCPBaseRequest):
     enabled: bool = Field(True, description="Server enabled")
     
     @validator('name')
-    def validate_name(cls, v):
-        return validate_server_name(v)
+    def validate_name(cls, v, values):
+        # Name is required unless installing from registry (server_id provided)
+        if not v and not values.get('server_id'):
+            raise ValueError("name is required unless installing from registry (server_id provided)")
+        if v:
+            return validate_server_name(v)
+        return v
     
     @validator('mode')
-    def validate_mode(cls, v):
-        return validate_transport_type(v)
+    def validate_mode(cls, v, values):
+        # Mode is required unless installing from registry (server_id provided)
+        if not v and not values.get('server_id'):
+            raise ValueError("mode is required unless installing from registry (server_id provided)")
+        if v:
+            return validate_transport_type(v)
+        return v
     
     @validator('description')
     def validate_description(cls, v):
@@ -914,10 +924,35 @@ class MCPServerConfig:
         if not self.command:
             raise ValueError("command is required for stdio servers")
 
+        # Use env vars from config, ensuring they're passed to the subprocess
+        env_dict = self.env or {}
+        from vmcp.utilities.logging.config import get_logger
+        logger = get_logger(__name__)
+        
+        logger.info("=" * 60)
+        logger.info(f"[MCPServerConfig] Creating StdioServerParameters for server: {self.name}")
+        logger.info(f"[MCPServerConfig] Command: {self.command}")
+        logger.info(f"[MCPServerConfig] Args: {self.args}")
+        logger.info(f"[MCPServerConfig] Env vars from config: {list(env_dict.keys()) if env_dict else 'NONE'}")
+        
+        if env_dict:
+            for key, value in env_dict.items():
+                # Mask sensitive values - show first 20 and last 4 chars
+                if len(value) > 24:
+                    masked_value = f"{value[:20]}...{value[-4:]}"
+                else:
+                    masked_value = value
+                logger.info(f"[MCPServerConfig]   {key} = {masked_value} (length: {len(value)})")
+        else:
+            logger.warning("[MCPServerConfig] ⚠️  NO ENV VARS PROVIDED - subprocess will inherit parent environment!")
+        
+        logger.info(f"[MCPServerConfig] These env vars will be passed to subprocess.Popen(env=...)")
+        logger.info("=" * 60)
+        
         return StdioServerParameters(
             command=self.command,
             args=self.args or [],
-            env=self.env or {}
+            env=env_dict  # This env dict is passed to subprocess.Popen
         )
 
     def to_dict(self) -> Dict[str, Any]:

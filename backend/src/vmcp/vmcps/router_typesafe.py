@@ -2508,7 +2508,67 @@ async def add_server_to_vmcp(
         if existing_server:
             # Server exists, use it
             logger.info(f"   ✅ Found existing server for user: {existing_server.name} ({existing_server.server_id})")
-            server_to_add = existing_server
+            
+            # If env vars are provided in the request, update the existing server's env vars
+            # User-entered env vars should take precedence over existing ones
+            if server_data.env:
+                logger.info("=" * 60)
+                logger.info(f"   🔄 Updating env vars for existing server: {existing_server.name}")
+                logger.info(f"   📝 New env vars keys: {list(server_data.env.keys())}")
+                logger.info(f"   📝 Old env vars keys: {list(existing_server.env.keys()) if existing_server.env else 'NONE'}")
+                
+                # Log values (masked for security)
+                for key, value in server_data.env.items():
+                    masked = f"{value[:20]}...{value[-4:]}" if len(value) > 24 else value
+                    logger.info(f"   📝   {key} = {masked} (length: {len(value)})")
+                logger.info("=" * 60)
+                # Create updated config with new env vars
+                updated_config = MCPServerConfig(
+                    name=existing_server.name,
+                    transport_type=existing_server.transport_type,
+                    description=existing_server.description,
+                    command=existing_server.command,
+                    args=existing_server.args,
+                    env=server_data.env,  # User-entered env vars take precedence
+                    url=existing_server.url,
+                    headers=existing_server.headers,
+                    auth=existing_server.auth,
+                    auto_connect=existing_server.auto_connect,
+                    enabled=existing_server.enabled,
+                    status=existing_server.status,
+                    favicon_url=existing_server.favicon_url,
+                )
+                # Preserve server ID and other metadata
+                updated_config.server_id = existing_server.server_id
+                updated_config.last_connected = existing_server.last_connected
+                updated_config.last_error = existing_server.last_error
+                updated_config.tools = existing_server.tools
+                updated_config.resources = existing_server.resources
+                updated_config.prompts = existing_server.prompts
+                updated_config.capabilities = existing_server.capabilities
+                
+                # Update the server config
+                success = config_manager.update_server_config(existing_server.server_id, updated_config)
+                if not success:
+                    raise HTTPException(status_code=500, detail="Failed to update server env vars")
+                logger.info(f"   ✅ Updated env vars for existing server: {existing_server.name}")
+                
+                # If server was connected, disconnect it so it reconnects with new env vars
+                # Note: disconnect_server needs a session, not server_id
+                # The server will reconnect automatically on next use with new env vars
+                if existing_server.status == MCPConnectionStatus.CONNECTED:
+                    logger.info(f"   🔌 Server was connected - it will reconnect with new env vars on next use")
+                    # Update status to disconnected so it reconnects with new env vars
+                    updated_config.status = MCPConnectionStatus.DISCONNECTED
+                    config_manager.update_server_status(existing_server.server_id, MCPConnectionStatus.DISCONNECTED)
+                
+                # Get the updated server
+                server_to_add = config_manager.get_server(existing_server.server_id)
+                if not server_to_add:
+                    raise HTTPException(status_code=500, detail="Failed to retrieve updated server")
+            else:
+                server_to_add = existing_server
+            
             server_name  = server_to_add.name
             server_id = server_to_add.server_id
         else:
@@ -2520,6 +2580,19 @@ async def add_server_to_vmcp(
             # transport_type = MCPTransportType(transport_value)
             
             # Create server config
+            logger.info("=" * 60)
+            logger.info(f"   📝 Creating new server: {server_data.name}")
+            logger.info(f"   📝 Transport: {server_data.transport}")
+            logger.info(f"   📝 Command: {server_data.command}")
+            logger.info(f"   📝 Env vars from request: {list(server_data.env.keys()) if server_data.env else 'NONE'}")
+            
+            if server_data.env:
+                for key, value in server_data.env.items():
+                    masked = f"{value[:20]}...{value[-4:]}" if len(value) > 24 else value
+                    logger.info(f"   📝   {key} = {masked} (length: {len(value)})")
+            else:
+                logger.warning("   ⚠️  NO ENV VARS IN REQUEST!")
+            
             server_config = MCPServerConfig(
                 name=server_data.name,
                 transport_type=MCPTransportType(server_data.transport),
@@ -2527,13 +2600,15 @@ async def add_server_to_vmcp(
                 url=server_data.url,
                 command=server_data.command,
                 args=server_data.args,
-                env=server_data.env,
+                env=server_data.env,  # Use env vars from request
                 headers=server_data.headers,
                 auto_connect=True,
                 enabled=True,
                 status=MCPConnectionStatus.DISCONNECTED,
                 favicon_url=server_data.favicon_url,
             )
+            logger.info(f"   ✅ Server config created with env keys: {list(server_config.env.keys()) if server_config.env else 'NONE'}")
+            logger.info("=" * 60)
             
             # Generate server ID
             server_id = server_config.ensure_server_id()

@@ -371,6 +371,14 @@ class MCPClientManager:
         transport_cm = None
         if isinstance(server_params, StdioServerParameters):
             logger.info(f"📡 Opening Stdio transport connection for {server_name}({server_id})...")
+            # Log the env vars being passed to stdio_client
+            if hasattr(server_params, 'env') and server_params.env:
+                logger.info(f"📡 StdioServerParameters.env keys: {list(server_params.env.keys())}")
+                for key, value in server_params.env.items():
+                    masked = f"{value[:20]}...{value[-4:]}" if len(value) > 24 else value
+                    logger.info(f"📡   {key} = {masked} (length: {len(value)})")
+            else:
+                logger.warning(f"📡 ⚠️  StdioServerParameters has NO env vars - subprocess will inherit parent environment!")
             transport_cm = mcp.stdio_client(server_params)
         elif isinstance(server_params, SseServerParameters):
             logger.info(f"📡 Opening SSE transport connection for {server_name}({server_id})...")
