@@ -28,6 +28,8 @@ import { MCPServersDiscovery } from '@/components/discover/MCPServersDiscovery';
 import { Modal } from '@/components/ui/modal';
 import { ServerDetailsModal } from '@/components/vmcp/ServerDetailsModal';
 import { CustomServerModal, type CustomServerFormData } from '@/components/vmcp/CustomServerModal';
+import { EnvironmentVariablesModal } from '@/components/vmcp/EnvironmentVariablesModal';
+import { normalizeEnvVars } from '@/lib/app-utils';
 
 // Validation functions for MCP server names
 const validateServerName = (name: string): { isValid: boolean; errors: string[] } => {
@@ -87,7 +89,7 @@ export default function MCPServersTab({
 }: MCPServersTabProps) {
   const router = useRouter();
   const { success, error: toastError } = useToast();
-  const { connectServer, refreshServerStatus, refreshServerCapabilities, addServer, updateServer, removeServer, refreshServers } = useServersActions();
+  const { connectServer, refreshServerStatus, refreshServerCapabilities, addServer, updateServer, removeServer, refreshServers, updateServerEnvVars } = useServersActions();
   const { refreshVMCPData } = useVMCPActions();
   const { vmcps } = useVMCPState();
   const [activeTab, setActiveTab] = useState<'myvmcp' | 'public'>('myvmcp');
@@ -95,6 +97,9 @@ export default function MCPServersTab({
   const [selectedModalServerId, setSelectedModalServerId] = useState<string | null>(null);
   const [modalLoading, setModalLoading] = useState<{refresh?: boolean, connect?: boolean, auth?: boolean}>({});
   const [showCustomServerModal, setShowCustomServerModal] = useState(false);
+  const [envVarsModalOpen, setEnvVarsModalOpen] = useState(false);
+  const [pendingServerAdd, setPendingServerAdd] = useState<any | null>(null);
+  const [isAddingServer, setIsAddingServer] = useState(false);
   const [customServerForm, setCustomServerForm] = useState<CustomServerFormData>({
     name: '',
     description: '',
@@ -111,9 +116,9 @@ export default function MCPServersTab({
   const [showDiscoveryModal, setShowDiscoveryModal] = useState(false);
 
 
-  // Add a server to vMCP using the new backend endpoint
-  const addServerToVMCP = async (serverData: any) => {
-    console.log('🔧 Adding server to vMCP:', serverData);
+  // Perform the actual server add after env vars are confirmed
+  const performAddServerToVMCP = async (serverData: any, env?: Record<string, string>) => {
+    console.log('🔧 Adding server to vMCP:', serverData, 'with env:', env);
     
     // Validate server name before proceeding
     const validation = validateServerName(serverData.name);
@@ -145,8 +150,33 @@ export default function MCPServersTab({
         toastError('vMCP ID is required');
         return;
       }
+
+      // If env vars were provided, add them to serverData
+      // User-entered env vars completely replace any defaults
+      const serverDataWithEnv = env ? { ...serverData, env } : serverData;
       
-      const result = await apiClient.addServerToVMCP(vmcpConfig.id, serverData, accessToken);
+      console.log('='.repeat(60));
+      console.log('🔧 [FRONTEND] Sending server data with env vars');
+      console.log('🔧 Server name:', serverData.name);
+      console.log('🔧 Has env vars:', !!env);
+      console.log('🔧 Env var keys:', env ? Object.keys(env) : 'NONE');
+      
+      if (env) {
+        Object.entries(env).forEach(([key, value]) => {
+          const masked = value && value.length > 24 
+            ? `${value.substring(0, 20)}...${value.substring(value.length - 4)}`
+            : value;
+          console.log(`🔧   ${key} = ${masked} (length: ${value?.length || 0})`);
+        });
+      } else {
+        console.warn('🔧 ⚠️  NO ENV VARS PROVIDED - will use defaults or system env vars!');
+      }
+      
+      console.log('🔧 Full serverData keys:', Object.keys(serverDataWithEnv));
+      console.log('🔧 serverDataWithEnv.env:', serverDataWithEnv.env);
+      console.log('='.repeat(60));
+      
+      const result = await apiClient.addServerToVMCP(vmcpConfig.id, serverDataWithEnv, accessToken);
       
       if (result.success && result.data) {
         console.log('🔧 result.data:', result.data);
@@ -208,7 +238,64 @@ export default function MCPServersTab({
       console.error('Failed to add server to vMCP:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to add server to vMCP';
       toastError(errorMessage);
+    } finally {
+      setIsAddingServer(false);
+      setEnvVarsModalOpen(false);
+      setPendingServerAdd(null);
     }
+  };
+
+  // Add a server to vMCP using the new backend endpoint
+  const addServerToVMCP = async (serverData: any) => {
+    console.log('🔧 Adding server to vMCP:', serverData);
+    
+    // Check if server has env_vars that need configuration
+    // Check both env_vars (metadata) and mcp_registry_config.env (actual config)
+    const envVars = serverData.mcp_registry_config?.env || serverData.env_vars;
+    const hasEnvVars = envVars && (
+      (typeof envVars === 'object' && envVars !== null && Object.keys(envVars).length > 0) ||
+      (typeof envVars === 'string' && envVars.trim().length > 0)
+    );
+
+    console.log('🔍 Checking env vars for server:', serverData.name, {
+      envVars,
+      hasEnvVars,
+      mcp_registry_config_env: serverData.mcp_registry_config?.env,
+      env_vars: serverData.env_vars
+    });
+
+    if (hasEnvVars) {
+      console.log('✅ Server has env vars, showing modal');
+      // Show modal to configure env vars
+      setPendingServerAdd(serverData);
+      setEnvVarsModalOpen(true);
+      return;
+    } else {
+      console.log('❌ Server has no env vars, adding directly');
+    }
+
+    // No env vars, add directly
+    await performAddServerToVMCP(serverData);
+  };
+
+  // Handle env vars submit from modal
+  const handleEnvVarsSubmit = async (env: Record<string, string>) => {
+    if (!pendingServerAdd) return;
+    await performAddServerToVMCP(pendingServerAdd, env);
+  };
+
+  // Get initial env vars for modal
+  const getInitialEnvVars = () => {
+    if (!pendingServerAdd) return undefined;
+    
+    // Try mcp_registry_config.env first, then env_vars
+    if (pendingServerAdd.mcp_registry_config?.env) {
+      return pendingServerAdd.mcp_registry_config.env;
+    }
+    if (pendingServerAdd.env_vars) {
+      return normalizeEnvVars(pendingServerAdd.env_vars);
+    }
+    return undefined;
   };
 
   // Add custom server directly to vMCP
@@ -456,6 +543,34 @@ export default function MCPServersTab({
     }
   };
 
+  const handleModalUpdateEnvVars = async (env: Record<string, string>) => {
+    if (!selectedModalServerId) return;
+    
+    setModalLoading(prev => ({ ...prev, updateEnv: true }));
+    
+    try {
+      await updateServerEnvVars(selectedModalServerId, env);
+      success(`Successfully updated environment variables for ${selectedModalServerId}`);
+      
+      // Refresh both server and vMCP contexts
+      await Promise.all([
+        refreshServers(),
+        refreshVMCPData()
+      ]);
+      
+      // Also reload the VMCP config to get the latest server data
+      if (loadVMCPConfig) {
+        await loadVMCPConfig();
+      }
+    } catch (err) {
+      console.error('Error updating server env vars:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update server env vars';
+      toastError(errorMessage);
+    } finally {
+      setModalLoading(prev => ({ ...prev, updateEnv: false }));
+    }
+  };
+
   const handleModalAuth = async () => {
     if (!selectedModalServerId) return;
     
@@ -555,12 +670,22 @@ export default function MCPServersTab({
                   env: server.env,
                 };
               } else {
+                const serverAny = server as any;
                 serverData = {                
                   id: server.id,
                   name: server.name,
                   transport: server.transport_type,
                   description: server.description,
                   url: server.url,
+                  command: server.command,
+                  args: server.args,
+                  env: server.env,
+                  env_vars: serverAny.env_vars,
+                  headers: server.headers,
+                  // Include mcp_registry_config if available
+                  mcp_registry_config: serverAny.mcp_registry_config || (server.env ? {
+                    env: server.env
+                  } : undefined)
                 };
               }
               // Add server to vMCP
@@ -817,6 +942,7 @@ export default function MCPServersTab({
             onRefresh={handleModalRefresh}
             onConnect={handleModalConnect}
             onAuth={handleModalAuth}
+            onUpdateEnvVars={handleModalUpdateEnvVars}
             isLoading={modalLoading}
           />
         );
@@ -852,6 +978,19 @@ export default function MCPServersTab({
           />
         </div>
       </Modal>
+
+      {/* Environment Variables Modal */}
+      <EnvironmentVariablesModal
+        isOpen={envVarsModalOpen}
+        onClose={() => {
+          setEnvVarsModalOpen(false);
+          setPendingServerAdd(null);
+        }}
+        onSubmit={handleEnvVarsSubmit}
+        initialEnvVars={getInitialEnvVars()}
+        serverName={pendingServerAdd?.name}
+        isLoading={isAddingServer}
+      />
     </div>
   );
 }

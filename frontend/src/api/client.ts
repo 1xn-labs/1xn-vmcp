@@ -19,6 +19,7 @@ import type {
   VmcpResourceRequest,
   VmcpConfig,
 } from './generated/types.gen';
+import { normalizeEnvVars } from '@/lib/app-utils';
 
 // Type aliases for backward compatibility (old ALL_CAPS style)
 export type MCPInstallRequest = McpInstallRequest;
@@ -1154,12 +1155,68 @@ class ApiClient {
     }
   }
 
-  async installGlobalMCPServer(serverId: string, token?: string): Promise<ApiResponse<any>> {
+  async installGlobalMCPServer(
+    serverData: { id?: string | null; name: string; description?: string | null; transport: string; command?: string | null; args?: Array<string> | null; url?: string | null; headers?: { [key: string]: string } | null; env_vars?: string | null; mcp_registry_config?: { env?: { [key: string]: string } | null; [key: string]: any } | null; [key: string]: any },
+    env?: Record<string, string>,
+    token?: string
+  ): Promise<ApiResponse<any>> {
     try {
       const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
-      // Note: installGlobalMCPServer may use a different endpoint in generated SDK
+      
+      // User-entered env vars take precedence - if provided, use them exclusively
+      // Otherwise, fall back to registry defaults
+      let finalEnv: Record<string, string> | null = null;
+      
+      console.log('='.repeat(60));
+      console.log('[API CLIENT] Determining final env vars for installGlobalMCPServer');
+      console.log('  User-provided env:', env ? Object.keys(env) : 'NONE');
+      console.log('  Registry config env:', serverData.mcp_registry_config?.env ? Object.keys(serverData.mcp_registry_config.env) : 'NONE');
+      console.log('  serverData.env_vars:', serverData.env_vars ? 'EXISTS' : 'NONE');
+      
+      if (env && Object.keys(env).length > 0) {
+        // User-entered env vars completely replace defaults
+        finalEnv = env;
+        console.log('  ✅ Using USER-PROVIDED env vars (replaces defaults)');
+      } else if (serverData.mcp_registry_config?.env) {
+        finalEnv = serverData.mcp_registry_config.env;
+        console.log('  ✅ Using registry config env vars');
+      } else if (serverData.env_vars) {
+        finalEnv = normalizeEnvVars(serverData.env_vars);
+        console.log('  ✅ Using normalized env_vars');
+      } else {
+        console.warn('  ⚠️  NO ENV VARS - will be null in request');
+      }
+      
+      if (finalEnv) {
+        console.log('  Final env keys:', Object.keys(finalEnv));
+        Object.entries(finalEnv).forEach(([key, value]) => {
+          const masked = value && value.length > 24 
+            ? `${value.substring(0, 20)}...${value.substring(value.length - 4)}`
+            : value;
+          console.log(`    ${key} = ${masked} (length: ${value?.length || 0})`);
+        });
+      }
+      console.log('='.repeat(60));
+
+      // Build MCPInstallRequest from server data
+      const request: MCPInstallRequest = {
+        name: serverData.name,
+        mode: serverData.transport.toLowerCase(),
+        description: serverData.description || null,
+        command: serverData.command || null,
+        args: serverData.args || null,
+        env: finalEnv,
+        url: serverData.url || null,
+        headers: serverData.headers || null,
+        auth_type: 'none',
+        auto_connect: true,
+        enabled: true,
+      };
+      
+      console.log('[API CLIENT] MCPInstallRequest.env:', request.env ? Object.keys(request.env) : 'NULL');
+
       const response = await sdk.installMcpServerApiMcpsInstallPost({
-        body: { server_id: serverId } as any,
+        body: request,
         ...(headers && { headers }),
       });
       return { success: true, data: response.data };

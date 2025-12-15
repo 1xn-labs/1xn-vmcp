@@ -1,12 +1,14 @@
 // components/vmcp/ServerDetailsModal.tsx
 
 import { useState } from 'react';
-import { Server, X, Wifi, WifiOff, Lock, LinkIcon, AlertTriangle, Activity, Terminal, Globe, CheckCircle, RefreshCw } from 'lucide-react';
+import { Server, X, Wifi, WifiOff, Lock, LinkIcon, AlertTriangle, Activity, Terminal, Globe, CheckCircle, RefreshCw, Settings } from 'lucide-react';
 import { PromptIcon, ToolIcon, ResourceIcon } from '@/lib/vmcp';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import type { McpServerInfo } from '@/api/generated/types.gen';
+import { EnvironmentVariablesModal } from '@/components/vmcp/EnvironmentVariablesModal';
+import { normalizeEnvVars } from '@/lib/app-utils';
 
 interface ServerDetailsModalProps {
   server: McpServerInfo;
@@ -15,10 +17,12 @@ interface ServerDetailsModalProps {
   onRefresh: () => Promise<void>;
   onConnect: () => Promise<void>;
   onAuth: () => Promise<void>;
+  onUpdateEnvVars?: (env: Record<string, string>) => Promise<void>;
   isLoading?: {
     refresh?: boolean;
     connect?: boolean;
     auth?: boolean;
+    updateEnv?: boolean;
   };
 }
 
@@ -29,9 +33,11 @@ export function ServerDetailsModal({
   onRefresh,
   onConnect,
   onAuth,
+  onUpdateEnvVars,
   isLoading = {}
 }: ServerDetailsModalProps) {
   const [isWaitingForAuth, setIsWaitingForAuth] = useState(false);
+  const [envVarsModalOpen, setEnvVarsModalOpen] = useState(false);
 
   const handleAuth = async () => {
     setIsWaitingForAuth(true);
@@ -208,6 +214,20 @@ export function ServerDetailsModal({
                 <RefreshCw className={`h-4 w-4 ${isLoading.refresh ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
+
+              {/* Edit Environment Variables Button - only show for stdio servers */}
+              {server.transport_type === 'stdio' && onUpdateEnvVars && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEnvVarsModalOpen(true)}
+                  disabled={isLoading.refresh || isLoading.connect || isLoading.auth || isLoading.updateEnv}
+                  className="flex items-center gap-2"
+                >
+                  <Settings className="h-4 w-4" />
+                  Edit Env Vars
+                </Button>
+              )}
             </div>
           </div>
 
@@ -246,6 +266,31 @@ export function ServerDetailsModal({
               )}
             </div>
           </div>
+
+          {/* Environment Variables - only show for stdio servers */}
+          {server.transport_type === 'stdio' && (server.env || (server as any).env_vars) && (
+            <div>
+              <h3 className="text-sm font-medium text-foreground mb-2">Environment Variables</h3>
+              <div className="space-y-1">
+                {(() => {
+                  const serverAny = server as any;
+                  const envVars = server.env || (serverAny.env_vars && typeof serverAny.env_vars === 'object' ? serverAny.env_vars : {});
+                  if (!envVars || typeof envVars !== 'object' || Object.keys(envVars).length === 0) {
+                    return <p className="text-sm text-muted-foreground">No environment variables configured</p>;
+                  }
+                  return Object.entries(envVars).map(([key, value]) => (
+                    <div key={key} className="flex items-center gap-2 text-xs">
+                      <code className="bg-muted px-2 py-1 rounded font-mono text-foreground/80">{key}</code>
+                      <span className="text-muted-foreground">=</span>
+                      <code className="bg-muted px-2 py-1 rounded font-mono text-muted-foreground">
+                        {String(value).length > 50 ? `${String(value).substring(0, 50)}...` : String(value)}
+                      </code>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
+          )}
 
           {/* Capabilities Summary */}
           <div>
@@ -306,6 +351,21 @@ export function ServerDetailsModal({
           )}
         </div>
       </div>
+
+      {/* Environment Variables Modal */}
+      {onUpdateEnvVars && (
+        <EnvironmentVariablesModal
+          isOpen={envVarsModalOpen}
+          onClose={() => setEnvVarsModalOpen(false)}
+          onSubmit={async (env) => {
+            await onUpdateEnvVars(env);
+            setEnvVarsModalOpen(false);
+          }}
+          initialEnvVars={server.env || (server as any).env_vars}
+          serverName={server.name}
+          isLoading={isLoading.updateEnv}
+        />
+      )}
     </div>
   );
 }

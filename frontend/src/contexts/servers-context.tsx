@@ -3,7 +3,8 @@ import React, { createContext, useContext, useState, useCallback, useEffect, Rea
 import { apiClient} from '@/api/client';
 import type { McpServerInfo as MCPServer, RegistryServerInfo as MCPRegistryServer } from '@/api/generated/types.gen';
 import { useAuth } from './auth-context';
-import { parseEnvVars } from '@/lib/app-utils';
+import { parseEnvVars, normalizeEnvVars } from '@/lib/app-utils';
+import { EnvironmentVariablesModal } from '@/components/vmcp/EnvironmentVariablesModal';
 
 interface ServerStats {
   total: number;
@@ -42,7 +43,8 @@ interface ServersContextType extends ServersState {
   refreshServerStatus: (serverId: string) => Promise<void>;
   refreshAllStatus: () => Promise<void>;
   clearServerAuth: (serverId: string) => Promise<void>;
-  installMCPRegistryServer: (serverId: string) => Promise<void>;
+  installMCPRegistryServer: (serverData: MCPRegistryServer) => Promise<void>;
+  updateServerEnvVars: (serverId: string, env: Record<string, string>) => Promise<void>;
 }
 
 // Create separate contexts for state and actions
@@ -85,6 +87,12 @@ export function ServersProvider({ children }: ServersProviderProps) {
   const retryCountRef = useRef(0);
   const hasErrorRef = useRef(false);
   const maxRetries = 3;
+  const serversRef = useRef<MCPServer[]>([]);
+  
+  // Keep serversRef in sync with state
+  useEffect(() => {
+    serversRef.current = state.servers;
+  }, [state.servers]);
 
   // Helper function to recalculate server stats based on current server statuses
   const recalculateStats = useCallback((servers: MCPServer[]) => {
@@ -659,36 +667,9 @@ export function ServersProvider({ children }: ServersProviderProps) {
     }
   }, [isAuthenticated, user]);
 
-  const installMCPRegistryServer = useCallback(async (serverId: string) => {
-    try {
-      const accessToken = localStorage.getItem('access_token');
-      if (!accessToken) {
-        throw new Error('No access token available');
-      }
-
-      console.log(`🔄 Installing MCP registry server: ${serverId}`);
-      const result = await apiClient.installGlobalMCPServer(serverId, accessToken);
-      
-      if (result.success) {
-        console.log(`✅ Successfully installed MCP registry server: ${serverId}`);
-        // Note: refreshServers will be called after this function is defined
-        // For now, we'll just show success message
-      } else {
-        throw new Error(result.error || 'Failed to install MCP registry server');
-      }
-    } catch (error) {
-      console.error('❌ Error installing MCP registry server:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      
-      setState(prev => ({
-        ...prev,
-        error: errorMessage,
-        hasError: true
-      }));
-      
-      throw error;
-    }
-  }, []);
+  const [envVarsModalOpen, setEnvVarsModalOpen] = useState(false);
+  const [pendingServerInstall, setPendingServerInstall] = useState<MCPRegistryServer | null>(null);
+  const [isInstalling, setIsInstalling] = useState(false);
 
   const refreshServers = useCallback(async () => {
     if (loadingRef.current) {
@@ -791,6 +772,118 @@ export function ServersProvider({ children }: ServersProviderProps) {
     }
   }, [isAuthenticated, user, recalculateStats]);
 
+  // Define performInstallWithRefresh after refreshServers is defined
+  const performInstallWithRefresh = useCallback(async (
+    serverData: MCPRegistryServer,
+    env?: Record<string, string>,
+    accessToken?: string
+  ) => {
+    try {
+      const token = accessToken || localStorage.getItem('access_token');
+      if (!token) {
+        throw new Error('No access token available');
+      }
+
+      setIsInstalling(true);
+      console.log('='.repeat(60));
+      console.log(`🔄 [FRONTEND] Installing MCP registry server: ${serverData.id || serverData.name}`);
+      console.log(`🔄 Has env vars:`, !!env);
+      if (env) {
+        console.log(`🔄 Env var keys:`, Object.keys(env));
+        Object.entries(env).forEach(([key, value]) => {
+          const masked = value && value.length > 24 
+            ? `${value.substring(0, 20)}...${value.substring(value.length - 4)}`
+            : value;
+          console.log(`🔄   ${key} = ${masked} (length: ${value?.length || 0})`);
+        });
+      }
+      console.log('='.repeat(60));
+      
+      const result = await apiClient.installGlobalMCPServer(serverData, env, token);
+      
+      if (result.success) {
+        console.log(`✅ Successfully installed MCP registry server: ${serverData.id || serverData.name}`);
+        // Refresh servers list
+        loadingRef.current = false;
+        await refreshServers();
+      } else {
+        throw new Error(result.error || 'Failed to install MCP registry server');
+      }
+    } catch (error) {
+      console.error('❌ Error installing MCP registry server:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      setState(prev => ({
+        ...prev,
+        error: errorMessage,
+        hasError: true
+      }));
+      
+      throw error;
+    } finally {
+      setIsInstalling(false);
+      setEnvVarsModalOpen(false);
+      setPendingServerInstall(null);
+    }
+  }, [refreshServers]);
+
+  // Define handleEnvVarsSubmit after performInstallWithRefresh is defined
+  const handleEnvVarsSubmit = useCallback(async (env: Record<string, string>) => {
+    if (!pendingServerInstall) return;
+    await performInstallWithRefresh(pendingServerInstall, env);
+  }, [pendingServerInstall, performInstallWithRefresh]);
+
+  // Define installMCPRegistryServer after performInstallWithRefresh is defined
+  const installMCPRegistryServer = useCallback(async (serverData: MCPRegistryServer) => {
+    try {
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) {
+        throw new Error('No access token available');
+      }
+
+      // Check if server has env_vars that need configuration
+      // Check both env_vars (metadata) and mcp_registry_config.env (actual config)
+      const envVars = serverData.mcp_registry_config?.env || serverData.env_vars;
+      const hasEnvVars = envVars && (
+        (typeof envVars === 'object' && envVars !== null && Object.keys(envVars).length > 0) ||
+        (typeof envVars === 'string' && envVars.trim().length > 0)
+      );
+
+      console.log('🔍 Checking env vars for server:', serverData.name, {
+        envVars,
+        hasEnvVars,
+        mcp_registry_config_env: serverData.mcp_registry_config?.env,
+        env_vars: serverData.env_vars,
+        envVarsType: typeof envVars,
+        envVarsKeys: (typeof envVars === 'object' && envVars !== null) ? Object.keys(envVars) : null
+      });
+
+      if (hasEnvVars) {
+        console.log('✅ Server has env vars, showing modal');
+        // Show modal to configure env vars
+        setPendingServerInstall(serverData);
+        setEnvVarsModalOpen(true);
+        return;
+      } else {
+        console.log('❌ Server has no env vars, installing directly');
+      }
+
+      // No env vars, install directly
+      await performInstallWithRefresh(serverData, undefined, accessToken);
+    } catch (error) {
+      console.error('❌ Error installing MCP registry server:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      setState(prev => ({
+        ...prev,
+        error: errorMessage,
+        hasError: true
+      }));
+      
+      throw error;
+    }
+  }, [performInstallWithRefresh]);
+
   // Initialize servers on mount and when auth changes
   useEffect(() => {
     if (isAuthenticated && user && !state.initialized) {
@@ -798,6 +891,75 @@ export function ServersProvider({ children }: ServersProviderProps) {
       refreshMCPRegistryServers();
     }
   }, [isAuthenticated, user, state.initialized, refreshServers, refreshMCPRegistryServers]);
+
+  const updateServerEnvVars = useCallback(async (serverId: string, env: Record<string, string>) => {
+    try {
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) {
+        throw new Error('No access token available');
+      }
+
+      // Get current server from ref (always has latest servers)
+      const currentServer = serversRef.current.find(s => s.id === serverId || (s as any).server_id === serverId);
+
+      if (!currentServer) {
+        throw new Error(`Server ${serverId} not found`);
+      }
+
+      // Check if server is currently connected
+      const wasConnected = currentServer.status === 'connected';
+      
+      // Disconnect if connected (env vars require reconnection)
+      if (wasConnected) {
+        console.log(`🔌 Disconnecting server ${serverId} before updating env vars`);
+        await disconnectServer(serverId);
+      }
+
+      // Build update request with new env vars
+      const updateRequest = {
+        name: currentServer.name,
+        mode: (currentServer as any).transport_type || currentServer.transport_type || 'stdio',
+        description: currentServer.description || null,
+        command: currentServer.command || null,
+        args: currentServer.args || null,
+        env: env,
+        url: currentServer.url || null,
+        headers: currentServer.headers || null,
+        auth_type: 'none',
+        auto_connect: currentServer.auto_connect ?? true,
+        enabled: currentServer.enabled ?? true,
+      };
+
+      console.log(`🔄 Updating env vars for server ${serverId}`);
+      const result = await apiClient.updateMCPServer(serverId, updateRequest, accessToken);
+      
+      if (result.success) {
+        console.log(`✅ Successfully updated env vars for server ${serverId}`);
+        
+        // Refresh server list to get updated config
+        await refreshServers();
+        
+        // Reconnect if it was connected before
+        if (wasConnected) {
+          console.log(`🔄 Reconnecting server ${serverId} after env vars update`);
+          await connectServer(serverId);
+        }
+      } else {
+        throw new Error(result.error || 'Failed to update server env vars');
+      }
+    } catch (error) {
+      console.error('❌ Error updating server env vars:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      setState(prev => ({
+        ...prev,
+        error: errorMessage,
+        hasError: true
+      }));
+      
+      throw error;
+    }
+  }, [refreshServers, connectServer, disconnectServer]);
 
   const clearServerAuth = useCallback(async (serverId: string) => {
     try {
@@ -867,6 +1029,7 @@ export function ServersProvider({ children }: ServersProviderProps) {
     refreshAllStatus,
     clearServerAuth,
     installMCPRegistryServer,
+    updateServerEnvVars,
   }), [
     refreshServers,
     refreshMCPRegistryServers,
@@ -884,12 +1047,38 @@ export function ServersProvider({ children }: ServersProviderProps) {
     refreshAllStatus,
     clearServerAuth,
     installMCPRegistryServer,
+    updateServerEnvVars,
   ]);
+
+  // Get initial env vars for modal
+  const getInitialEnvVars = useCallback(() => {
+    if (!pendingServerInstall) return undefined;
+    
+    // Try mcp_registry_config.env first, then env_vars
+    if (pendingServerInstall.mcp_registry_config?.env) {
+      return pendingServerInstall.mcp_registry_config.env;
+    }
+    if (pendingServerInstall.env_vars) {
+      return normalizeEnvVars(pendingServerInstall.env_vars);
+    }
+    return undefined;
+  }, [pendingServerInstall]);
 
   return (
     <ServersStateContext.Provider value={state}>
       <ServersActionsContext.Provider value={actions}>
         {children}
+        <EnvironmentVariablesModal
+          isOpen={envVarsModalOpen}
+          onClose={() => {
+            setEnvVarsModalOpen(false);
+            setPendingServerInstall(null);
+          }}
+          onSubmit={handleEnvVarsSubmit}
+          initialEnvVars={getInitialEnvVars()}
+          serverName={pendingServerInstall?.name}
+          isLoading={isInstalling}
+        />
       </ServersActionsContext.Provider>
     </ServersStateContext.Provider>
   );
