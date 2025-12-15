@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "1xn-vmcp"
-version = "0.6.93"
+version = "0.7.0"
 description = "v(irtual)MCP - Extend, Compose, Customize MCP servers"
 readme = "README.md"
 requires-python = ">=3.10,<3.14"
@@ -59,6 +59,9 @@ dependencies = [
     # Dependencies from sandbox-runtime-py (bundled in this package)
     # Only click is actually used in sandbox_runtime code
     "click>=8.0",
+    # LLM MCP Server dependencies
+    "litellm>=1.40.0",
+    "pypdf>=4.0.0",
 ]
 
 [project.optional-dependencies]
@@ -81,6 +84,7 @@ vmcp = "vmcp.cli.main:app"
 vmcp_sdk_cli = "vmcp_sdk.cli.main:app"
 vmcp-postgres = "vmcp.scripts.postgres_setup:main"
 vmcp-sdk-cli = "vmcp_sdk.cli.main:app"
+llm-mcp = "llm_mcp.__main__:main"
 
 [project.urls]
 Homepage = "https://1xn.ai"
@@ -90,7 +94,7 @@ Issues = "https://github.com/1xn-labs/1xn-vmcp/issues"
 
 [tool.hatch.build.targets.wheel]
 # Include main packages
-packages = ["src/vmcp", "src/vmcp_sdk"]
+packages = ["src/vmcp", "src/vmcp_sdk", "src/llm_mcp"]
 # Note: sandbox_runtime is nested, so we handle it via force-include to map correctly
 
 [tool.hatch.build.targets.wheel.force-include]
