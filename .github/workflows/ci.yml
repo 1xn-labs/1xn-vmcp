@@ -14,8 +14,8 @@ on:
         type: string
 
 jobs:
-  test:
-    name: Run Tests
+  test-main:
+    name: Run Main Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -42,20 +42,6 @@ jobs:
           mkdir -p public/frontend
           # Create a minimal index.html to satisfy the build requirement
           echo "<!DOCTYPE html><html><head><title>vMCP</title></head><body><h1>vMCP</h1></body></html>" > public/frontend/index.html
-
-      - name: Install system dependencies for sandboxing
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y bubblewrap socat ripgrep
-          
-      - name: Enable user namespaces for bubblewrap
-        run: |
-          # Enable unprivileged user namespaces (required for bubblewrap)
-          # This allows bubblewrap to create isolated environments without root
-          sudo sysctl -w kernel.unprivileged_userns_clone=1 || echo "Warning: Could not enable user namespaces (may already be enabled or not supported)"
-          
-          # Verify bubblewrap can work
-          bwrap --version || echo "Warning: bubblewrap not found"
 
       - name: Install dependencies
         working-directory: ./backend
@@ -153,19 +139,146 @@ jobs:
             sleep 2
           done
 
-      - name: Run pytest
+      - name: Run pytest (excluding sandboxing tests)
         working-directory: ./backend
         env:
           DATABASE_URL: sqlite:///tmp/vmcp_ci/vmcp_test.db
           VMCP_DUMMY_USER_TOKEN: vmcp-test-dummy-token
         run: |
-          uv run pytest -v --tb=short
+          uv run pytest -v --tb=short --ignore=tests/test_sandboxing.py
 
       - name: Upload test logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: test-logs
+          path: |
+            /tmp/backend_server.log
+            /tmp/test_server.log
+            /tmp/mcp_servers.log
+          if-no-files-found: ignore
+
+  test-sandboxing:
+    name: Run Sandboxing Tests
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:24.04
+      options: --privileged --security-opt seccomp=unconfined
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch || github.ref }}
+
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y python3.12 python3.12-venv python3-pip curl build-essential
+          apt-get install -y bubblewrap socat ripgrep
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Create frontend directory
+        working-directory: ./backend
+        run: |
+          mkdir -p public/frontend
+          echo "<!DOCTYPE html><html><head><title>vMCP</title></head><body><h1>vMCP</h1></body></html>" > public/frontend/index.html
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: |
+          uv sync --dev
+
+      - name: Set up environment variables
+        working-directory: ./backend
+        run: |
+          mkdir -p /tmp/vmcp_ci
+          echo "DATABASE_URL=sqlite:///tmp/vmcp_ci/vmcp_test.db" >> $GITHUB_ENV
+          echo "VMCP_DATABASE_URL=sqlite:///tmp/vmcp_ci/vmcp_test.db" >> $GITHUB_ENV
+          echo "VMCP_DUMMY_USER_TOKEN=vmcp-test-dummy-token" >> $GITHUB_ENV
+
+      - name: Run database migrations
+        working-directory: ./backend
+        env:
+          DATABASE_URL: sqlite:///tmp/vmcp_ci/vmcp_test.db
+        run: |
+          uv run python run_migrations.py || true
+
+      - name: Start backend server in background
+        working-directory: ./backend
+        env:
+          DATABASE_URL: sqlite:///tmp/vmcp_ci/vmcp_test.db
+          VMCP_DATABASE_URL: sqlite:///tmp/vmcp_ci/vmcp_test.db
+          VMCP_DUMMY_USER_TOKEN: vmcp-test-dummy-token
+        run: |
+          uv run vmcp run --host 0.0.0.0 --port 8000 > /tmp/backend_server.log 2>&1 &
+          echo "Backend server starting..."
+
+      - name: Start test servers in background
+        working-directory: ./backend
+        env:
+          VMCP_DUMMY_USER_TOKEN: vmcp-test-dummy-token
+        run: |
+          uv run python tests/test_server/test_http_server.py > /tmp/test_server.log 2>&1 &
+          uv run python tests/mcp_server/start_mcp_servers.py > /tmp/mcp_servers.log 2>&1 &
+          echo "Test servers starting..."
+
+      - name: Wait for servers to be ready
+        working-directory: ./backend
+        run: |
+          echo "Waiting for servers to start..."
+          sleep 5
+          
+          for i in {1..30}; do
+            BACKEND_READY=false
+            MCP_READY=false
+            TEST_READY=false
+            
+            if curl -s -f http://localhost:8000/health > /dev/null 2>&1; then
+              BACKEND_READY=true
+            fi
+            
+            if curl -s -f http://localhost:8001/health > /dev/null 2>&1; then
+              MCP_READY=true
+            fi
+            
+            if curl -s -f http://localhost:8002/health > /dev/null 2>&1; then
+              TEST_READY=true
+            fi
+            
+            if [ "$BACKEND_READY" = true ] && [ "$MCP_READY" = true ] && [ "$TEST_READY" = true ]; then
+              echo "✓ All servers are ready!"
+              break
+            fi
+            
+            if [ $i -eq 30 ]; then
+              echo "✗ Servers failed to start after 60 seconds"
+              cat /tmp/backend_server.log || echo "No backend log"
+              cat /tmp/mcp_servers.log || echo "No MCP log"
+              cat /tmp/test_server.log || echo "No test server log"
+              exit 1
+            fi
+            echo "Waiting for servers... ($i/30) - Backend: $BACKEND_READY, MCP: $MCP_READY, Test: $TEST_READY"
+            sleep 2
+          done
+
+      - name: Run sandboxing tests
+        working-directory: ./backend
+        env:
+          DATABASE_URL: sqlite:///tmp/vmcp_ci/vmcp_test.db
+          VMCP_DUMMY_USER_TOKEN: vmcp-test-dummy-token
+        run: |
+          uv run pytest tests/test_sandboxing.py -v --tb=short
+
+      - name: Upload test logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sandbox-test-logs
           path: |
             /tmp/backend_server.log
             /tmp/test_server.log
