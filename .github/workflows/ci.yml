@@ -33,6 +33,11 @@ jobs:
           # Create a minimal index.html to satisfy the build requirement
           echo "<!DOCTYPE html><html><head><title>vMCP</title></head><body><h1>vMCP</h1></body></html>" > public/frontend/index.html
 
+      - name: Install system dependencies for sandboxing
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y bubblewrap socat ripgrep
+  
       - name: Install dependencies
         working-directory: ./backend
         run: |
