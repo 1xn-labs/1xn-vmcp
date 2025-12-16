@@ -62,6 +62,18 @@ def restrictive_sandbox_config(test_sandbox_dir):
 
 
 @pytest.fixture
+def blocked_write_dir(tmp_path):
+    """Create a directory that should be blocked for writes in VMCP tests."""
+    blocked_dir = tmp_path / "blocked_write_dir"
+    blocked_dir.mkdir(parents=True, exist_ok=True)
+    yield blocked_dir
+    # Cleanup
+    if blocked_dir.exists():
+        import shutil
+        shutil.rmtree(blocked_dir, ignore_errors=True)
+
+
+@pytest.fixture
 async def initialized_sandbox_manager(restrictive_sandbox_config):
     """Initialize SandboxManager with restrictive config."""
     await SandboxManager.initialize(restrictive_sandbox_config)
@@ -868,33 +880,38 @@ class TestVMCPIntegration:
     """Test sandboxing in VMCP tool execution."""
 
     async def test_python_tool_filesystem_restrictions(
-        self, base_url, create_vmcp, helpers
+        self, base_url, create_vmcp, helpers, blocked_write_dir
     ):
         """Test that Python tools respect filesystem restrictions."""
         vmcp = create_vmcp
         print(f"\n🔒 Test - Python tool filesystem restrictions: {vmcp['id']}")
 
         # Add Python tool that tries to write outside sandbox
+        # Use a directory that's not in the allowed write paths
+        blocked_path = str(blocked_write_dir)
         vmcp_data = helpers["get_vmcp"](vmcp["id"])
         vmcp_data["custom_tools"].append({
             "name": "write_outside_sandbox",
             "description": "Try to write outside sandbox",
             "tool_type": "python",
-            "code": """
+            "code": f"""
 import os
 from pathlib import Path
 
 def main():
     # Try to write to a path outside sandbox (should fail)
-    # Use /usr/bin which is definitely outside the sandbox and should be read-only
-    test_file = Path("/usr/bin") / ".sandbox_escape_test.txt"
+    # This directory is not in the allowed write paths
+    test_file = Path("{blocked_path}") / "sandbox_escape_test.txt"
     try:
         test_file.write_text("escaped!")
-        return f"ERROR: Write succeeded (should have failed): {test_file}"
+        return f"ERROR: Write succeeded (should have failed): {{test_file}}"
     except PermissionError as e:
-        return f"SUCCESS: Permission denied as expected: {type(e).__name__}: {str(e)[:100]}"
+        return f"SUCCESS: Permission denied as expected: {{type(e).__name__}}: {{str(e)[:100]}}"
+    except OSError as e:
+        # OSError can occur for read-only filesystem or invalid operations
+        return f"SUCCESS: Access blocked as expected: {{type(e).__name__}}: {{str(e)[:100]}}"
     except Exception as e:
-        return f"SUCCESS: Write blocked as expected: {type(e).__name__}: {str(e)[:100]}"
+        return f"SUCCESS: Write blocked as expected: {{type(e).__name__}}: {{str(e)[:100]}}"
 """,
             "variables": [],
             "environment_variables": [],
@@ -920,7 +937,7 @@ def main():
                 # Check if the write actually succeeded (which would be a test failure)
                 if "ERROR" in result_text and "succeeded" in result_text:
                     # Write succeeded when it shouldn't - this indicates sandboxing isn't working
-                    pytest.fail(f"Write to /usr/bin succeeded when it should be blocked: {result_text}")
+                    pytest.fail(f"Write to blocked directory succeeded when it should be blocked: {result_text}")
                 assert "SUCCESS" in result_text or "blocked" in result_text.lower() or \
                        "permission" in result_text.lower() or "denied" in result_text.lower(), \
                     f"Expected write to be blocked, got: {result_text}"
@@ -1044,37 +1061,39 @@ fi
                 print("✅ Bash tool filesystem restrictions working")
 
     async def test_sandbox_violation_error_messages(
-        self, base_url, create_vmcp, helpers
+        self, base_url, create_vmcp, helpers, blocked_write_dir
     ):
         """Test that sandbox violations produce clear error messages."""
         vmcp = create_vmcp
         print(f"\n🔒 Test - Sandbox violation error messages: {vmcp['id']}")
 
         # Add Python tool that triggers a sandbox violation
+        # Use a directory that's not in the allowed write paths
+        blocked_path = str(blocked_write_dir)
         vmcp_data = helpers["get_vmcp"](vmcp["id"])
         vmcp_data["custom_tools"].append({
             "name": "sandbox_violation_test",
             "description": "Test sandbox violation handling",
             "tool_type": "python",
-            "code": """
+            "code": f"""
 import os
 from pathlib import Path
 
 def main():
     # Try to write to a path that should be restricted
-    # Use /usr/lib which is definitely outside the sandbox and should be read-only
-    test_file = Path("/usr/lib") / ".sandbox_violation_test.txt"
+    # This directory is not in the allowed write paths
+    test_file = Path("{blocked_path}") / "sandbox_violation_test.txt"
     try:
         # Try to write outside sandbox (should fail)
         test_file.write_text("violation test")
-        return f"ERROR: Write succeeded (should have failed): {test_file}"
+        return f"ERROR: Write succeeded (should have failed): {{test_file}}"
     except PermissionError as e:
-        return f"SUCCESS: Permission denied as expected: {str(e)[:100]}"
+        return f"SUCCESS: Permission denied as expected: {{str(e)[:100]}}"
     except OSError as e:
-        # OSError can occur for read-only filesystem
-        return f"SUCCESS: Access blocked as expected: {type(e).__name__}: {str(e)[:100]}"
+        # OSError can occur for read-only filesystem or invalid operations
+        return f"SUCCESS: Access blocked as expected: {{type(e).__name__}}: {{str(e)[:100]}}"
     except Exception as e:
-        return f"SUCCESS: Access blocked as expected: {type(e).__name__}: {str(e)[:100]}"
+        return f"SUCCESS: Access blocked as expected: {{type(e).__name__}}: {{str(e)[:100]}}"
 """,
             "variables": [],
             "environment_variables": [],
@@ -1100,7 +1119,7 @@ def main():
                 # Check if the write actually succeeded (which would be a test failure)
                 if "ERROR" in result_text and "succeeded" in result_text:
                     # Write succeeded when it shouldn't - this indicates sandboxing isn't working
-                    pytest.fail(f"Write to /usr/lib succeeded when it should be blocked: {result_text}")
+                    pytest.fail(f"Write to blocked directory succeeded when it should be blocked: {result_text}")
                 assert "SUCCESS" in result_text or "permission" in result_text.lower() or \
                        "denied" in result_text.lower() or "blocked" in result_text.lower(), \
                     f"Expected clear error message, got: {result_text}"
