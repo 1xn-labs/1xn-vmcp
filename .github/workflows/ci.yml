@@ -45,9 +45,18 @@ jobs:
 
       - name: Install system dependencies for sandboxing
         run: |
-            sudo apt-get update
-            sudo apt-get install -y bubblewrap socat ripgrep
-  
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap socat ripgrep
+          
+      - name: Enable user namespaces for bubblewrap
+        run: |
+          # Enable unprivileged user namespaces (required for bubblewrap)
+          # This allows bubblewrap to create isolated environments without root
+          sudo sysctl -w kernel.unprivileged_userns_clone=1 || echo "Warning: Could not enable user namespaces (may already be enabled or not supported)"
+          
+          # Verify bubblewrap can work
+          bwrap --version || echo "Warning: bubblewrap not found"
+
       - name: Install dependencies
         working-directory: ./backend
         run: |
@@ -162,4 +171,3 @@ jobs:
             /tmp/test_server.log
             /tmp/mcp_servers.log
           if-no-files-found: ignore
-
