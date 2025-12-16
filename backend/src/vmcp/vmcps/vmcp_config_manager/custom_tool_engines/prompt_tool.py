@@ -49,7 +49,14 @@ async def get_custom_prompt(
         raise ValueError(f"Custom prompt {prompt_id} not found in vMCP {vmcp_id}")
 
     # Get the prompt text
-    prompt_text = custom_prompt.get('text', '')
+    # Special handling for sandbox_setup: regenerate dynamically based on current config
+    # This ensures the prompt reflects the current progressive discovery and sandbox state
+    if prompt_id == 'sandbox_setup':
+        from vmcp.vmcps.sandbox_service import SandboxService
+        sandbox_service = SandboxService()
+        prompt_text = sandbox_service.get_sandbox_prompt(vmcp_id, vmcp_config)
+    else:
+        prompt_text = custom_prompt.get('text', '')
     if arguments is None:
         arguments = {}
 
