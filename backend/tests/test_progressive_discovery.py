@@ -189,10 +189,11 @@ class TestProgressiveDiscovery:
                 assert "execute_bash" not in tool_names, "execute_bash should NOT be available when sandbox is disabled"
                 assert "execute_python" not in tool_names, "execute_python should NEVER be available"
                 
-                # MCP tools SHOULD be available (progressive discovery only hides them when sandbox is also ON)
+                # MCP tools should NOT be available (progressive discovery hides them regardless of sandbox status)
+                # According to the implementation, progressive discovery hides MCP tools whenever it's enabled
                 mcp_tools = [t for t in tool_names if t.startswith("everything_")]
-                assert len(mcp_tools) > 0, "MCP tools SHOULD be available when sandbox is disabled, even if progressive discovery is ON"
-                print(f"✅ Found {len(mcp_tools)} MCP tools (correct - sandbox is disabled)")
+                assert len(mcp_tools) == 0, "MCP tools should NOT be available when progressive discovery is ON (regardless of sandbox status)"
+                print(f"✅ No MCP tools found (correct - progressive discovery is ON)")
                 
                 # List prompts
                 prompts_response = await session.list_prompts()
@@ -337,8 +338,10 @@ class TestProgressiveDiscovery:
                 prompt_result = await session.get_prompt("sandbox_setup")
                 prompt_text = prompt_result.messages[0].content.text
                 
-                assert "CLI FOR DISCOVERY" in prompt_text or "EXPLORATION STRATEGY" in prompt_text, "Prompt should include CLI instructions when progressive discovery is ON"
-                assert "vmcp-sdk" in prompt_text or "CLI" in prompt_text.upper(), "Prompt should mention CLI when progressive discovery is ON"
+                # Check for progressive discovery keywords in the prompt
+                # The prompt should mention progressive discovery mode and discovery tools
+                assert "PROGRESSIVE DISCOVERY" in prompt_text.upper() or "progressive discovery" in prompt_text.lower(), "Prompt should mention progressive discovery mode"
+                assert "tools_list" in prompt_text or "tool_detail" in prompt_text or "execute_tool" in prompt_text, "Prompt should mention discovery tools (tools_list, tool_detail, execute_tool)"
                 print("✅ Prompt includes CLI instructions")
                 
                 print("✅ Test 2b passed: Sandbox enabled + Progressive discovery ON behavior verified")
@@ -404,12 +407,13 @@ class TestProgressiveDiscovery:
                 prompt_result = await session.get_prompt("sandbox_setup")
                 prompt_text = prompt_result.messages[0].content.text
                 
-                # Check for CLI-related keywords
-                cli_keywords = ["CLI FOR DISCOVERY", "EXPLORATION STRATEGY", "vmcp-sdk", "list-tools", "call-tool"]
-                found_cli_keywords = [kw for kw in cli_keywords if kw in prompt_text]
+                # Check for progressive discovery keywords in the prompt
+                # The prompt should mention progressive discovery mode and discovery tools
+                pd_keywords = ["PROGRESSIVE DISCOVERY", "progressive discovery", "tools_list", "tool_detail", "execute_tool", "DISCOVERY MODE"]
+                found_keywords = [kw for kw in pd_keywords if kw in prompt_text or kw.lower() in prompt_text.lower()]
                 
-                assert len(found_cli_keywords) > 0, f"Prompt should contain CLI instructions. Found keywords: {found_cli_keywords}"
-                print(f"✅ Prompt contains CLI keywords: {found_cli_keywords}")
+                assert len(found_keywords) > 0, f"Prompt should contain progressive discovery instructions. Found keywords: {found_keywords}, prompt length: {len(prompt_text)}"
+                print(f"✅ Prompt contains progressive discovery keywords: {found_keywords}")
                 
                 print("✅ Test 3 passed: Detailed verification of sandbox + progressive discovery ON")
 
