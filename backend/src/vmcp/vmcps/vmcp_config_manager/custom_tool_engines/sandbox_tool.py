@@ -22,7 +22,166 @@ from typing import Dict, Any, Optional, Union
 
 from mcp.types import TextContent, PromptMessage, GetPromptResult, CallToolResult
 
+from .models import DynamicToolOutput
+
 logger = logging.getLogger("1xN_vMCP_SANDBOX_TOOL")
+
+
+async def execute_dynamic_tool_in_sandbox(
+    vmcp_id: str,
+    script_path: str,
+    arguments: Dict[str, Any]
+) -> DynamicToolOutput:
+    """
+    Execute a dynamic tool script in sandbox and return structured output.
+    
+    This function wraps the sandbox execution logic and returns DynamicToolOutput
+    which can be used with structured_output=True in Tool.from_function.
+    
+    Args:
+        vmcp_id: The vMCP ID
+        script_path: Relative path to the script from sandbox root
+        arguments: Tool arguments dictionary
+        
+    Returns:
+        DynamicToolOutput with result, stdout, and stderr
+    """
+    logger.info(f"🏖️  DYNAMIC_TOOL: Executing dynamic tool - vmcp_id={vmcp_id}, script_path={script_path}, arguments={arguments}")
+    
+    try:
+        from vmcp.vmcps.sandbox_service import get_sandbox_service
+
+        sandbox_service = get_sandbox_service()
+        sandbox_path = sandbox_service.get_sandbox_path(vmcp_id)
+        full_script_path = sandbox_path / script_path
+        
+        if not full_script_path.exists():
+            return DynamicToolOutput(
+                result={"success": False, "error": f"Script not found: {script_path}"},
+                stdout="",
+                stderr=f"Sandbox tool script not found: {script_path}. The tool file may have been deleted or moved."
+            )
+
+        # Get venv Python
+        venv_python_path = sandbox_path / ".venv" / "bin" / "python"
+        if not venv_python_path.exists():
+            venv_python_path = sandbox_path / ".venv" / "Scripts" / "python.exe"
+        venv_python = str(venv_python_path) if venv_python_path.exists() else "python3"
+        
+        # Write arguments to JSON file
+        args_file = sandbox_path / "temp_tool_args.json"
+        with open(args_file, 'w') as f:
+            json.dump(arguments, f)
+        
+        sandbox_dir_str = str(sandbox_path)
+        
+        # Inner script that executes the tool
+        inner_code = f"""
+import sys
+import json
+import inspect
+import pathlib
+import os
+import asyncio
+
+sandbox_path_str = '{sandbox_dir_str}'
+if sandbox_path_str not in sys.path:
+    sys.path.insert(0, sandbox_path_str)
+
+args_path = '{str(args_file)}'
+try:
+    with open(args_path, 'r') as f:
+        args = json.load(f)
+except Exception as e:
+    print(json.dumps({{'success': False, 'error': f'Failed to load arguments: {{e}}'}}))
+    sys.exit(1)
+
+script_path_str = '{str(full_script_path)}'
+script_path = pathlib.Path(script_path_str)
+g = {{}}
+try:
+    exec(compile(script_path.read_text(), str(script_path), 'exec'), g)
+except Exception as e:
+    print(json.dumps({{'success': False, 'error': f'Failed to load tool script: {{e}}'}}))
+    sys.exit(1)
+
+main = g.get('main')
+if main and callable(main):
+    try:
+        sig = inspect.signature(main)
+        params = list(sig.parameters.keys())
+        filtered = {{k:v for k,v in args.items() if k in params}}
+        
+        if inspect.iscoroutinefunction(main):
+            res = asyncio.run(main(**filtered))
+        else:
+            res = main(**filtered)
+        print(json.dumps({{'success': True, 'result': res}}))
+    except Exception as e:
+        print(json.dumps({{'success': False, 'error': f'Tool execution error: {{e}}'}}))
+else:
+    print(json.dumps({{'success': False, 'error': 'No main() function found'}}))
+"""
+        
+        inner_b64 = base64.b64encode(inner_code.encode('utf-8')).decode('utf-8')
+        target_command = f"{venv_python} -c \"import base64; exec(base64.b64decode('{inner_b64}').decode('utf-8'))\""
+        
+        # Execute in sandbox
+        original_cwd = os.getcwd()
+        os.chdir(str(sandbox_path))
+        
+        try:
+            process = await asyncio.create_subprocess_shell(
+                target_command,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                cwd=str(sandbox_path)
+            )
+            
+            stdout, stderr = await asyncio.wait_for(
+                process.communicate(),
+                timeout=60
+            )
+            
+            stdout_str = stdout.decode("utf-8", errors="replace")
+            stderr_str = stderr.decode("utf-8", errors="replace")
+            
+            # Parse result from stdout
+            try:
+                result_data = json.loads(stdout_str.strip())
+                if result_data.get('success', False):
+                    result = result_data.get('result', {})
+                else:
+                    result = {"success": False, "error": result_data.get('error', 'Unknown error')}
+            except json.JSONDecodeError:
+                result = {"success": False, "error": "Failed to parse result", "raw_output": stdout_str}
+            
+            return DynamicToolOutput(
+                result=result,
+                stdout=stdout_str,
+                stderr=stderr_str
+            )
+            
+        except asyncio.TimeoutError:
+            return DynamicToolOutput(
+                result={"success": False, "error": "Tool execution timed out"},
+                stdout="",
+                stderr="Tool execution timed out after 60 seconds"
+            )
+        finally:
+            os.chdir(original_cwd)
+            try:
+                args_file.unlink()
+            except:
+                pass
+                
+    except Exception as e:
+        logger.error(f"Error executing dynamic tool: {e}", exc_info=True)
+        return DynamicToolOutput(
+            result={"success": False, "error": str(e)},
+            stdout="",
+            stderr=f"Error executing dynamic tool: {str(e)}"
+        )
 
 
 async def execute_sandbox_discovered_tool(
@@ -59,15 +218,17 @@ async def execute_sandbox_discovered_tool(
         logger.info(f"🏖️  SANDBOX_TOOL: Sandbox path: {sandbox_path}, Full script path: {full_script_path}")
 
         if not full_script_path.exists():
-            error_content = TextContent(
-                type="text",
-                text=f"Sandbox tool script not found: {script_path}. The tool file may have been deleted or moved.",
-                annotations=None,
-                _meta=None
-            )
+            error_msg = f"Sandbox tool script not found: {script_path}. The tool file may have been deleted or moved."
+            error_result = {"error": error_msg}
+            structured_output: Dict[str, Any] = {
+                "result": error_result,
+                "stdout": "",
+                "stderr": error_msg
+            }
+            error_text = json.dumps(structured_output, indent=2)
             return CallToolResult(
-                content=[error_content],
-                structuredContent=None,
+                content=[TextContent(type="text", text=error_text, annotations=None, _meta=None)],
+                structuredContent=structured_output,
                 isError=True
             )
 
@@ -179,37 +340,56 @@ else:
                 
                 stdout, stderr = await process.communicate()
                 
-                # Parse result - just return stdout as-is
+                # Parse result
                 stdout_str = stdout.decode("utf-8", errors="replace")
                 stderr_str = stderr.decode("utf-8", errors="replace")
                 
-                # Combine stdout and stderr if both exist
-                if stdout_str and stderr_str:
-                    result_text = f"{stdout_str}\n\nStderr: {stderr_str}"
-                elif stdout_str:
-                    result_text = stdout_str
-                elif stderr_str:
-                    result_text = stderr_str
-                else:
-                    result_text = ""
+                # Parse result_data from stdout
+                try:
+                    result_data = json.loads(stdout_str.strip())
+                except json.JSONDecodeError:
+                    result_data = {"success": False, "error": "Failed to parse result", "raw_output": stdout_str}
                 
-                content = TextContent(
-                    type="text",
-                    text=result_text,
-                    annotations=None,
-                    _meta=None
-                )
+                is_error = process.returncode != 0 or not result_data.get('success', False)
+                
+                # Extract actual return value
+                if result_data.get('success', False):
+                    actual_result = result_data.get('result')
+                else:
+                    actual_result = {"error": result_data.get('error', 'Unknown error')}
+                
+                # Create structured output dict: {"result": ..., "stdout": ..., "stderr": ...}
+                structured_output: Dict[str, Any] = {
+                    "result": actual_result,
+                    "stdout": stdout_str,
+                    "stderr": stderr_str
+                }
+                
+                # Create JSON object for text content (same structure)
+                text_content_json = json.dumps(structured_output, indent=2)
                 
                 if tool_as_prompt:
+                    combined_content = TextContent(
+                        type="text",
+                        text=text_content_json,
+                        annotations=None,
+                        _meta=None
+                    )
                     return GetPromptResult(
                         description="Tool executed successfully",
-                        messages=[PromptMessage(role="user", content=content)]
+                        messages=[PromptMessage(role="user", content=combined_content)]
                     )
                 
+                # Return with structuredContent containing the full output structure
                 return CallToolResult(
-                    content=[content],
-                    structuredContent=None,
-                    isError=process.returncode != 0
+                    content=[TextContent(
+                        type="text",
+                        text=text_content_json,
+                        annotations=None,
+                        _meta=None
+                    )],
+                    structuredContent=structured_output,  # Full structure: {result, stdout, stderr}
+                    isError=is_error
                 )
                     
             finally:
@@ -330,14 +510,17 @@ if __name__ == "__main__":
             except asyncio.TimeoutError:
                 process.kill()
                 await process.wait()
+                timeout_msg = "Tool execution timed out after 60 seconds"
+                timeout_result = {"error": timeout_msg}
+                structured_output: Dict[str, Any] = {
+                    "result": timeout_result,
+                    "stdout": "",
+                    "stderr": timeout_msg
+                }
+                timeout_text = json.dumps(structured_output, indent=2)
                 return CallToolResult(
-                    content=[TextContent(
-                        type="text",
-                        text="Tool execution timed out after 60 seconds",
-                        annotations=None,
-                        _meta=None
-                    )],
-                    structuredContent=None,
+                    content=[TextContent(type="text", text=timeout_text, annotations=None, _meta=None)],
+                    structuredContent=structured_output,
                     isError=True
                 )
 
@@ -354,38 +537,53 @@ if __name__ == "__main__":
             if any(pattern.lower() in stderr_str.lower() for pattern in sandbox_violation_patterns):
                 stderr_str = f"⚠️ SANDBOX RESTRICTION: {stderr_str}"
 
-            # Just return stdout as-is, combine with stderr if needed
-            if stdout_str and stderr_str:
-                result_text = f"{stdout_str}\n\nStderr: {stderr_str}"
-            elif stdout_str:
-                result_text = stdout_str
-            elif stderr_str:
-                result_text = stderr_str
-            else:
-                result_text = ""
+            # Parse result_data from stdout
+            try:
+                result_data = json.loads(stdout_str.strip())
+            except json.JSONDecodeError:
+                result_data = {"success": False, "error": "Failed to parse result", "raw_output": stdout_str}
             
-            is_error = process.returncode != 0
+            is_error = process.returncode != 0 or not result_data.get('success', False)
 
-            text_content = TextContent(
-                type="text",
-                text=result_text,
-                annotations=None,
-                _meta=None
-            )
+            # Extract actual return value
+            if result_data.get('success', False):
+                actual_result = result_data.get('result')
+            else:
+                actual_result = {"error": result_data.get('error', 'Unknown error')}
+            
+            # Create structured output dict: {"result": ..., "stdout": ..., "stderr": ...}
+            structured_output: Dict[str, Any] = {
+                "result": actual_result,
+                "stdout": stdout_str,
+                "stderr": stderr_str
+            }
+            text_content_json = json.dumps(structured_output, indent=2)
 
             if tool_as_prompt:
+                combined_content = TextContent(
+                    type="text",
+                    text=text_content_json,
+                    annotations=None,
+                    _meta=None
+                )
                 prompt_message = PromptMessage(
                     role="user",
-                    content=text_content
+                    content=combined_content
                 )
                 return GetPromptResult(
                     description="Sandbox tool execution result",
                     messages=[prompt_message]
                 )
 
+            # Return with structuredContent containing the full output structure
             return CallToolResult(
-                content=[text_content],
-                structuredContent=None,
+                content=[TextContent(
+                    type="text",
+                    text=text_content_json,
+                    annotations=None,
+                    _meta=None
+                )],
+                structuredContent=structured_output,  # Full structure: {result, stdout, stderr}
                 isError=is_error
             )
 
@@ -416,15 +614,16 @@ if __name__ == "__main__":
         else:
             error_msg = f"Sandbox tool execution failed. Error type: {exc_type}. Details: {exc_str}"
         
-        error_content = TextContent(
-            type="text",
-            text=error_msg,
-            annotations=None,
-            _meta=None
-        )
+        error_result = {"error": error_msg}
+        structured_output: Dict[str, Any] = {
+            "result": error_result,
+            "stdout": "",
+            "stderr": error_msg
+        }
+        error_text = json.dumps(structured_output, indent=2)
         return CallToolResult(
-            content=[error_content],
-            structuredContent=None,
+            content=[TextContent(type="text", text=error_text, annotations=None, _meta=None)],
+            structuredContent=structured_output,
             isError=True
         )
 

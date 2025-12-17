@@ -575,14 +575,14 @@ class StorageBase:
             if removed_count > 0:
                 logger.debug(f"Removed {removed_count} existing sandbox tools for vMCP {vmcp_id}")
             
-            # Remove sandbox prompt (by checking if it contains sandbox setup text)
+            # Remove sandbox prompt (by checking name to avoid duplicates)
             before_prompt_remove = len(custom_prompts)
             custom_prompts = [
                 prompt for prompt in custom_prompts
-                if 'SANDBOX ENVIRONMENT' not in prompt.get('text', '')
+                if prompt.get('name') != 'sandbox_setup'
             ]
             if len(custom_prompts) < before_prompt_remove:
-                logger.debug(f"Removed sandbox setup prompt for vMCP {vmcp_id}")
+                logger.debug(f"Removed {before_prompt_remove - len(custom_prompts)} sandbox setup prompt(s) for vMCP {vmcp_id}")
             
             # Only inject sandbox tools/prompts if sandbox is enabled
             if sandbox_service.is_enabled(vmcp_id, vmcp_config):

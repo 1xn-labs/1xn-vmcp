@@ -26,6 +26,10 @@ from typing import Any, Dict, List, Optional
 
 from vmcp.utilities.logging import get_logger
 
+# Import for Tool.from_function
+from mcp.server.fastmcp.tools.base import Tool
+from vmcp.vmcps.vmcp_config_manager.custom_tool_engines.models import DynamicToolOutput
+
 logger = get_logger(__name__)
 
 class SandboxService:
@@ -905,13 +909,39 @@ class SandboxToolRegistry:
         with open(self.registry_file, 'w') as f:
             json.dump(registry, f, indent=2)
     
+    def _tool_to_dict(self, tool: Tool, script_content: str, script_path: Path) -> Dict[str, Any]:
+        """Convert Tool object to dict format for custom_tools storage."""
+        # Extract variables from tool.parameters (inputSchema)
+        variables = []
+        required = tool.parameters.get('required', [])
+        for param_name, param_schema in tool.parameters.get('properties', {}).items():
+            variables.append({
+                'name': param_name,
+                'description': param_schema.get('description', ''),
+                'type': param_schema.get('type', 'str'),
+                'required': param_name in required
+            })
+        
+        return {
+            'name': tool.name,
+            'description': tool.description,
+            'tool_type': 'python',
+            'code': script_content,  # Keep for backward compatibility
+            'inputSchema': tool.parameters,
+            'outputSchema': tool.output_schema,
+            'variables': variables,
+            'environment_variables': [],
+            'tool_calls': [],
+            'meta': tool.meta or {}
+        }
+
     def _parse_script_as_tool(
         self, 
         script_path: Path, 
         registry: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
         """
-        Parse Python script to extract tool definition.
+        Parse Python script and create a Tool using Tool.from_function.
         
         Looks for:
         - main() function with type hints for parameters
@@ -951,64 +981,47 @@ class SandboxToolRegistry:
                 if 'description' in registry[tool_name]:
                     description = registry[tool_name]['description']
             
-            # Extract parameters from function signature
-            variables = []
-            required_params = []
+            # Import here to avoid circular import
+            from vmcp.vmcps.vmcp_config_manager.custom_tool_engines.sandbox_tool import execute_dynamic_tool_in_sandbox
             
-            for arg in main_func.args.args:
-                if arg.arg == 'self':
-                    continue
+            # Create wrapper function that executes the script in sandbox
+            async def tool_wrapper(**kwargs: Dict[str, Any]) -> DynamicToolOutput:
+                """
+                Wrapper function that executes the script in sandbox.
                 
-                param_name = arg.arg
-                param_type = 'str'  # default
-                
-                # Extract type hint if available
-                if arg.annotation:
-                    if isinstance(arg.annotation, ast.Name):
-                        type_name = arg.annotation.id
-                        type_mapping = {
-                            'str': 'str',
-                            'int': 'int',
-                            'float': 'float',
-                            'bool': 'bool',
-                            'list': 'list',
-                            'dict': 'dict'
-                        }
-                        param_type = type_mapping.get(type_name, 'str')
-                
-                # Check if has default (optional parameter)
-                has_default = len(main_func.args.defaults) > 0 and \
-                             len(main_func.args.args) - len(main_func.args.defaults) <= \
-                             main_func.args.args.index(arg)
-                
-                if not has_default:
-                    required_params.append(param_name)
-                
-                variables.append({
-                    'name': param_name,
-                    'description': f"Parameter: {param_name}",
-                    'type': param_type,
-                    'required': not has_default
-                })
+                Args:
+                    **kwargs: Arguments to pass to the script's main() function
+                    
+                Returns:
+                    DynamicToolOutput with result, stdout, and stderr
+                """
+                return await execute_dynamic_tool_in_sandbox(
+                    vmcp_id=self.vmcp_id,
+                    script_path=str(script_path.relative_to(self.sandbox_path)),
+                    arguments=kwargs
+                )
             
-            # Create tool definition
-            # Read full script content for code field
-            tool_def = {
-                'name': tool_name,  # Keep original tool name without prefix
-                'description': description,
-                'tool_type': 'python',
-                'code': script_content,  # Full script content
-                'variables': variables,
-                'environment_variables': [],
-                'tool_calls': [],
-                'meta': {
+            # Set function metadata for better tool definition
+            tool_wrapper.__name__ = tool_name
+            tool_wrapper.__doc__ = description
+            
+            # Create Tool using Tool.from_function with structured_output=True
+            tool = Tool.from_function(
+                fn=tool_wrapper,
+                name=tool_name,
+                description=description,
+                structured_output=True,  # This enables structured output with DynamicToolOutput
+                meta={
                     'source': 'sandbox_discovered',
                     'script_path': str(script_path.relative_to(self.sandbox_path)),
                     'vmcp_id': self.vmcp_id
                 }
-            }
+            )
             
-            return tool_def
+            # Convert Tool to dict for storage
+            tool_dict = self._tool_to_dict(tool, script_content, script_path)
+            
+            return tool_dict
             
         except Exception as e:
             logger.warning(f"Failed to parse script {script_path}: {e}")

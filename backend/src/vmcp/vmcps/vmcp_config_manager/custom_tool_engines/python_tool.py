@@ -134,15 +134,17 @@ async def execute_python_tool(
     # Get the Python code
     python_code = custom_tool.get('code', '')
     if not python_code:
-        error_content = TextContent(
-            type="text",
-            text="No Python code provided for this tool",
-            annotations=None,
-            _meta=None
-        )
+        error_msg = "No Python code provided for this tool"
+        error_result = {"error": error_msg}
+        structured_output: Dict[str, Any] = {
+            "result": error_result,
+            "stdout": "",
+            "stderr": error_msg
+        }
+        error_text = json.dumps(structured_output, indent=2)
         return CallToolResult(
-            content=[error_content],
-            structuredContent=None,
+            content=[TextContent(type="text", text=error_text, annotations=None, _meta=None)],
+            structuredContent=structured_output,
             isError=True
         )
 
@@ -207,28 +209,32 @@ async def execute_python_tool(
             logger.info(f"🏖️  PYTHON_TOOL: Extracted vmcp_id from tool metadata: {vmcp_id}")
         
         if not script_path:
-            error_content = TextContent(
-                type="text",
-                text=f"Sandbox tool missing script_path in metadata: {tool_meta}",
-                annotations=None,
-                _meta=None
-            )
+            error_msg = f"Sandbox tool missing script_path in metadata: {tool_meta}"
+            error_result = {"error": error_msg}
+            structured_output: Dict[str, Any] = {
+                "result": error_result,
+                "stdout": "",
+                "stderr": error_msg
+            }
+            error_text = json.dumps(structured_output, indent=2)
             return CallToolResult(
-                content=[error_content],
-                structuredContent=None,
+                content=[TextContent(type="text", text=error_text, annotations=None, _meta=None)],
+                structuredContent=structured_output,
                 isError=True
             )
         
         if not vmcp_id:
-            error_content = TextContent(
-                type="text",
-                text=f"Sandbox tool missing vmcp_id. Tool metadata: {tool_meta}. Please ensure the tool is called with vmcp_id context.",
-                annotations=None,
-                _meta=None
-            )
+            error_msg = f"Sandbox tool missing vmcp_id. Tool metadata: {tool_meta}. Please ensure the tool is called with vmcp_id context."
+            error_result = {"error": error_msg}
+            structured_output: Dict[str, Any] = {
+                "result": error_result,
+                "stdout": "",
+                "stderr": error_msg
+            }
+            error_text = json.dumps(structured_output, indent=2)
             return CallToolResult(
-                content=[error_content],
-                structuredContent=None,
+                content=[TextContent(type="text", text=error_text, annotations=None, _meta=None)],
+                structuredContent=structured_output,
                 isError=True
             )
         
@@ -384,69 +390,89 @@ else:
         # Clean up the temporary file
         os.unlink(temp_file)
 
+        # Get stdout and stderr separately
+        stdout_str = result.stdout if result.stdout else ""
+        stderr_str = result.stderr if result.stderr else ""
+
         # Parse the result
         try:
-            result_data = json.loads(result.stdout.strip())
-            if result_data.get('success', False):
-                result_text = json.dumps(result_data.get('result', ''), indent=2)
-            else:
-                result_text = f"Error: {result_data.get('error', 'Unknown error')}"
+            result_data = json.loads(stdout_str.strip())
         except json.JSONDecodeError:
-            result_text = result.stdout if result.stdout else result.stderr
+            result_data = {"success": False, "error": "Failed to parse result", "raw_output": stdout_str}
 
-        # Create the TextContent
-        text_content = TextContent(
-            type="text",
-            text=result_text,
-            annotations=None,
-            _meta=None
-        )
+        is_error = not result_data.get('success', False) if result_data else True
+
+        # Extract actual return value
+        if result_data.get('success', False):
+            actual_result = result_data.get('result')
+        else:
+            actual_result = {"error": result_data.get('error', 'Unknown error')}
+
+        # Create structured output dict: {"result": ..., "stdout": ..., "stderr": ...}
+        structured_output: Dict[str, Any] = {
+            "result": actual_result,
+            "stdout": stdout_str,
+            "stderr": stderr_str
+        }
+        text_content_json = json.dumps(structured_output, indent=2)
 
         if tool_as_prompt:
-            # Create the PromptMessage
+            combined_content = TextContent(
+                type="text",
+                text=text_content_json,
+                annotations=None,
+                _meta=None
+            )
             prompt_message = PromptMessage(
                 role="user",
-                content=text_content
+                content=combined_content
             )
-
-            # Create the GetPromptResult
             prompt_result = GetPromptResult(
                 description="Python tool execution result",
                 messages=[prompt_message]
             )
             return prompt_result
 
-        # Create the CallToolResult
+        # Create the CallToolResult with structuredContent containing the full output structure
         tool_result = CallToolResult(
-            content=[text_content],
-            structuredContent=None,
-            isError=not result_data.get('success', False) if 'result_data' in locals() else False
+            content=[TextContent(
+                type="text",
+                text=text_content_json,
+                annotations=None,
+                _meta=None
+            )],
+            structuredContent=structured_output,  # Full structure: {result, stdout, stderr}
+            isError=is_error
         )
 
         return tool_result
 
     except subprocess.TimeoutExpired as e:
         timeout_seconds = getattr(e, 'timeout', 30)
-        error_content = TextContent(
-            type="text",
-            text=f"Python tool execution timed out ({timeout_seconds} seconds)",
-            annotations=None,
-            _meta=None
-        )
+        timeout_msg = f"Python tool execution timed out ({timeout_seconds} seconds)"
+        timeout_result = {"error": timeout_msg}
+        structured_output: Dict[str, Any] = {
+            "result": timeout_result,
+            "stdout": "",
+            "stderr": timeout_msg
+        }
+        timeout_text = json.dumps(structured_output, indent=2)
         return CallToolResult(
-            content=[error_content],
-            structuredContent=None,
+            content=[TextContent(type="text", text=timeout_text, annotations=None, _meta=None)],
+            structuredContent=structured_output,
             isError=True
         )
     except Exception as e:
-        error_content = TextContent(
-            type="text",
-            text=f"Error executing Python tool: {str(e)}",
-            annotations=None,
-            _meta=None
-        )
+        error_msg = f"Error executing Python tool: {str(e)}"
+        error_result = {"error": error_msg}
+        structured_output: Dict[str, Any] = {
+            "result": error_result,
+            "stdout": "",
+            "stderr": error_msg
+        }
+        error_text = json.dumps(structured_output, indent=2)
         return CallToolResult(
-            content=[error_content],
-            structuredContent=None,
+            content=[TextContent(type="text", text=error_text, annotations=None, _meta=None)],
+            structuredContent=structured_output,
             isError=True
         )
