@@ -73,6 +73,14 @@ async def execute_dynamic_tool_in_sandbox(
         with open(args_file, 'w') as f:
             json.dump(arguments, f)
         
+        # Create .tmp directory for result files
+        tmp_dir = sandbox_path / ".tmp"
+        tmp_dir.mkdir(exist_ok=True)
+        
+        # Create unique result file in .tmp directory
+        import uuid
+        result_file = tmp_dir / f"temp_tool_result_{uuid.uuid4().hex}.json"
+        
         sandbox_dir_str = str(sandbox_path)
         
         # Inner script that executes the tool
@@ -113,11 +121,51 @@ if main and callable(main):
         
         sig = inspect.signature(main)
         
-        # Build filtered args with default values
+        # Helper function to convert argument to correct type
+        def convert_arg_to_type(value, param):
+            if value is None:
+                return param.default if param.default != inspect.Parameter.empty else None
+            
+            # Get the annotation type
+            param_type = param.annotation
+            if param_type == inspect.Parameter.empty:
+                return value  # No type annotation, use as-is
+            
+            # Handle Optional types
+            import typing
+            if hasattr(typing, 'get_origin') and hasattr(typing, 'get_args'):
+                origin = typing.get_origin(param_type)
+                if origin is typing.Union:
+                    args = typing.get_args(param_type)
+                    # Check if it's Optional[SomeType] (Union[SomeType, None])
+                    if len(args) == 2 and type(None) in args:
+                        param_type = args[0] if args[0] is not type(None) else args[1]
+            
+            # Convert based on type
+            try:
+                if param_type == int or param_type == 'int':
+                    return int(value)
+                elif param_type == float or param_type == 'float':
+                    return float(value)
+                elif param_type == bool or param_type == 'bool':
+                    if isinstance(value, str):
+                        return value.lower() in ('true', '1', 'yes', 'on')
+                    return bool(value)
+                elif param_type == str or param_type == 'str':
+                    return str(value)
+                else:
+                    # For other types, try to convert or return as-is
+                    return value
+            except (ValueError, TypeError):
+                # If conversion fails, return as-is or use default
+                return param.default if param.default != inspect.Parameter.empty else value
+        
+        # Build filtered args with default values and type conversion
         filtered = {{}}
         for param_name, param in sig.parameters.items():
             if param_name in args:
-                filtered[param_name] = args[param_name]
+                # Convert argument to correct type
+                filtered[param_name] = convert_arg_to_type(args[param_name], param)
             elif param.default != inspect.Parameter.empty:
                 # Use default value if parameter not provided
                 filtered[param_name] = param.default
@@ -141,11 +189,13 @@ if main and callable(main):
         if isinstance(res, BaseModel):
             res = res.model_dump() if hasattr(res, 'model_dump') else res.dict()
         
-        # Print user output to stdout, then JSON result as last line
+        # Print user output to stdout (only prints/logs, no JSON)
         if user_prints:
             print(user_prints, end='')
-        # Print JSON result as the last line in stdout
-        print(json.dumps({{'success': True, 'result': res}}))
+        # Write result to file (no JSON in stdout/stderr)
+        result_path = '{str(result_file)}'
+        with open(result_path, 'w') as f:
+            json.dump({{'success': True, 'result': res}}, f)
     except Exception as e:
         # Restore stdout if it was redirected
         try:
@@ -153,12 +203,17 @@ if main and callable(main):
                 sys.stdout = original_stdout
         except:
             pass
-        # Errors go to stderr
+        # Errors go to stderr (only error message, no JSON)
         print(str(e), file=sys.stderr)
-        # But we still need JSON result in stdout for parsing
-        print(json.dumps({{'success': False, 'error': f'Tool execution error: {{e}}'}}))
+        # Write error to file
+        result_path = '{str(result_file)}'
+        with open(result_path, 'w') as f:
+            json.dump({{'success': False, 'error': f'Tool execution error: {{e}}'}}, f)
 else:
-    print(json.dumps({{'success': False, 'error': 'No main() function found'}}), file=sys.stderr)
+    # Write error to file
+    result_path = '{str(result_file)}'
+    with open(result_path, 'w') as f:
+        json.dump({{'success': False, 'error': 'No main() function found'}}, f)
 """
         
         inner_b64 = base64.b64encode(inner_code.encode('utf-8')).decode('utf-8')
@@ -184,39 +239,25 @@ else:
             stdout_str = stdout.decode("utf-8", errors="replace")
             stderr_str = stderr.decode("utf-8", errors="replace")
             
-            # Parse result from stdout (JSON is the last line, user prints are before it)
-            # Split stdout into user prints and JSON result
-            stdout_lines = stdout_str.strip().split('\n')
-            user_prints = ""
+            # stdout contains only user prints (no JSON)
+            stdout_str = stdout_str.strip()
+            
+            # Read result from file
             result_data = None
-            
-            if stdout_lines:
-                # Try to parse the last line as JSON
+            if result_file.exists():
                 try:
-                    result_data = json.loads(stdout_lines[-1])
-                    # If successful, everything before the last line is user prints
-                    if len(stdout_lines) > 1:
-                        user_prints = '\n'.join(stdout_lines[:-1]) + '\n'
-                    else:
-                        user_prints = ""
-                except json.JSONDecodeError:
-                    # Last line is not JSON, try parsing entire stdout as JSON (backward compatibility)
-                    try:
-                        result_data = json.loads(stdout_str.strip())
-                        user_prints = ""
-                    except json.JSONDecodeError:
-                        result_data = {"success": False, "error": "Failed to parse result", "raw_output": stdout_str}
-                        user_prints = stdout_str
+                    with open(result_file, 'r') as f:
+                        result_data = json.load(f)
+                except Exception as e:
+                    logger.warning(f"Failed to read result file: {e}")
+                    result_data = None
             
-            # Extract result from result_data (don't include 'success' field in result)
+            # Extract result from result_data
             if result_data and result_data.get('success', False):
                 result = result_data.get('result', {})
             else:
                 error_msg = result_data.get('error', 'Unknown error') if result_data else 'Failed to parse result'
-                result = {"error": error_msg}  # Don't include 'success' field
-            
-            # Update stdout_str to only contain user prints
-            stdout_str = user_prints
+                result = {"error": error_msg}
             
             return DynamicToolOutput(
                 result=result,
@@ -234,6 +275,10 @@ else:
             os.chdir(original_cwd)
             try:
                 args_file.unlink()
+            except:
+                pass
+            try:
+                result_file.unlink()
             except:
                 pass
                 
@@ -309,6 +354,14 @@ async def execute_sandbox_discovered_tool(
         with open(args_file, 'w') as f:
             json.dump(arguments, f)
 
+        # Create .tmp directory for result files
+        tmp_dir = sandbox_path / ".tmp"
+        tmp_dir.mkdir(exist_ok=True)
+        
+        # Create unique result file in .tmp directory
+        import uuid
+        result_file = tmp_dir / f"temp_tool_result_{uuid.uuid4().hex}.json"
+
         # Initialize sandbox config keys/paths for the outer script
         sandbox_dir_str = str(sandbox_path)
         
@@ -359,11 +412,51 @@ if main and callable(main):
         
         sig = inspect.signature(main)
         
-        # Build filtered args with default values
+        # Helper function to convert argument to correct type
+        def convert_arg_to_type(value, param):
+            if value is None:
+                return param.default if param.default != inspect.Parameter.empty else None
+            
+            # Get the annotation type
+            param_type = param.annotation
+            if param_type == inspect.Parameter.empty:
+                return value  # No type annotation, use as-is
+            
+            # Handle Optional types
+            import typing
+            if hasattr(typing, 'get_origin') and hasattr(typing, 'get_args'):
+                origin = typing.get_origin(param_type)
+                if origin is typing.Union:
+                    args = typing.get_args(param_type)
+                    # Check if it's Optional[SomeType] (Union[SomeType, None])
+                    if len(args) == 2 and type(None) in args:
+                        param_type = args[0] if args[0] is not type(None) else args[1]
+            
+            # Convert based on type
+            try:
+                if param_type == int or param_type == 'int':
+                    return int(value)
+                elif param_type == float or param_type == 'float':
+                    return float(value)
+                elif param_type == bool or param_type == 'bool':
+                    if isinstance(value, str):
+                        return value.lower() in ('true', '1', 'yes', 'on')
+                    return bool(value)
+                elif param_type == str or param_type == 'str':
+                    return str(value)
+                else:
+                    # For other types, try to convert or return as-is
+                    return value
+            except (ValueError, TypeError):
+                # If conversion fails, return as-is or use default
+                return param.default if param.default != inspect.Parameter.empty else value
+        
+        # Build filtered args with default values and type conversion
         filtered = {{}}
         for param_name, param in sig.parameters.items():
             if param_name in args:
-                filtered[param_name] = args[param_name]
+                # Convert argument to correct type
+                filtered[param_name] = convert_arg_to_type(args[param_name], param)
             elif param.default != inspect.Parameter.empty:
                 # Use default value if parameter not provided
                 filtered[param_name] = param.default
@@ -390,10 +483,13 @@ if main and callable(main):
         if isinstance(res, BaseModel):
             res = res.model_dump() if hasattr(res, 'model_dump') else res.dict()
         
-        # Print user output to stdout, JSON result to stderr
+        # Print user output to stdout (only prints/logs, no JSON)
         if user_prints:
             print(user_prints, end='')
-        print(json.dumps({{'success': True, 'result': res}}), file=sys.stderr)
+        # Write result to file (no JSON in stdout/stderr)
+        result_path = '{str(result_file)}'
+        with open(result_path, 'w') as f:
+            json.dump({{'success': True, 'result': res}}, f)
     except Exception as e:
         # Restore stdout if it was redirected
         try:
@@ -401,15 +497,27 @@ if main and callable(main):
                 sys.stdout = original_stdout
         except:
             pass
-        print(json.dumps({{'success': False, 'error': f'Tool execution error: {{e}}'}}), file=sys.stderr)
+        # Errors go to stderr (only error message, no JSON)
+        print(str(e), file=sys.stderr)
+        # Write error to file
+        result_path = '{str(result_file)}'
+        with open(result_path, 'w') as f:
+            json.dump({{'success': False, 'error': f'Tool execution error: {{e}}'}}, f)
 else:
-    print(json.dumps({{'success': False, 'error': 'No main() function found'}}), file=sys.stderr)
+    # Write error to file
+    result_path = '{str(result_file)}'
+    with open(result_path, 'w') as f:
+        json.dump({{'success': False, 'error': 'No main() function found'}}, f)
 """
         # Base64 encode the inner code to avoid escaping hell when passing to python -c
         inner_b64 = base64.b64encode(inner_code.encode('utf-8')).decode('utf-8')
         
         # The command that the sandbox manager will wrap
         # This effectively runs: python -c "exec(b64decode(...))"
+        # We'll pass venv_python and inner_b64 separately to avoid quote escaping issues
+        venv_python_str = str(venv_python)
+        
+        # For skip_sandbox mode, construct command directly
         target_command = f"{venv_python} -c \"import base64; exec(base64.b64decode('{inner_b64}').decode('utf-8'))\""
 
         # ------------------------------------------------------------------
@@ -439,32 +547,18 @@ else:
                 stdout_str = stdout.decode("utf-8", errors="replace")
                 stderr_str = stderr.decode("utf-8", errors="replace")
                 
-                # Parse result_data from stdout (JSON is the last line, user prints are before it)
-                # Split stdout into user prints and JSON result
-                stdout_lines = stdout_str.strip().split('\n')
-                user_prints = ""
+                # stdout contains only user prints (no JSON)
+                stdout_str = stdout_str.strip()
+                
+                # Read result from file
                 result_data = None
-                
-                if stdout_lines:
-                    # Try to parse the last line as JSON
+                if result_file.exists():
                     try:
-                        result_data = json.loads(stdout_lines[-1])
-                        # If successful, everything before the last line is user prints
-                        if len(stdout_lines) > 1:
-                            user_prints = '\n'.join(stdout_lines[:-1]) + '\n'
-                        else:
-                            user_prints = ""
-                    except json.JSONDecodeError:
-                        # Last line is not JSON, try parsing entire stdout as JSON (backward compatibility)
-                        try:
-                            result_data = json.loads(stdout_str.strip())
-                            user_prints = ""
-                        except json.JSONDecodeError:
-                            result_data = {"success": False, "error": "Failed to parse result", "raw_output": stdout_str}
-                            user_prints = stdout_str
-                
-                # Update stdout_str to only contain user prints
-                stdout_str = user_prints
+                        with open(result_file, 'r') as f:
+                            result_data = json.load(f)
+                    except Exception as e:
+                        logger.warning(f"Failed to read result file: {e}")
+                        result_data = None
                 
                 is_error = bool(process.returncode != 0 or (result_data and not result_data.get('success', False)))
                 
@@ -512,9 +606,13 @@ else:
             finally:
                 # Always restore CWD
                 os.chdir(original_cwd)
-                # Clean up temp args file
+                # Clean up temp files
                 try:
                     args_file.unlink()
+                except:
+                    pass
+                try:
+                    result_file.unlink()
                 except:
                     pass
 
@@ -561,8 +659,12 @@ async def run_sandboxed():
     
     await SandboxManager.initialize(sandbox_config)
     
-    # Wrap the command
-    cmd_str = {repr(target_command)}
+    # Wrap the command - reconstruct it here to avoid quote escaping issues
+    venv_python_str = '{venv_python_str}'
+    inner_b64 = '{inner_b64}'
+    # Use repr() to properly escape the base64 string for Python
+    inner_b64_repr = repr(inner_b64)  # This gives us a properly escaped Python string literal
+    cmd_str = venv_python_str + ' -c "import base64; exec(base64.b64decode(' + inner_b64_repr + ').decode(\\'utf-8\\'))"'
     
     try:
         sandboxed_cmd = await SandboxManager.wrap_with_sandbox(
@@ -654,32 +756,18 @@ if __name__ == "__main__":
             if any(pattern.lower() in stderr_str.lower() for pattern in sandbox_violation_patterns):
                 stderr_str = f"⚠️ SANDBOX RESTRICTION: {stderr_str}"
 
-            # Parse result_data from stdout (JSON is the last line, user prints are before it)
-            # Split stdout into user prints and JSON result
-            stdout_lines = stdout_str.strip().split('\n')
-            user_prints = ""
+            # stdout contains only user prints (no JSON)
+            stdout_str = stdout_str.strip()
+            
+            # Read result from file
             result_data = None
-            
-            if stdout_lines:
-                # Try to parse the last line as JSON
+            if result_file.exists():
                 try:
-                    result_data = json.loads(stdout_lines[-1])
-                    # If successful, everything before the last line is user prints
-                    if len(stdout_lines) > 1:
-                        user_prints = '\n'.join(stdout_lines[:-1]) + '\n'
-                    else:
-                        user_prints = ""
-                except json.JSONDecodeError:
-                    # Last line is not JSON, try parsing entire stdout as JSON (backward compatibility)
-                    try:
-                        result_data = json.loads(stdout_str.strip())
-                        user_prints = ""
-                    except json.JSONDecodeError:
-                        result_data = {"success": False, "error": "Failed to parse result", "raw_output": stdout_str}
-                        user_prints = stdout_str
-            
-            # Update stdout_str to only contain user prints
-            stdout_str = user_prints
+                    with open(result_file, 'r') as f:
+                        result_data = json.load(f)
+                except Exception as e:
+                    logger.warning(f"Failed to read result file: {e}")
+                    result_data = None
             
             is_error = bool(process.returncode != 0 or (result_data and not result_data.get('success', False)))
             
@@ -730,6 +818,10 @@ if __name__ == "__main__":
             os.chdir(original_cwd)
             try:
                 args_file.unlink()
+            except Exception:
+                pass
+            try:
+                result_file.unlink()
             except Exception:
                 pass
 

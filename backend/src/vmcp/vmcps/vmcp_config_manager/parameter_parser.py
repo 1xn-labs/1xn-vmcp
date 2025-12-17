@@ -212,7 +212,8 @@ def cast_value_to_type(value: Any, type_str: str) -> Any:
 
 def parse_python_function_schema(
     function_code: str,
-    pre_parsed_variables: Optional[Dict[str, str]] = None
+    pre_parsed_variables: Optional[Dict[str, str]] = None,
+    function_name: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Parse Python function to extract input schema for tool definition.
@@ -220,6 +221,7 @@ def parse_python_function_schema(
     Args:
         function_code: Python function code as string
         pre_parsed_variables: Pre-parsed variables from previous parsing (optional)
+        function_name: Name of the function to parse (default: first function, or 'main' if not found)
 
     Returns:
         Dictionary with 'properties' and 'required' fields for JSON schema
@@ -233,10 +235,33 @@ def parse_python_function_schema(
     try:
         # Parse the function definition
         tree = ast.parse(function_code)
-        if not tree.body or not isinstance(tree.body[0], ast.FunctionDef):
+        if not tree.body:
             return {"properties": properties, "required": required}
 
-        func_def = tree.body[0]
+        # Find the target function (main() by default, or first function)
+        func_def = None
+        if function_name:
+            # Look for specific function name
+            for node in ast.walk(tree):
+                if isinstance(node, ast.FunctionDef) and node.name == function_name:
+                    func_def = node
+                    break
+        else:
+            # Default: look for 'main' first, then first function
+            for node in tree.body:
+                if isinstance(node, ast.FunctionDef):
+                    if node.name == 'main':
+                        func_def = node
+                        break
+            # If main not found, use first function
+            if func_def is None:
+                for node in tree.body:
+                    if isinstance(node, ast.FunctionDef):
+                        func_def = node
+                        break
+
+        if func_def is None:
+            return {"properties": properties, "required": required}
 
         # Extract parameters
         for arg in func_def.args.args:
@@ -251,6 +276,20 @@ def parse_python_function_schema(
             # Get type annotation if present
             if arg.annotation:
                 type_str = ast.unparse(arg.annotation) if hasattr(ast, 'unparse') else _ast_to_string(arg.annotation)
+
+                # Handle Optional[Type] - extract the inner type
+                if 'Optional[' in type_str:
+                    # Extract type from Optional[Type]
+                    inner_type = type_str.replace('Optional[', '').replace(']', '').strip()
+                    type_str = inner_type
+                elif 'Union[' in type_str and 'None' in type_str:
+                    # Handle Union[Type, None] - extract the non-None type
+                    parts = type_str.replace('Union[', '').replace(']', '').split(',')
+                    for part in parts:
+                        part = part.strip()
+                        if part != 'None':
+                            type_str = part
+                            break
 
                 # Map Python types to JSON Schema types
                 if type_str in ['str', 'string']:
@@ -274,10 +313,22 @@ def parse_python_function_schema(
                 default_index = arg_index - defaults_offset
                 default_ast = func_def.args.defaults[default_index]
                 try:
-                    default_value = ast.literal_eval(default_ast)
+                    # Handle None specially (NameConstant in older Python, Constant in newer)
+                    if isinstance(default_ast, ast.Constant) and default_ast.value is None:
+                        default_value = None
+                    elif isinstance(default_ast, ast.NameConstant) and default_ast.value is None:
+                        default_value = None
+                    else:
+                        default_value = ast.literal_eval(default_ast)
                     param_schema["default"] = default_value
                 except:
-                    pass
+                    # If we can't evaluate, check if it's None
+                    if isinstance(default_ast, (ast.Constant, ast.NameConstant)):
+                        if (isinstance(default_ast, ast.Constant) and default_ast.value is None) or \
+                           (isinstance(default_ast, ast.NameConstant) and default_ast.value is None):
+                            param_schema["default"] = None
+                    # Otherwise, parameter has a default but we can't evaluate it
+                    # Still mark it as optional (not required)
             else:
                 # No default value means it's required
                 required.append(param_name)

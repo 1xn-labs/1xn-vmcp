@@ -991,6 +991,16 @@ class SandboxToolRegistry:
             if main_func.returns:
                 return_type_schema = self._extract_return_type_schema_from_function(script_content, script_path)
             
+            # Extract parameters from main() function signature for proper tool definition
+            from vmcp.vmcps.vmcp_config_manager.parameter_parser import parse_python_function_schema
+            main_parameters_schema = None
+            try:
+                # Parse the main() function to get its parameter schema
+                # Explicitly pass function_name='main' to ensure we parse the correct function
+                main_parameters_schema = parse_python_function_schema(script_content, function_name='main')
+            except Exception as e:
+                logger.debug(f"Failed to parse main() parameters: {e}")
+            
             # Import here to avoid circular import
             from vmcp.vmcps.vmcp_config_manager.custom_tool_engines.sandbox_tool import execute_dynamic_tool_in_sandbox
             
@@ -1027,6 +1037,11 @@ class SandboxToolRegistry:
                     'vmcp_id': self.vmcp_id
                 }
             )
+            
+            # Override parameters with the actual main() function parameters
+            # This ensures the tool shows the correct parameters instead of just "kwargs"
+            if main_parameters_schema:
+                tool.parameters = main_parameters_schema
             
             # If we have a nested return type schema, update the outputSchema
             # Handle both camelCase and snake_case attributes for maximum compatibility

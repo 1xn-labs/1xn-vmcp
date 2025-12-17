@@ -51,6 +51,22 @@ def _parse_python_function_schema(custom_tool: dict) -> dict:
     """
     from .parameter_parser import parse_python_function_schema
     
+    # If inputSchema already exists (e.g., from sandbox-discovered tools), use it
+    # This preserves the correct types that were extracted during tool discovery
+    if 'inputSchema' in custom_tool and custom_tool.get('inputSchema'):
+        stored_schema = custom_tool.get('inputSchema')
+        if isinstance(stored_schema, dict) and 'properties' in stored_schema:
+            # Ensure the schema has all required fields for JSON Schema
+            # Create a copy to avoid modifying the original
+            result_schema = stored_schema.copy()
+            # If it's missing 'type', add it (should be 'object' for input schemas)
+            if 'type' not in result_schema:
+                result_schema['type'] = 'object'
+            # Ensure additionalProperties is set if missing
+            if 'additionalProperties' not in result_schema:
+                result_schema['additionalProperties'] = False
+            return result_schema
+    
     variables = custom_tool.get('variables', [])
     code = custom_tool.get('code', '')
 
