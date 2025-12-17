@@ -119,6 +119,105 @@ def _parse_python_function_schema(custom_tool: dict) -> dict:
     }
 
 
+def _extract_return_type_schema_from_function(python_code: str) -> Optional[Dict[str, Any]]:
+    """
+    Extract JSON schema from main() function's return type using Tool.from_function.
+    
+    This leverages Tool.from_function's built-in schema inference which handles
+    Pydantic models, complex types, etc. automatically.
+    
+    Args:
+        python_code: The Python code string containing the main() function
+        
+    Returns:
+        JSON schema dict for the return type, or None if cannot be determined
+    """
+    try:
+        import ast
+        from typing import Dict, Any
+        from mcp.server.fastmcp.tools.base import Tool as MCPTool
+        
+        # Parse the code to find main() function
+        tree = ast.parse(python_code)
+        main_func = None
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and node.name == 'main':
+                main_func = node
+                break
+        
+        if not main_func or not main_func.returns:
+            return None
+        
+        # Execute the code in a controlled environment to get the actual return type
+        script_globals: Dict[str, Any] = {
+            '__name__': '__main__',
+        }
+        
+        # Add common imports that might be needed
+        from pydantic import BaseModel
+        from typing import Any, Dict, List, Optional, Union
+        script_globals['BaseModel'] = BaseModel
+        script_globals['Any'] = Any
+        script_globals['Dict'] = Dict
+        script_globals['List'] = List
+        script_globals['Optional'] = Optional
+        script_globals['Union'] = Union
+        
+        # Execute the code to get class definitions and types
+        exec(python_code, script_globals)
+        
+        # Get the actual return type from the executed code
+        # Convert AST annotation to actual type
+        return_type = None
+        if isinstance(main_func.returns, ast.Name):
+            # Simple type name (e.g., UserData, str, int)
+            return_type_name = main_func.returns.id
+            if return_type_name in script_globals:
+                return_type = script_globals[return_type_name]
+            elif return_type_name in __builtins__:  # type: ignore
+                # Built-in type
+                return_type = __builtins__[return_type_name]  # type: ignore
+        else:
+            # Complex type annotation (Dict[str, Any], List[int], etc.)
+            # Convert AST back to a type annotation string and evaluate it
+            try:
+                if hasattr(ast, 'unparse'):
+                    type_str = ast.unparse(main_func.returns)
+                    # Evaluate the type string in the context
+                    return_type = eval(type_str, script_globals)
+                else:
+                    # Fallback: try to handle common cases
+                    return None
+            except Exception:
+                return None
+        
+        if return_type is None:
+            return None
+        
+        # Create a dummy async function and set the return type annotation dynamically
+        async def dummy_func():
+            pass
+        
+        # Set the return type annotation using __annotations__
+        dummy_func.__annotations__ = {'return': return_type}
+        
+        # Use Tool.from_function to extract the schema
+        try:
+            schema_tool = MCPTool.from_function(
+                fn=dummy_func,
+                structured_output=True
+            )
+            output_schema = getattr(schema_tool, 'outputSchema', None) or getattr(schema_tool, 'output_schema', None)
+            return output_schema
+        except Exception as e:
+            logger.debug(f"[ProtocolHandler] Failed to extract schema using Tool.from_function: {e}")
+            return None
+        
+    except Exception as e:
+        logger.debug(f"[ProtocolHandler] Failed to extract return type schema: {e}")
+        return None
+
+
 @trace_method("[ProtocolHandler]: List Tools")
 async def tools_list(
     vmcp_id: str,
@@ -297,10 +396,52 @@ async def tools_list(
                     if key in original_meta and key not in tool_meta:
                         tool_meta[key] = original_meta[key]
 
+            # Get outputSchema from custom_tool if available (check both camelCase and snake_case)
+            output_schema = custom_tool.get("outputSchema") or custom_tool.get("output_schema")
+            
+            # If outputSchema is missing for Python tools, generate it using Tool.from_function
+            # and extract the actual return type from the main() function
+            if not output_schema and tool_type == 'python':
+                try:
+                    from vmcp.vmcps.vmcp_config_manager.custom_tool_engines.models import DynamicToolOutput
+                    from typing import Dict, Any
+                    from mcp.server.fastmcp.tools.base import Tool as MCPTool
+                    import ast
+                    
+                    # Extract return type from main() function using Tool.from_function
+                    return_type_schema = None
+                    python_code = custom_tool.get('code', '')
+                    if python_code:
+                        try:
+                            return_type_schema = _extract_return_type_schema_from_function(python_code)
+                        except Exception as e:
+                            logger.debug(f"[ProtocolHandler] Failed to extract return type from code: {e}")
+                    
+                    # Create a dummy function that returns DynamicToolOutput to get the base schema
+                    async def dummy_wrapper(**kwargs: Dict[str, Any]) -> DynamicToolOutput:
+                        return DynamicToolOutput(result=None, stdout="", stderr="")
+                    
+                    schema_tool = MCPTool.from_function(
+                        fn=dummy_wrapper,
+                        structured_output=True
+                    )
+                    output_schema = getattr(schema_tool, 'outputSchema', None) or getattr(schema_tool, 'output_schema', None)
+                    
+                    # If we extracted a return type schema, nest it in the result field
+                    if return_type_schema and output_schema and 'properties' in output_schema:
+                        if 'result' in output_schema['properties']:
+                            output_schema['properties']['result'] = return_type_schema
+                    
+                    logger.debug(f"[ProtocolHandler] Generated outputSchema for Python tool {custom_tool.get('name')}, "
+                               f"return_type_schema={'present' if return_type_schema else 'missing'}")
+                except Exception as e:
+                    logger.warning(f"[ProtocolHandler] Failed to generate outputSchema for {custom_tool.get('name')}: {e}")
+            
             custom_tool_obj = Tool(
                 name=custom_tool.get("name"),
                 description=description,
                 inputSchema=tool_input_schema,
+                outputSchema=output_schema,
                 title=title,
                 meta=tool_meta
             )

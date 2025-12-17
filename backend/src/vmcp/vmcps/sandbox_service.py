@@ -922,13 +922,18 @@ class SandboxToolRegistry:
                 'required': param_name in required
             })
         
+        # Handle both snake_case and camelCase output schema attributes from MCP Tool
+        output_schema = getattr(tool, "outputSchema", None)
+        if output_schema is None:
+            output_schema = getattr(tool, "output_schema", None)
+        
         return {
             'name': tool.name,
             'description': tool.description,
             'tool_type': 'python',
             'code': script_content,  # Keep for backward compatibility
             'inputSchema': tool.parameters,
-            'outputSchema': tool.output_schema,
+            'outputSchema': output_schema,
             'variables': variables,
             'environment_variables': [],
             'tool_calls': [],
@@ -981,6 +986,11 @@ class SandboxToolRegistry:
                 if 'description' in registry[tool_name]:
                     description = registry[tool_name]['description']
             
+            # Extract return type annotation to get nested schema using Tool.from_function
+            return_type_schema = None
+            if main_func.returns:
+                return_type_schema = self._extract_return_type_schema_from_function(script_content, script_path)
+            
             # Import here to avoid circular import
             from vmcp.vmcps.vmcp_config_manager.custom_tool_engines.sandbox_tool import execute_dynamic_tool_in_sandbox
             
@@ -1018,6 +1028,15 @@ class SandboxToolRegistry:
                 }
             )
             
+            # If we have a nested return type schema, update the outputSchema
+            # Handle both camelCase and snake_case attributes for maximum compatibility
+            if return_type_schema:
+                schema = getattr(tool, "outputSchema", None)
+                if schema is None:
+                    schema = getattr(tool, "output_schema", None)
+                if schema and 'properties' in schema and 'result' in schema['properties']:
+                    schema['properties']['result'] = return_type_schema
+            
             # Convert Tool to dict for storage
             tool_dict = self._tool_to_dict(tool, script_content, script_path)
             
@@ -1025,6 +1044,234 @@ class SandboxToolRegistry:
             
         except Exception as e:
             logger.warning(f"Failed to parse script {script_path}: {e}")
+            return None
+    
+    def _extract_return_type_schema_from_function(self, python_code: str, script_path: Path) -> Optional[Dict[str, Any]]:
+        """
+        Extract JSON schema from main() function's return type using Tool.from_function.
+        
+        This leverages Tool.from_function's built-in schema inference which handles
+        Pydantic models, complex types, etc. automatically.
+        
+        Args:
+            python_code: The Python code string containing the main() function
+            script_path: Path to the script (for context)
+            
+        Returns:
+            JSON schema dict for the return type, or None if cannot be determined
+        """
+        try:
+            import ast
+            from typing import Dict, Any
+            from mcp.server.fastmcp.tools.base import Tool as MCPTool
+            
+            # Parse the code to find main() function
+            tree = ast.parse(python_code)
+            main_func = None
+            for node in ast.walk(tree):
+                if isinstance(node, ast.FunctionDef) and node.name == 'main':
+                    main_func = node
+                    break
+            
+            if not main_func or not main_func.returns:
+                return None
+            
+            # Execute the code in a controlled environment to get the actual return type
+            script_globals: Dict[str, Any] = {
+                '__name__': '__main__',
+                '__file__': str(script_path),
+            }
+            
+            # Add common imports that might be needed
+            from pydantic import BaseModel
+            from typing import Any, Dict, List, Optional, Union
+            script_globals['BaseModel'] = BaseModel
+            script_globals['Any'] = Any
+            script_globals['Dict'] = Dict
+            script_globals['List'] = List
+            script_globals['Optional'] = Optional
+            script_globals['Union'] = Union
+            
+            # Execute the code to get class definitions and types
+            exec(compile(python_code, str(script_path), 'exec'), script_globals)
+            
+            # Get the actual return type from the executed code
+            # Convert AST annotation to actual type
+            return_type = None
+            if isinstance(main_func.returns, ast.Name):
+                # Simple type name (e.g., UserData, str, int)
+                return_type_name = main_func.returns.id
+                if return_type_name in script_globals:
+                    return_type = script_globals[return_type_name]
+                elif return_type_name in __builtins__:  # type: ignore
+                    # Built-in type
+                    return_type = __builtins__[return_type_name]  # type: ignore
+            else:
+                # Complex type annotation (Dict[str, Any], List[int], etc.)
+                # Convert AST back to a type annotation string and evaluate it
+                try:
+                    if hasattr(ast, 'unparse'):
+                        type_str = ast.unparse(main_func.returns)
+                        # Evaluate the type string in the context
+                        return_type = eval(type_str, script_globals)
+                    else:
+                        # Fallback: try to handle common cases
+                        return None
+                except Exception:
+                    return None
+            
+            if return_type is None:
+                return None
+            
+            # Create a dummy async function and set the return type annotation dynamically
+            async def dummy_func():
+                pass
+            
+            # Set the return type annotation using __annotations__
+            dummy_func.__annotations__ = {'return': return_type}
+            
+            # Use Tool.from_function to extract the schema
+            try:
+                schema_tool = MCPTool.from_function(
+                    fn=dummy_func,
+                    structured_output=True
+                )
+                output_schema = getattr(schema_tool, 'outputSchema', None) or getattr(schema_tool, 'output_schema', None)
+                return output_schema
+            except Exception as e:
+                logger.debug(f"[SandboxToolRegistry] Failed to extract schema using Tool.from_function: {e}")
+                return None
+            
+        except Exception as e:
+            logger.debug(f"[SandboxToolRegistry] Failed to extract return type schema: {e}")
+            return None
+    
+    def _extract_return_type_schema(self, return_annotation: Any, script_path: Path) -> Optional[Dict[str, Any]]:
+        """
+        Extract JSON schema from return type annotation.
+        
+        Handles:
+        - Pydantic models (extracts their JSON schema)
+        - Dict[str, Any] or Dict[K, V] (returns object schema)
+        - Basic types (str, int, etc.)
+        - List types
+        
+        Args:
+            return_annotation: AST node for return type annotation
+            script_path: Path to the script (for importing types)
+            
+        Returns:
+            JSON schema dict for the return type, or None if cannot be determined
+        """
+        try:
+            import sys
+            from typing import get_origin, get_args
+            from pydantic import BaseModel
+            import ast  # Import here for method scope
+            
+            # Convert AST to string representation
+            if hasattr(ast, 'unparse'):
+                type_str = ast.unparse(return_annotation)
+            else:
+                # Fallback for older Python versions
+                type_str = ast.dump(return_annotation)
+            
+            # Handle Dict types
+            if 'Dict' in type_str or 'dict' in type_str:
+                # Extract key and value types if specified
+                if '[' in type_str and ']' in type_str:
+                    # Dict[str, Any] or Dict[K, V]
+                    return {
+                        "type": "object",
+                        "additionalProperties": True
+                    }
+                else:
+                    # Just dict
+                    return {
+                        "type": "object",
+                        "additionalProperties": True
+                    }
+            
+            # Handle List types
+            if 'List' in type_str or 'list' in type_str:
+                return {
+                    "type": "array",
+                    "items": {}
+                }
+            
+            # Handle basic types
+            type_map = {
+                'str': {"type": "string"},
+                'int': {"type": "integer"},
+                'float': {"type": "number"},
+                'bool': {"type": "boolean"},
+                'Any': {},
+                'None': {"type": "null"}
+            }
+            
+            for py_type, schema in type_map.items():
+                if py_type in type_str:
+                    return schema
+            
+            # Try to import and check if it's a Pydantic model
+            try:
+                script_content = script_path.read_text(encoding='utf-8')
+                
+                # Extract class name from return annotation
+                if isinstance(return_annotation, ast.Name):
+                    class_name = return_annotation.id
+                    
+                    # Try to execute the script in a controlled context to get the class
+                    # We'll create a minimal execution environment
+                    script_globals = {
+                        '__name__': '__main__',
+                        '__file__': str(script_path),
+                    }
+                    
+                    # Add common imports that might be needed
+                    from pydantic import BaseModel
+                    from typing import Any, Dict, List, Optional, Union
+                    # Add typing imports to script globals
+                    script_globals['BaseModel'] = BaseModel  # type: ignore
+                    script_globals['Any'] = Any  # type: ignore
+                    script_globals['Dict'] = Dict  # type: ignore
+                    script_globals['List'] = List  # type: ignore
+                    script_globals['Optional'] = Optional  # type: ignore
+                    script_globals['Union'] = Union  # type: ignore
+                    
+                    # Execute the script to get class definitions
+                    try:
+                        exec(compile(script_content, str(script_path), 'exec'), script_globals)
+                        
+                        # Check if the class exists and is a Pydantic model
+                        if class_name in script_globals:
+                            return_type_class = script_globals[class_name]
+                            
+                            # Check if it's a Pydantic BaseModel
+                            if isinstance(return_type_class, type):
+                                try:
+                                    if issubclass(return_type_class, BaseModel):
+                                        # Get the JSON schema from the Pydantic model
+                                        if hasattr(return_type_class, 'model_json_schema'):
+                                            pydantic_schema = return_type_class.model_json_schema()  # type: ignore[attr-defined]
+                                            return pydantic_schema
+                                        elif hasattr(return_type_class, 'schema'):
+                                            # Fallback for older Pydantic versions
+                                            pydantic_schema = return_type_class.schema()  # type: ignore[attr-defined]
+                                            return pydantic_schema
+                                except (TypeError, AttributeError) as e:
+                                    logger.debug(f"Failed to check/get Pydantic schema for {class_name}: {e}")
+                    except Exception as e:
+                        logger.debug(f"Could not execute script to extract class {class_name}: {e}")
+                
+            except Exception as e:
+                logger.debug(f"Could not extract Pydantic model schema: {e}")
+            
+            # Default: return empty schema (Any type)
+            return {}
+            
+        except Exception as e:
+            logger.debug(f"Failed to extract return type schema: {e}")
             return None
     
     def register_tool_metadata(

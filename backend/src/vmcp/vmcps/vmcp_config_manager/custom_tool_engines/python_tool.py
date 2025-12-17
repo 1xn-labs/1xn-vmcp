@@ -335,30 +335,64 @@ environment_variables = {repr(environment_variables)}
 # Execute the main function if it exists
 if 'main' in locals() and callable(main):
     try:
-        # Get function signature to properly map arguments
+        # Get function signature to properly map arguments and handle defaults
         import inspect
         import asyncio
+        from io import StringIO
+        import sys
+        
         sig = inspect.signature(main)
-        param_names = list(sig.parameters.keys())
-
-        # Filter arguments to only include those that match function parameters
+        
+        # Build filtered args with default values
         filtered_args = {{}}
-        for param_name in param_names:
+        for param_name, param in sig.parameters.items():
             if param_name in arguments:
                 filtered_args[param_name] = arguments[param_name]
+            elif param.default != inspect.Parameter.empty:
+                # Use default value if parameter not provided
+                filtered_args[param_name] = param.default
 
-        # Check if main is async
-        if inspect.iscoroutinefunction(main):
-            # Execute async main
-            result = asyncio.run(main(**filtered_args))
-        else:
-            # Execute sync main
-            result = main(**filtered_args)
+        # Capture user print statements separately from JSON result
+        # Redirect stdout to capture user prints
+        user_output = StringIO()
+        original_stdout = sys.stdout
+        
+        try:
+            sys.stdout = user_output
+            # Check if main is async
+            if inspect.iscoroutinefunction(main):
+                # Execute async main
+                result = asyncio.run(main(**filtered_args))
+            else:
+                # Execute sync main
+                result = main(**filtered_args)
+            user_prints = user_output.getvalue()
+        finally:
+            sys.stdout = original_stdout
+        
+        # Convert Pydantic models to dict before JSON serialization
+        from pydantic import BaseModel
+        if isinstance(result, BaseModel):
+            result = result.model_dump() if hasattr(result, 'model_dump') else result.dict()
+        
+        # Print user output to stdout, then JSON result as last line
+        if user_prints:
+            print(user_prints, end='')
+        # Print JSON result as the last line in stdout (with marker for parsing)
         print(json.dumps({{"success": True, "result": result}}))
     except Exception as e:
+        # Restore stdout if it was redirected
+        try:
+            if 'original_stdout' in locals():
+                sys.stdout = original_stdout
+        except:
+            pass
+        # Errors go to stderr
+        print(str(e), file=sys.stderr)
+        # But we still need JSON result in stdout for parsing
         print(json.dumps({{"success": False, "error": str(e)}}))
 else:
-    print(json.dumps({{"success": False, "error": "No 'main' function found in the code"}}))
+    print(json.dumps({{"success": False, "error": "No 'main' function found in the code"}}), file=sys.stderr)
 """
             f.write(execution_code)
             temp_file = f.name
@@ -394,19 +428,68 @@ else:
         stdout_str = result.stdout if result.stdout else ""
         stderr_str = result.stderr if result.stderr else ""
 
-        # Parse the result
-        try:
-            result_data = json.loads(stdout_str.strip())
-        except json.JSONDecodeError:
-            result_data = {"success": False, "error": "Failed to parse result", "raw_output": stdout_str}
-
-        is_error = not result_data.get('success', False) if result_data else True
-
-        # Extract actual return value
-        if result_data.get('success', False):
-            actual_result = result_data.get('result')
+        # Parse the result from stdout (JSON is the last line, user prints are before it)
+        # Split stdout into user prints and JSON result
+        stdout_lines = stdout_str.strip().split('\n')
+        user_prints = ""
+        result_data = None
+        
+        if stdout_lines:
+            # Try to parse the last line as JSON
+            try:
+                result_data = json.loads(stdout_lines[-1])
+                # If successful, everything before the last line is user prints
+                if len(stdout_lines) > 1:
+                    user_prints = '\n'.join(stdout_lines[:-1]) + '\n'
+                else:
+                    user_prints = ""
+            except json.JSONDecodeError:
+                # Last line is not JSON, try parsing entire stdout as JSON (backward compatibility)
+                try:
+                    result_data = json.loads(stdout_str.strip())
+                    user_prints = ""
+                except json.JSONDecodeError:
+                    result_data = {"success": False, "error": "Failed to parse result", "raw_output": stdout_str}
+                    user_prints = stdout_str
+        
+        # Special handling for execute_bash tool
+        if tool_name == 'execute_bash' and result_data:
+            # execute_bash returns a dict with stdout, stderr, returncode, success
+            # The result_data structure is: {"success": True, "result": {"stdout": "...", "stderr": "...", "returncode": 0, "success": True}}
+            bash_result = result_data.get('result', {})
+            if isinstance(bash_result, dict) and 'stdout' in bash_result:
+                # Extract stdout, stderr, returncode, success from the nested result
+                bash_stdout = bash_result.get('stdout', '')
+                bash_stderr = bash_result.get('stderr', '')
+                returncode = bash_result.get('returncode', -1)
+                success = bash_result.get('success', False)
+                
+                # For execute_bash: result is the stdout, stderr is from the command, isError based on returncode/success
+                actual_result = bash_stdout
+                stdout_str = ""  # No user prints for execute_bash
+                stderr_str = bash_stderr
+                is_error = not success or returncode != 0
+            else:
+                # Fallback: treat as normal result (might be an error case)
+                if result_data.get('success', False):
+                    actual_result = bash_result
+                else:
+                    error_msg = result_data.get('error', 'Unknown error')
+                    actual_result = {"error": error_msg}
+                stdout_str = user_prints
+                is_error = not result_data.get('success', False)
         else:
-            actual_result = {"error": result_data.get('error', 'Unknown error')}
+            # Update stdout_str to only contain user prints
+            stdout_str = user_prints
+
+            is_error = not result_data.get('success', False) if result_data else True
+
+            # Extract actual return value
+            if result_data and result_data.get('success', False):
+                actual_result = result_data.get('result')
+            else:
+                error_msg = result_data.get('error', 'Unknown error') if result_data else 'Failed to parse result'
+                actual_result = {"error": error_msg}
 
         # Create structured output dict: {"result": ..., "stdout": ..., "stderr": ...}
         structured_output: Dict[str, Any] = {

@@ -589,14 +589,112 @@ class VMCPServer(FastMCP):
         # Log tool details
         for i, tool in enumerate(all_tools):
             # Claude code and most MCP client dont add the outputSchema to context, so add it to the tool desc
-            if sandbox_mode and tool.outputSchema:
-                import json
-                schema_str = json.dumps(tool.outputSchema, indent=2)
-                tool.description = f"{tool.description or ''}\n\n\"outputSchema\": {schema_str}"
+            # Add outputSchema to description for:
+            # 1. Sandbox mode tools (existing behavior)
+            # 2. Python tools (tool_type == 'python' in meta)
+            # 3. Sandbox-discovered tools (source == 'sandbox_discovered' in meta)
+            # Check if this is a Python or sandbox tool that needs description formatting
+            tool_meta = tool.meta or {}
+            tool_type = tool_meta.get('tool_type', '')
+            source = tool_meta.get('source', '')
+            is_python_or_sandbox = tool_type == 'python' or source == 'sandbox_discovered'
+            
+            # Debug: Check outputSchema existence
+            output_schema_camel = getattr(tool, 'outputSchema', None)
+            output_schema_snake = getattr(tool, 'output_schema', None)
+            has_output_schema = output_schema_camel is not None or output_schema_snake is not None
+            
+            logger.debug(f"[VMCPServer] Tool {tool.name}: meta={tool_meta}, tool_type='{tool_type}', source='{source}', "
+                        f"is_python_or_sandbox={is_python_or_sandbox}, has_outputSchema={has_output_schema}, "
+                        f"outputSchema={output_schema_camel is not None}, output_schema={output_schema_snake is not None}")
+            
+            should_add_output_schema = False
+            if sandbox_mode:
+                # Always format in sandbox mode (existing behavior)
+                should_add_output_schema = True
+                logger.debug(f"[VMCPServer] Tool {tool.name}: Formatting because sandbox_mode=True")
+            elif is_python_or_sandbox:
+                # Format Python and sandbox-discovered tools
+                should_add_output_schema = True
+                logger.debug(f"[VMCPServer] Tool {tool.name}: Formatting because is_python_or_sandbox=True")
+            
+            if should_add_output_schema:
+                tool.description = self._format_tool_description(tool)
+                logger.debug(f"[VMCPServer] Tool {tool.name}: Formatted description length={len(tool.description)}")
             tool_type = "PRESET" if i < len(preset_tools) else "vMCP"
             logger.debug(f"[VMCPServer] Tool {i+1} [{tool_type}]: {tool.name} - {tool.description[:50] if tool.description else 'No description'}...")
 
         return all_tools
+
+    def _format_tool_description(self, tool: Tool) -> str:
+        """
+        Format tool description with Args, Returns, and outputSchema sections.
+        
+        Similar to how MCP tools format their descriptions for better LLM understanding.
+        
+        Args:
+            tool: Tool object to format
+            
+        Returns:
+            Formatted description string
+        """
+        import json
+        
+        description_parts = [tool.description or ""]
+        
+        # Add Args section from inputSchema
+        input_schema = getattr(tool, 'inputSchema', None) or getattr(tool, 'parameters', None)
+        if input_schema and input_schema.get('properties'):
+            properties = input_schema.get('properties', {})
+            required = input_schema.get('required', [])
+            
+            if properties:
+                description_parts.append("\nArgs:")
+                for param_name, param_schema in properties.items():
+                    param_type = param_schema.get('type', 'any')
+                    param_desc = param_schema.get('description', '')
+                    is_required = param_name in required
+                    
+                    # Format: param_name: description (Required/Optional)
+                    if param_desc:
+                        if is_required:
+                            description_parts.append(f"    {param_name}: {param_desc} (Required)")
+                        else:
+                            description_parts.append(f"    {param_name}: {param_desc} (Optional)")
+                    else:
+                        if is_required:
+                            description_parts.append(f"    {param_name}: {param_type} (Required)")
+                        else:
+                            description_parts.append(f"    {param_name}: {param_type} (Optional)")
+        
+        # Add Returns section
+        # Check both camelCase (outputSchema) and snake_case (output_schema) attributes
+        output_schema = getattr(tool, 'outputSchema', None)
+        if output_schema is None:
+            output_schema = getattr(tool, 'output_schema', None)
+        
+        logger.debug(f"[VMCPServer] _format_tool_description({tool.name}): outputSchema={output_schema is not None}, "
+                    f"outputSchema value={output_schema}")
+        
+        if output_schema:
+            # For Python/sandbox tools, describe the DynamicToolOutput structure
+            returns_desc = "Tool execution result with structured output containing result, stdout, and stderr."
+            if 'title' in output_schema:
+                title = output_schema.get('title', '')
+                if title and 'Output' in title:
+                    returns_desc = title.replace('Output', '').strip()
+            elif 'description' in output_schema:
+                returns_desc = output_schema.get('description', returns_desc)
+            
+            description_parts.append(f"\nReturns:")
+            description_parts.append(f"    {returns_desc}")
+        
+        # Add outputSchema JSON
+        if output_schema:
+            schema_str = json.dumps(output_schema, indent=2)
+            description_parts.append(f'\n\n"outputSchema": {schema_str}')
+        
+        return "\n".join(description_parts)
 
     @trace_method("[VMCPServer]: List Resources")
     async def proxy_list_resources(self) -> List[Resource]:

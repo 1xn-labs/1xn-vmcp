@@ -57,7 +57,7 @@ async def execute_dynamic_tool_in_sandbox(
         
         if not full_script_path.exists():
             return DynamicToolOutput(
-                result={"success": False, "error": f"Script not found: {script_path}"},
+                result={"error": f"Script not found: {script_path}"},  # Don't include 'success' field
                 stdout="",
                 stderr=f"Sandbox tool script not found: {script_path}. The tool file may have been deleted or moved."
             )
@@ -108,19 +108,57 @@ except Exception as e:
 main = g.get('main')
 if main and callable(main):
     try:
-        sig = inspect.signature(main)
-        params = list(sig.parameters.keys())
-        filtered = {{k:v for k,v in args.items() if k in params}}
+        import sys
+        from io import StringIO
         
-        if inspect.iscoroutinefunction(main):
-            res = asyncio.run(main(**filtered))
-        else:
-            res = main(**filtered)
+        sig = inspect.signature(main)
+        
+        # Build filtered args with default values
+        filtered = {{}}
+        for param_name, param in sig.parameters.items():
+            if param_name in args:
+                filtered[param_name] = args[param_name]
+            elif param.default != inspect.Parameter.empty:
+                # Use default value if parameter not provided
+                filtered[param_name] = param.default
+        
+        # Capture user print statements separately from JSON result
+        user_output = StringIO()
+        original_stdout = sys.stdout
+        
+        try:
+            sys.stdout = user_output
+            if inspect.iscoroutinefunction(main):
+                res = asyncio.run(main(**filtered))
+            else:
+                res = main(**filtered)
+            user_prints = user_output.getvalue()
+        finally:
+            sys.stdout = original_stdout
+        
+        # Convert Pydantic models to dict before JSON serialization
+        from pydantic import BaseModel
+        if isinstance(res, BaseModel):
+            res = res.model_dump() if hasattr(res, 'model_dump') else res.dict()
+        
+        # Print user output to stdout, then JSON result as last line
+        if user_prints:
+            print(user_prints, end='')
+        # Print JSON result as the last line in stdout
         print(json.dumps({{'success': True, 'result': res}}))
     except Exception as e:
+        # Restore stdout if it was redirected
+        try:
+            if 'original_stdout' in locals():
+                sys.stdout = original_stdout
+        except:
+            pass
+        # Errors go to stderr
+        print(str(e), file=sys.stderr)
+        # But we still need JSON result in stdout for parsing
         print(json.dumps({{'success': False, 'error': f'Tool execution error: {{e}}'}}))
 else:
-    print(json.dumps({{'success': False, 'error': 'No main() function found'}}))
+    print(json.dumps({{'success': False, 'error': 'No main() function found'}}), file=sys.stderr)
 """
         
         inner_b64 = base64.b64encode(inner_code.encode('utf-8')).decode('utf-8')
@@ -146,15 +184,39 @@ else:
             stdout_str = stdout.decode("utf-8", errors="replace")
             stderr_str = stderr.decode("utf-8", errors="replace")
             
-            # Parse result from stdout
-            try:
-                result_data = json.loads(stdout_str.strip())
-                if result_data.get('success', False):
-                    result = result_data.get('result', {})
-                else:
-                    result = {"success": False, "error": result_data.get('error', 'Unknown error')}
-            except json.JSONDecodeError:
-                result = {"success": False, "error": "Failed to parse result", "raw_output": stdout_str}
+            # Parse result from stdout (JSON is the last line, user prints are before it)
+            # Split stdout into user prints and JSON result
+            stdout_lines = stdout_str.strip().split('\n')
+            user_prints = ""
+            result_data = None
+            
+            if stdout_lines:
+                # Try to parse the last line as JSON
+                try:
+                    result_data = json.loads(stdout_lines[-1])
+                    # If successful, everything before the last line is user prints
+                    if len(stdout_lines) > 1:
+                        user_prints = '\n'.join(stdout_lines[:-1]) + '\n'
+                    else:
+                        user_prints = ""
+                except json.JSONDecodeError:
+                    # Last line is not JSON, try parsing entire stdout as JSON (backward compatibility)
+                    try:
+                        result_data = json.loads(stdout_str.strip())
+                        user_prints = ""
+                    except json.JSONDecodeError:
+                        result_data = {"success": False, "error": "Failed to parse result", "raw_output": stdout_str}
+                        user_prints = stdout_str
+            
+            # Extract result from result_data (don't include 'success' field in result)
+            if result_data and result_data.get('success', False):
+                result = result_data.get('result', {})
+            else:
+                error_msg = result_data.get('error', 'Unknown error') if result_data else 'Failed to parse result'
+                result = {"error": error_msg}  # Don't include 'success' field
+            
+            # Update stdout_str to only contain user prints
+            stdout_str = user_prints
             
             return DynamicToolOutput(
                 result=result,
@@ -164,7 +226,7 @@ else:
             
         except asyncio.TimeoutError:
             return DynamicToolOutput(
-                result={"success": False, "error": "Tool execution timed out"},
+                result={"error": "Tool execution timed out"},  # Don't include 'success' field
                 stdout="",
                 stderr="Tool execution timed out after 60 seconds"
             )
@@ -178,7 +240,7 @@ else:
     except Exception as e:
         logger.error(f"Error executing dynamic tool: {e}", exc_info=True)
         return DynamicToolOutput(
-            result={"success": False, "error": str(e)},
+            result={"error": str(e)},  # Don't include 'success' field
             stdout="",
             stderr=f"Error executing dynamic tool: {str(e)}"
         )
@@ -292,23 +354,56 @@ except Exception as e:
 main = g.get('main')
 if main and callable(main):
     try:
-        sig = inspect.signature(main)
-        params = list(sig.parameters.keys())
-        # Filter args
-        filtered = {{k:v for k,v in args.items() if k in params}}
+        import sys
+        from io import StringIO
         
-        # Check if main is async
-        if inspect.iscoroutinefunction(main):
-            # Execute async main
-            res = asyncio.run(main(**filtered))
-        else:
-            # Execute sync main
-            res = main(**filtered)
-        print(json.dumps({{'success': True, 'result': res}}))
+        sig = inspect.signature(main)
+        
+        # Build filtered args with default values
+        filtered = {{}}
+        for param_name, param in sig.parameters.items():
+            if param_name in args:
+                filtered[param_name] = args[param_name]
+            elif param.default != inspect.Parameter.empty:
+                # Use default value if parameter not provided
+                filtered[param_name] = param.default
+        
+        # Capture user print statements separately from JSON result
+        user_output = StringIO()
+        original_stdout = sys.stdout
+        
+        try:
+            sys.stdout = user_output
+            # Check if main is async
+            if inspect.iscoroutinefunction(main):
+                # Execute async main
+                res = asyncio.run(main(**filtered))
+            else:
+                # Execute sync main
+                res = main(**filtered)
+            user_prints = user_output.getvalue()
+        finally:
+            sys.stdout = original_stdout
+        
+        # Convert Pydantic models to dict before JSON serialization
+        from pydantic import BaseModel
+        if isinstance(res, BaseModel):
+            res = res.model_dump() if hasattr(res, 'model_dump') else res.dict()
+        
+        # Print user output to stdout, JSON result to stderr
+        if user_prints:
+            print(user_prints, end='')
+        print(json.dumps({{'success': True, 'result': res}}), file=sys.stderr)
     except Exception as e:
-        print(json.dumps({{'success': False, 'error': f'Tool execution error: {{e}}'}}))
+        # Restore stdout if it was redirected
+        try:
+            if 'original_stdout' in locals():
+                sys.stdout = original_stdout
+        except:
+            pass
+        print(json.dumps({{'success': False, 'error': f'Tool execution error: {{e}}'}}), file=sys.stderr)
 else:
-    print(json.dumps({{'success': False, 'error': 'No main() function found'}}))
+    print(json.dumps({{'success': False, 'error': 'No main() function found'}}), file=sys.stderr)
 """
         # Base64 encode the inner code to avoid escaping hell when passing to python -c
         inner_b64 = base64.b64encode(inner_code.encode('utf-8')).decode('utf-8')
@@ -344,19 +439,41 @@ else:
                 stdout_str = stdout.decode("utf-8", errors="replace")
                 stderr_str = stderr.decode("utf-8", errors="replace")
                 
-                # Parse result_data from stdout
-                try:
-                    result_data = json.loads(stdout_str.strip())
-                except json.JSONDecodeError:
-                    result_data = {"success": False, "error": "Failed to parse result", "raw_output": stdout_str}
+                # Parse result_data from stdout (JSON is the last line, user prints are before it)
+                # Split stdout into user prints and JSON result
+                stdout_lines = stdout_str.strip().split('\n')
+                user_prints = ""
+                result_data = None
                 
-                is_error = process.returncode != 0 or not result_data.get('success', False)
+                if stdout_lines:
+                    # Try to parse the last line as JSON
+                    try:
+                        result_data = json.loads(stdout_lines[-1])
+                        # If successful, everything before the last line is user prints
+                        if len(stdout_lines) > 1:
+                            user_prints = '\n'.join(stdout_lines[:-1]) + '\n'
+                        else:
+                            user_prints = ""
+                    except json.JSONDecodeError:
+                        # Last line is not JSON, try parsing entire stdout as JSON (backward compatibility)
+                        try:
+                            result_data = json.loads(stdout_str.strip())
+                            user_prints = ""
+                        except json.JSONDecodeError:
+                            result_data = {"success": False, "error": "Failed to parse result", "raw_output": stdout_str}
+                            user_prints = stdout_str
+                
+                # Update stdout_str to only contain user prints
+                stdout_str = user_prints
+                
+                is_error = bool(process.returncode != 0 or (result_data and not result_data.get('success', False)))
                 
                 # Extract actual return value
-                if result_data.get('success', False):
+                if result_data and result_data.get('success', False):
                     actual_result = result_data.get('result')
                 else:
-                    actual_result = {"error": result_data.get('error', 'Unknown error')}
+                    error_msg = result_data.get('error', 'Unknown error') if result_data else 'Failed to parse result'
+                    actual_result = {"error": error_msg}
                 
                 # Create structured output dict: {"result": ..., "stdout": ..., "stderr": ...}
                 structured_output: Dict[str, Any] = {
@@ -537,19 +654,41 @@ if __name__ == "__main__":
             if any(pattern.lower() in stderr_str.lower() for pattern in sandbox_violation_patterns):
                 stderr_str = f"⚠️ SANDBOX RESTRICTION: {stderr_str}"
 
-            # Parse result_data from stdout
-            try:
-                result_data = json.loads(stdout_str.strip())
-            except json.JSONDecodeError:
-                result_data = {"success": False, "error": "Failed to parse result", "raw_output": stdout_str}
+            # Parse result_data from stdout (JSON is the last line, user prints are before it)
+            # Split stdout into user prints and JSON result
+            stdout_lines = stdout_str.strip().split('\n')
+            user_prints = ""
+            result_data = None
             
-            is_error = process.returncode != 0 or not result_data.get('success', False)
-
+            if stdout_lines:
+                # Try to parse the last line as JSON
+                try:
+                    result_data = json.loads(stdout_lines[-1])
+                    # If successful, everything before the last line is user prints
+                    if len(stdout_lines) > 1:
+                        user_prints = '\n'.join(stdout_lines[:-1]) + '\n'
+                    else:
+                        user_prints = ""
+                except json.JSONDecodeError:
+                    # Last line is not JSON, try parsing entire stdout as JSON (backward compatibility)
+                    try:
+                        result_data = json.loads(stdout_str.strip())
+                        user_prints = ""
+                    except json.JSONDecodeError:
+                        result_data = {"success": False, "error": "Failed to parse result", "raw_output": stdout_str}
+                        user_prints = stdout_str
+            
+            # Update stdout_str to only contain user prints
+            stdout_str = user_prints
+            
+            is_error = bool(process.returncode != 0 or (result_data and not result_data.get('success', False)))
+            
             # Extract actual return value
-            if result_data.get('success', False):
+            if result_data and result_data.get('success', False):
                 actual_result = result_data.get('result')
             else:
-                actual_result = {"error": result_data.get('error', 'Unknown error')}
+                error_msg = result_data.get('error', 'Unknown error') if result_data else 'Failed to parse result'
+                actual_result = {"error": error_msg}
             
             # Create structured output dict: {"result": ..., "stdout": ..., "stderr": ...}
             structured_output: Dict[str, Any] = {
