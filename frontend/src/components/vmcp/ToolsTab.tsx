@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { apiClient } from '@/api/client';
 import type { VmcpToolCallRequest as VMCPToolCallRequest } from '@/api/generated/types.gen';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 import HttpToolImporter from '@/components/vmcp/HttpToolImporter';
 import HttpTool from '@/components/vmcp/HttpToolImporter';
@@ -149,6 +150,8 @@ export default function ToolsTab({
 }: ToolsTabProps) {
   const [toolViewMode, setToolViewMode] = useState<'list' | 'edit'>('list');
   const [selectedToolIndex, setSelectedToolIndex] = useState<number | null>(null);
+  const [sandboxAttached, setSandboxAttached] = useState(false);
+  const [checkingSandbox, setCheckingSandbox] = useState(true);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [modalName, setModalName] = useState('');
   const [modalValue, setModalValue] = useState('');
@@ -205,6 +208,59 @@ export default function ToolsTab({
 
   // HTTP tool importer states
   const [showHttpImporter, setShowHttpImporter] = useState(false);
+
+  // Check sandbox attachment status
+  useEffect(() => {
+    const checkSandboxStatus = async () => {
+      if (!vmcpConfig.id || isRemoteVMCP) {
+        setSandboxAttached(false);
+        setCheckingSandbox(false);
+        return;
+      }
+
+      try {
+        const accessToken = localStorage.getItem('access_token') || (import.meta.env.VITE_VMCP_OSS_BUILD === 'true' ? 'local-token' : undefined);
+        const result = await apiClient.getSandboxStatus(vmcpConfig.id, accessToken);
+        if (result.success && result.data) {
+          // Sandbox is attached if enabled, venv exists, and folder exists
+          setSandboxAttached(
+            result.data.enabled && 
+            result.data.venv_exists && 
+            result.data.folder_exists
+          );
+        } else {
+          setSandboxAttached(false);
+        }
+      } catch (err) {
+        console.error('Error checking sandbox status:', err);
+        setSandboxAttached(false);
+      } finally {
+        setCheckingSandbox(false);
+      }
+    };
+
+    checkSandboxStatus();
+  }, [vmcpConfig.id, isRemoteVMCP]);
+
+  // Handle attaching sandbox
+  const handleAttachSandbox = async () => {
+    if (!vmcpConfig.id) return;
+
+    try {
+      const accessToken = localStorage.getItem('access_token') || (import.meta.env.VITE_VMCP_OSS_BUILD === 'true' ? 'local-token' : undefined);
+      const result = await apiClient.attachSandbox(vmcpConfig.id, accessToken);
+      
+      if (result.success) {
+        setSandboxAttached(true);
+        success('Sandbox attached successfully. You can now create Python tools.');
+      } else {
+        error(result.error || 'Failed to attach sandbox. Please try again.');
+      }
+    } catch (err) {
+      console.error('Error attaching sandbox:', err);
+      error('Failed to attach sandbox. Please try again.');
+    }
+  };
 
   // Reset modal states when switching between tools
   useEffect(() => {
@@ -2294,6 +2350,20 @@ export default function ToolsTab({
 
         <TabsContent value="custom-tools">
           <div className="space-y-4">
+            {!checkingSandbox && !sandboxAttached && vmcpConfig.id && !isRemoteVMCP && (
+              <Alert>
+                <AlertDescription className="flex items-center justify-between">
+                  <span>Python tools require a sandbox to be attached. Attach a sandbox to create Python tools.</span>
+                  <Button
+                    size="sm"
+                    onClick={handleAttachSandbox}
+                    className="ml-4"
+                  >
+                    Attach Sandbox
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
             <div className="flex items-center justify-between">
               <p className="text-muted-foreground">Select a tool to edit or create a new one</p>
               <div className="flex gap-2">
@@ -2304,6 +2374,11 @@ export default function ToolsTab({
                       setSelectedToolIndex(vmcpConfig.custom_tools.length);
                       setToolViewMode('edit');
                     } else if (value === 'python') {
+                      // Check if sandbox is attached before creating Python tool
+                      if (!sandboxAttached) {
+                        error('Please attach a sandbox before creating Python tools.');
+                        return;
+                      }
                       addCustomTool('python');
                       setSelectedToolIndex(vmcpConfig.custom_tools.length);
                       setToolViewMode('edit');
@@ -2336,10 +2411,10 @@ export default function ToolsTab({
                         <span>HTTP Tool</span>
                       </div>
                     </SelectItem>
-                    <SelectItem value="python">
+                    <SelectItem value="python" disabled={!sandboxAttached && !checkingSandbox}>
                       <div className="flex items-center gap-2">
                         <Code className="h-4 w-4 text-primary" />
-                        <span>Python Tool</span>
+                        <span>Python Tool {!sandboxAttached && !checkingSandbox && '(Requires Sandbox)'}</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="import">

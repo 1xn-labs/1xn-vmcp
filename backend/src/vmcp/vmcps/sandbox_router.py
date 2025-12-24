@@ -139,9 +139,11 @@ async def enable_sandbox(
     """
     try:
         from vmcp.vmcps.vmcp_config_manager import VMCPConfigManager
+        from vmcp.vmcps.router_typesafe import get_cached_vmcp_config_manager
         
         sandbox_service = get_sandbox_service()
-        vmcp_config_manager = VMCPConfigManager(user_context.user_id, vmcp_id)
+        # Use cached manager to ensure cache invalidation works across all endpoints
+        vmcp_config_manager = get_cached_vmcp_config_manager(user_context.user_id, vmcp_id)
         vmcp_config = vmcp_config_manager.load_vmcp_config()
         
         # Check if already enabled
@@ -198,6 +200,8 @@ async def enable_sandbox(
                     vmcp_id=vmcp_id,
                     metadata=metadata
                 )
+                # Invalidate cache to ensure fresh data on next load
+                vmcp_config_manager.invalidate_config_cache(vmcp_id)
                 logger.info(f"Persisted sandbox enabled state for vMCP {vmcp_id}")
         except Exception as e:
             logger.warning(f"Failed to persist sandbox state in metadata for {vmcp_id}: {e}")
@@ -238,9 +242,11 @@ async def disable_sandbox(
     """
     try:
         from vmcp.vmcps.vmcp_config_manager import VMCPConfigManager
+        from vmcp.vmcps.router_typesafe import get_cached_vmcp_config_manager
         
         sandbox_service = get_sandbox_service()
-        vmcp_config_manager = VMCPConfigManager(user_context.user_id, vmcp_id)
+        # Use cached manager to ensure cache invalidation works across all endpoints
+        vmcp_config_manager = get_cached_vmcp_config_manager(user_context.user_id, vmcp_id)
         vmcp_config = vmcp_config_manager.load_vmcp_config()
         
         # Check if already disabled
@@ -266,6 +272,8 @@ async def disable_sandbox(
                     vmcp_id=vmcp_id,
                     metadata=metadata
                 )
+                # Invalidate cache to ensure fresh data on next load
+                vmcp_config_manager.invalidate_config_cache(vmcp_id)
                 logger.info(f"Persisted sandbox disabled state for vMCP {vmcp_id}")
         except Exception as e:
             logger.warning(f"Failed to persist sandbox state in metadata for {vmcp_id}: {e}")

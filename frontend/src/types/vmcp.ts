@@ -188,6 +188,7 @@ export interface VMCPConfig {
         originalName?: string; 
         originalDescription?: string;
       }>>;
+      pd_enabled_tools: Record<string, string[]>;
       tags: string[];
       is_default: boolean;
     };

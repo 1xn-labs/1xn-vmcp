@@ -720,6 +720,8 @@ class VMCPConfigManager:
             success = self.storage.update_vmcp(existing_config)
             if success:
                 logger.info(f"Updated VMCP config: {existing_config.name} (ID: {vmcp_id})")
+                # Invalidate cache for this vMCP after updating
+                self.invalidate_config_cache(vmcp_id)
 
                 # Also save environment variables to separate table if provided
                 if environment_variables is not None:

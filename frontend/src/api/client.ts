@@ -1300,6 +1300,37 @@ class ApiClient {
   // SANDBOX API METHODS
   // ============================================================================
 
+  async attachSandbox(vmcpId: string, token?: string): Promise<ApiResponse<{ success: boolean; message: string; path: string }>> {
+    try {
+      const config = client.getConfig();
+      const baseUrl = config.baseUrl || '';
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${baseUrl}/api/vmcps/${encodeURIComponent(vmcpId)}/sandbox/attach`, {
+        method: 'POST',
+        headers,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+        throw new Error(errorData.detail || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      return { success: true, data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to attach sandbox',
+      };
+    }
+  }
+
   async enableSandbox(vmcpId: string, token?: string): Promise<ApiResponse<{ success: boolean; message: string; path: string }>> {
     try {
       const config = client.getConfig();

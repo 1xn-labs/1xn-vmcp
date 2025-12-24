@@ -90,5 +90,6 @@ class VMCPConfigData(_PermissiveBaseModel):
     selected_tools: Dict[str, List[str]] = Field(default_factory=dict)
     selected_prompts: Dict[str, List[str]] = Field(default_factory=dict)
     selected_resources: Dict[str, List[str]] = Field(default_factory=dict)
+    pd_enabled_tools: Dict[str, List[str]] = Field(default_factory=dict, description="Tools enabled in Progressive Discovery mode. Structure: {server_id: [tool_names], 'custom': [tool_names]}")
 
 

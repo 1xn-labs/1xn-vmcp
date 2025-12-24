@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import FileTree from './FileTree';
 import CodeEditor from './CodeEditor';
-import Terminal from './Terminal';
+// import Terminal from './Terminal';  // TERMINAL FEATURE DISABLED
 import EmptySandboxState from './EmptySandboxState';
 import { getFileIcon } from '@/utils/fileIcons';
 import { Trash2 } from 'lucide-react';
@@ -21,9 +21,10 @@ interface SandboxTabProps {
   vmcpId: string;
   isRemoteVMCP?: boolean;
   onSandboxStatusChange?: (enabled: boolean) => void;
+  setVmcpConfig?: (config: VMCPConfig | ((prev: VMCPConfig) => VMCPConfig)) => void;
 }
 
-export default function SandboxTab({ vmcpConfig, vmcpId, isRemoteVMCP = false, onSandboxStatusChange }: SandboxTabProps) {
+export default function SandboxTab({ vmcpConfig, vmcpId, isRemoteVMCP = false, onSandboxStatusChange, setVmcpConfig }: SandboxTabProps) {
   const [sandboxEnabled, setSandboxEnabled] = useState(false);
   const [folderExists, setFolderExists] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -201,11 +202,36 @@ export default function SandboxTab({ vmcpConfig, vmcpId, isRemoteVMCP = false, o
         const result = await apiClient.enableSandbox(vmcpId, accessToken);
 
         if (result.success) {
-          setSandboxEnabled(true);
+          // Reload status from backend to ensure we have the latest state
+          try {
+            const statusResult = await apiClient.getSandboxStatus(vmcpId, accessToken);
+            if (statusResult.success && statusResult.data) {
+              setSandboxEnabled(statusResult.data.enabled);
+              setFolderExists(statusResult.data.folder_exists);
+            } else {
+              setSandboxEnabled(true); // Fallback to true if reload fails
+              setFolderExists(true);
+            }
+          } catch (reloadError) {
+            console.error('Error reloading sandbox status:', reloadError);
+            setSandboxEnabled(true); // Fallback to true if reload fails
+            setFolderExists(true);
+          }
+          
+          // Update local config metadata to reflect the change
+          if (setVmcpConfig) {
+            setVmcpConfig(prev => ({
+              ...prev,
+              metadata: {
+                ...prev.metadata,
+                sandbox_enabled: true
+              }
+            }));
+          }
+          
           if (onSandboxStatusChange) {
             onSandboxStatusChange(true);
           }
-          setFolderExists(true);
           showSuccess('Sandbox enabled successfully');
           await loadFiles();
         } else {
@@ -217,14 +243,35 @@ export default function SandboxTab({ vmcpConfig, vmcpId, isRemoteVMCP = false, o
         const result = await apiClient.disableSandbox(vmcpId, accessToken);
 
         if (result.success) {
-          setSandboxEnabled(false);
+          // Reload status from backend to ensure we have the latest state
+          try {
+            const statusResult = await apiClient.getSandboxStatus(vmcpId, accessToken);
+            if (statusResult.success && statusResult.data) {
+              setSandboxEnabled(statusResult.data.enabled);
+            } else {
+              setSandboxEnabled(false); // Fallback to false if reload fails
+            }
+          } catch (reloadError) {
+            console.error('Error reloading sandbox status:', reloadError);
+            setSandboxEnabled(false); // Fallback to false if reload fails
+          }
+          
+          // Update local config metadata to reflect the change
+          if (setVmcpConfig) {
+            setVmcpConfig(prev => ({
+              ...prev,
+              metadata: {
+                ...prev.metadata,
+                sandbox_enabled: false
+              }
+            }));
+          }
+          
           if (onSandboxStatusChange) {
             onSandboxStatusChange(false);
           }
           // Don't clear files or folder - just update the flag
           showSuccess('Sandbox disabled successfully');
-          // Reload status to sync with backend - Removed to prevent full reload
-          // await loadSandboxStatus();
         } else {
           showError(result.error || 'Failed to disable sandbox');
         }
@@ -462,7 +509,7 @@ export default function SandboxTab({ vmcpConfig, vmcpId, isRemoteVMCP = false, o
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
         <TabsList className="mx-4 mt-2 mb-0">
           <TabsTrigger value="files">Files</TabsTrigger>
-          <TabsTrigger value="terminal">Terminal</TabsTrigger>
+          {/* <TabsTrigger value="terminal">Terminal</TabsTrigger> TERMINAL FEATURE DISABLED */}
         </TabsList>
         
         <TabsContent value="files" className="flex flex-1 min-h-0 mt-0 overflow-hidden">
@@ -490,10 +537,11 @@ export default function SandboxTab({ vmcpConfig, vmcpId, isRemoteVMCP = false, o
           </div>
         </TabsContent>
         
+        {/* TERMINAL FEATURE DISABLED */}
         {/* Terminal - always mounted but hidden when not active to preserve WebSocket connection */}
-        <div className={activeTab === 'terminal' ? 'flex flex-1 min-h-0 mt-0 p-4 overflow-hidden' : 'hidden'}>
+        {/* <div className={activeTab === 'terminal' ? 'flex flex-1 min-h-0 mt-0 p-4 overflow-hidden' : 'hidden'}>
           <Terminal vmcpId={vmcpId} className="h-full" />
-        </div>
+        </div> */}
       </Tabs>
 
       {/* Status Bar - Fixed at bottom, spans full width */}

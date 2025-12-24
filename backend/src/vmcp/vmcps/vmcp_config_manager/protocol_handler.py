@@ -298,12 +298,22 @@ async def tools_list(
     if isinstance(metadata, dict):
         progressive_discovery_enabled = metadata.get('progressive_discovery_enabled', False) is True
 
-    # Hide MCP server tools if progressive discovery is enabled (independent of sandbox)
+    # Load pd_enabled_tools for filtering when PD is enabled
+    pd_enabled_tools = vmcp_config.vmcp_config.get('pd_enabled_tools', {})
+
+    # Filter MCP server tools if progressive discovery is enabled (independent of sandbox)
     # But allow bypass when called from tools_list tool itself
     logger.debug(f"vMCP {vmcp_id}: progressive_discovery_enabled={progressive_discovery_enabled}, bypass_pd_filter={bypass_pd_filter}")
     if progressive_discovery_enabled and not bypass_pd_filter:
-        logger.info(f"Progressive discovery enabled for vMCP {vmcp_id}, hiding MCP server tools")
-        vmcp_servers = []  # Skip all MCP server tools
+        logger.info(f"Progressive discovery enabled for vMCP {vmcp_id}, filtering tools by pd_enabled_tools")
+        # Filter servers to only those with enabled tools in pd_enabled_tools
+        filtered_servers = []
+        for server in vmcp_servers:
+            server_id = server.get('server_id')
+            if server_id in pd_enabled_tools and pd_enabled_tools[server_id]:
+                filtered_servers.append(server)
+        vmcp_servers = filtered_servers
+        logger.debug(f"vMCP {vmcp_id}: Filtered to {len(vmcp_servers)} servers with enabled tools")
     else:
         logger.debug(f"vMCP {vmcp_id}: Showing MCP server tools (progressive_discovery={progressive_discovery_enabled}, bypass={bypass_pd_filter})")
 
@@ -317,6 +327,15 @@ async def tools_list(
         if server_id in vmcp_selected_tools:
             selected_tools = vmcp_selected_tools.get(server_id, [])
             server_tools = [tool for tool in server_tools if tool.name in selected_tools]
+        
+        # Additional filtering for Progressive Discovery mode
+        if progressive_discovery_enabled and not bypass_pd_filter:
+            if server_id in pd_enabled_tools:
+                pd_selected_tools = pd_enabled_tools.get(server_id, [])
+                server_tools = [tool for tool in server_tools if tool.name in pd_selected_tools]
+            else:
+                # If server not in pd_enabled_tools, skip all tools from this server
+                server_tools = []
 
         selected_tool_overrides = {}
         if server_id in vmcp_selected_tool_overrides:
@@ -362,130 +381,160 @@ async def tools_list(
             )
             all_tools.append(vmcp_tool)
 
-    # Add custom tools (skip if progressive discovery is enabled, unless bypassing)
+    # Add custom tools
+    # If progressive discovery is enabled, only include tools in pd_enabled_tools["custom"]
     # This includes both user-defined custom tools AND sandbox tools (which are injected into custom_tools)
-    if not progressive_discovery_enabled or bypass_pd_filter:
-        for custom_tool in vmcp_config.custom_tools:
-            tool_type = custom_tool.get('tool_type', 'prompt')
-
-            if tool_type == 'bash':
-                # Bash tools have simple string parameters
-                tool_input_schema = {
-                    "type": "object",
-                    "properties": {
-                        "command": {
-                            "type": "string",
-                            "description": "The bash command to execute"
-                        },
-                        "timeout": {
-                            "type": "integer",
-                            "description": "Maximum execution time in seconds",
-                            "default": 30
-                        }
-                    },
-                    "required": ["command"],
-                    "additionalProperties": False,
-                    "$schema": "http://json-schema.org/draft-07/schema#"
-                }
-            elif tool_type == 'python':
-                # For Python tools, parse the function to extract parameters
-                tool_input_schema = _parse_python_function_schema(custom_tool)
+    # Exception: execute_bash is automatically added/removed from pd_enabled_custom_tools based on sandbox status
+    pd_enabled_custom_tools = []
+    if progressive_discovery_enabled and not bypass_pd_filter:
+        # Filter custom tools by pd_enabled_tools["custom"]
+        pd_enabled_custom_tools = list(pd_enabled_tools.get("custom", []))
+        
+        # Automatically manage execute_bash in enabled tools based on sandbox status
+        try:
+            from vmcp.vmcps.sandbox_service import get_sandbox_service
+            sandbox_service = get_sandbox_service()
+            sandbox_enabled = sandbox_service.is_enabled(vmcp_id, vmcp_config)
+            if sandbox_enabled:
+                # Add execute_bash if sandbox is enabled and not already in the list
+                if "execute_bash" not in pd_enabled_custom_tools:
+                    pd_enabled_custom_tools.append("execute_bash")
+                    logger.debug(f"[ProtocolHandler] Automatically added execute_bash to pd_enabled_tools (sandbox enabled)")
             else:
-                # For prompt and HTTP tools, use the existing logic
-                tool_input_variables = custom_tool.get("variables", [])
-                tool_input_schema = {
-                    "type": "object",
-                    "properties": {
-                        var.get("name"): {
-                            "type": "string",
-                            "description": var.get("description")
-                        }
-                        for var in tool_input_variables
+                # Remove execute_bash if sandbox is disabled
+                if "execute_bash" in pd_enabled_custom_tools:
+                    pd_enabled_custom_tools.remove("execute_bash")
+                    logger.debug(f"[ProtocolHandler] Automatically removed execute_bash from pd_enabled_tools (sandbox disabled)")
+        except Exception as e:
+            logger.debug(f"[ProtocolHandler] Failed to check sandbox status: {e}")
+    
+    for custom_tool in vmcp_config.custom_tools:
+        # Skip custom tools not in pd_enabled_tools when PD is enabled
+        tool_name = custom_tool.get("name")
+        if progressive_discovery_enabled and not bypass_pd_filter:
+            #tool_name = custom_tool.get("name")
+            if tool_name not in pd_enabled_custom_tools:
+                continue  # Skip this custom tool if not in pd_enabled_tools
+        tool_type = custom_tool.get('tool_type', 'prompt')
+
+        if tool_type == 'bash':
+            # Bash tools have simple string parameters
+            tool_input_schema = {
+                "type": "object",
+                "properties": {
+                    "command": {
+                        "type": "string",
+                        "description": "The bash command to execute"
                     },
-                    "required": [var.get("name") for var in tool_input_variables if var.get("required")],
-                    "additionalProperties": False,
-                    "$schema": "http://json-schema.org/draft-07/schema#"
-                }
-
-            # Get keywords from custom tool config and append to description
-            keywords = custom_tool.get("keywords", [])
-            description = custom_tool.get("description", "")
-
-            # Append keywords to description if they exist
-            if keywords:
-                keywords_str = ", ".join(keywords) if isinstance(keywords, list) else str(keywords)
-                description = f"{description} [Keywords: {keywords_str}]"
-
-            title = custom_tool.get('name')
-
-            # Preserve original meta fields (especially 'source' for sandbox_discovered tools)
-            original_meta = custom_tool.get('meta', {})
-            tool_meta = {
-                "type": "custom",
-                "tool_type": tool_type,
-                "vmcp_id": vmcp_id
+                    "timeout": {
+                        "type": "integer",
+                        "description": "Maximum execution time in seconds",
+                        "default": 30
+                    }
+                },
+                "required": ["command"],
+                "additionalProperties": False,
+                "$schema": "http://json-schema.org/draft-07/schema#"
             }
-            # Preserve source and other meta fields from original tool
-            if isinstance(original_meta, dict):
-                if 'source' in original_meta:
-                    tool_meta['source'] = original_meta['source']
-                if 'script_path' in original_meta:
-                    tool_meta['script_path'] = original_meta['script_path']
-                # Preserve any other meta fields
-                for key in ['source', 'script_path', 'vmcp_id']:
-                    if key in original_meta and key not in tool_meta:
-                        tool_meta[key] = original_meta[key]
+        elif tool_type == 'python':
+            # For Python tools, parse the function to extract parameters
+            tool_input_schema = _parse_python_function_schema(custom_tool)
+        else:
+            # For prompt and HTTP tools, use the existing logic
+            tool_input_variables = custom_tool.get("variables", [])
+            tool_input_schema = {
+                "type": "object",
+                "properties": {
+                    var.get("name"): {
+                        "type": "string",
+                        "description": var.get("description")
+                    }
+                    for var in tool_input_variables
+                },
+                "required": [var.get("name") for var in tool_input_variables if var.get("required")],
+                "additionalProperties": False,
+                "$schema": "http://json-schema.org/draft-07/schema#"
+            }
 
-            # Get outputSchema from custom_tool if available (check both camelCase and snake_case)
-            output_schema = custom_tool.get("outputSchema") or custom_tool.get("output_schema")
-            
-            # If outputSchema is missing for Python tools, generate it using Tool.from_function
-            # and extract the actual return type from the main() function
-            if not output_schema and tool_type == 'python':
-                try:
-                    from vmcp.vmcps.vmcp_config_manager.custom_tool_engines.models import DynamicToolOutput
-                    from typing import Dict, Any
-                    from mcp.server.fastmcp.tools.base import Tool as MCPTool
-                    import ast
-                    
-                    # Extract return type from main() function using Tool.from_function
-                    return_type_schema = None
-                    python_code = custom_tool.get('code', '')
-                    if python_code:
-                        try:
-                            return_type_schema = _extract_return_type_schema_from_function(python_code)
-                        except Exception as e:
-                            logger.debug(f"[ProtocolHandler] Failed to extract return type from code: {e}")
-                    
-                    # Create a dummy function that returns DynamicToolOutput to get the base schema
-                    async def dummy_wrapper(**kwargs: Dict[str, Any]) -> DynamicToolOutput:
-                        return DynamicToolOutput(result=None, stdout="", stderr="")
-                    
-                    schema_tool = MCPTool.from_function(
-                        fn=dummy_wrapper,
-                        structured_output=True
-                    )
-                    output_schema = getattr(schema_tool, 'outputSchema', None) or getattr(schema_tool, 'output_schema', None)
-                    
-                    # If we extracted a return type schema, nest it in the result field
-                    if return_type_schema and output_schema and 'properties' in output_schema:
-                        if 'result' in output_schema['properties']:
-                            output_schema['properties']['result'] = return_type_schema
-                    
-                    logger.debug(f"[ProtocolHandler] Generated outputSchema for Python tool {custom_tool.get('name')}, "
-                               f"return_type_schema={'present' if return_type_schema else 'missing'}")
-                except Exception as e:
-                    logger.warning(f"[ProtocolHandler] Failed to generate outputSchema for {custom_tool.get('name')}: {e}")
-            
-            custom_tool_obj = Tool(
-                name=custom_tool.get("name"),
-                description=description,
-                inputSchema=tool_input_schema,
-                outputSchema=output_schema,
-                title=title,
-                meta=tool_meta
-            )
-            all_tools.append(custom_tool_obj)
+        # Get keywords from custom tool config and append to description
+        keywords = custom_tool.get("keywords", [])
+        description = custom_tool.get("description", "")
+
+        # Append keywords to description if they exist
+        if keywords:
+            keywords_str = ", ".join(keywords) if isinstance(keywords, list) else str(keywords)
+            description = f"{description} [Keywords: {keywords_str}]"
+
+        title = custom_tool.get('name')
+
+        # Preserve original meta fields (especially 'source' for sandbox_discovered tools)
+        original_meta = custom_tool.get('meta', {})
+        tool_meta = {
+            "type": "custom",
+            "tool_type": tool_type,
+            "vmcp_id": vmcp_id
+        }
+        # Preserve source and other meta fields from original tool
+        if isinstance(original_meta, dict):
+            if 'source' in original_meta:
+                tool_meta['source'] = original_meta['source']
+            if 'script_path' in original_meta:
+                tool_meta['script_path'] = original_meta['script_path']
+            # Preserve any other meta fields
+            for key in ['source', 'script_path', 'vmcp_id']:
+                if key in original_meta and key not in tool_meta:
+                    tool_meta[key] = original_meta[key]
+
+        # Get outputSchema from custom_tool if available (check both camelCase and snake_case)
+        output_schema = custom_tool.get("outputSchema") or custom_tool.get("output_schema")
+        
+        # If outputSchema is missing for Python tools, generate it using Tool.from_function
+        # and extract the actual return type from the main() function
+        if not output_schema and tool_type == 'python':
+            try:
+                from vmcp.vmcps.vmcp_config_manager.custom_tool_engines.models import DynamicToolOutput
+                from typing import Dict, Any
+                from mcp.server.fastmcp.tools.base import Tool as MCPTool
+                import ast
+                
+                # Extract return type from main() function using Tool.from_function
+                return_type_schema = None
+                python_code = custom_tool.get('code', '')
+                if python_code:
+                    try:
+                        return_type_schema = _extract_return_type_schema_from_function(python_code)
+                    except Exception as e:
+                        logger.debug(f"[ProtocolHandler] Failed to extract return type from code: {e}")
+                
+                # Create a dummy function that returns DynamicToolOutput to get the base schema
+                async def dummy_wrapper(**kwargs: Dict[str, Any]) -> DynamicToolOutput:
+                    return DynamicToolOutput(result=None, stdout="", stderr="")
+                
+                schema_tool = MCPTool.from_function(
+                    fn=dummy_wrapper,
+                    structured_output=True
+                )
+                output_schema = getattr(schema_tool, 'outputSchema', None) or getattr(schema_tool, 'output_schema', None)
+                
+                # If we extracted a return type schema, nest it in the result field
+                if return_type_schema and output_schema and 'properties' in output_schema:
+                    if 'result' in output_schema['properties']:
+                        output_schema['properties']['result'] = return_type_schema
+                
+                logger.debug(f"[ProtocolHandler] Generated outputSchema for Python tool {custom_tool.get('name')}, "
+                            f"return_type_schema={'present' if return_type_schema else 'missing'}")
+            except Exception as e:
+                logger.warning(f"[ProtocolHandler] Failed to generate outputSchema for {custom_tool.get('name')}: {e}")
+        
+        custom_tool_obj = Tool(
+            name=custom_tool.get("name"),
+            description=description,
+            inputSchema=tool_input_schema,
+            outputSchema=output_schema,
+            title=title,
+            meta=tool_meta
+        )
+        all_tools.append(custom_tool_obj)
 
     # Log operation if callback provided
     if user_id and log_vmcp_operation:

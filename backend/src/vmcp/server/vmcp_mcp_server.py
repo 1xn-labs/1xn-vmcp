@@ -503,7 +503,39 @@ class VMCPServer(FastMCP):
                         }
                     )
                 )
-            logger.info(f"[VMCPServer] Returning {len(pd_tools)} PD tools")
+            
+            # Add selected tools from pd_enabled_tools
+            # These are the tools the user has explicitly enabled in PD mode
+            if deps.vmcp_config_manager:
+                try:
+                    # Load config if not already loaded
+                    if not vmcp_config:
+                        vmcp_config = deps.vmcp_config_manager.load_vmcp_config(vmcp_id)
+                    
+                    if vmcp_config:
+                        pd_enabled_tools = vmcp_config.vmcp_config.get('pd_enabled_tools', {})
+                        if pd_enabled_tools:
+                            # Get all enabled tools (honoring pd_enabled_tools filter, not bypassing)
+                            # This will return only the tools in pd_enabled_tools
+                            enabled_tools = await deps.vmcp_config_manager.tools_list(bypass_pd_filter=False)
+                            
+                            # Filter out PD discovery tools to avoid duplicates
+                            pd_discovery_tool_names = {"tools_list", "tool_detail", "execute_tool", "upload_prompt"}
+                            for tool in enabled_tools:
+                                if tool.name not in pd_discovery_tool_names:
+                                    # Check if execute_bash is already added
+                                    if tool.name == "execute_bash":
+                                        # Only add if not already in pd_tools
+                                        if not any(t.name == "execute_bash" for t in pd_tools):
+                                            pd_tools.append(tool)
+                                    else:
+                                        pd_tools.append(tool)
+                            
+                            logger.info(f"[VMCPServer] Added {len([t for t in enabled_tools if t.name not in pd_discovery_tool_names])} enabled tools from pd_enabled_tools")
+                except Exception as e:
+                    logger.warning(f"[VMCPServer] Failed to get enabled tools from pd_enabled_tools: {e}")
+            
+            logger.info(f"[VMCPServer] Returning {len(pd_tools)} PD tools (discovery + enabled)")
             return pd_tools
 
         # Get vMCP tools

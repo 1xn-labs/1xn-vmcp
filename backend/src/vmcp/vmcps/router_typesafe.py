@@ -1797,9 +1797,9 @@ async def update_vmcp(
     logger.info(f"   👤 User context: {user_context.user_id if user_context else 'None'}")
     
     try:
-        # Get managers
-        vmcp_config_manager = VMCPConfigManager(user_context.user_id)
-        user_vmcp_manager = VMCPConfigManager(user_context.user_id, vmcp_id)
+        # Get managers - use cached manager to ensure cache invalidation works across all endpoints
+        vmcp_config_manager = get_cached_vmcp_config_manager(user_context.user_id)
+        user_vmcp_manager = get_cached_vmcp_config_manager(user_context.user_id, vmcp_id)
         
         # Get existing vMCP config
         vmcp_config = vmcp_config_manager.load_vmcp_config(vmcp_id)
@@ -2172,7 +2172,8 @@ async def list_vmcp_tools(
     try:
         # Use cached manager to avoid repeated initialization
         user_vmcp_manager = get_cached_vmcp_config_manager(user_context.user_id, vmcp_id)
-        tools_list = await user_vmcp_manager.tools_list()
+        # Bypass PD filter for frontend testing - users should be able to test all tools regardless of PD settings
+        tools_list = await user_vmcp_manager.tools_list(bypass_pd_filter=True)
         
         # Handle request filters if provided
         filter_by_server = request_model.filter_by_server

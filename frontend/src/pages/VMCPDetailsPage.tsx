@@ -1125,6 +1125,7 @@ export default function VMCPDetailPage() {
             vmcpId={vmcpId}
             isRemoteVMCP={isRemoteVMCP}
             onSandboxStatusChange={setSandboxEnabled}
+            setVmcpConfig={setVmcpConfig}
           />
         </TabsContent>
 
@@ -1134,6 +1135,7 @@ export default function VMCPDetailPage() {
             vmcpId={vmcpId}
             isRemoteVMCP={isRemoteVMCP}
             onProgressiveDiscoveryStatusChange={setProgressiveDiscoveryEnabled}
+            setVmcpConfig={setVmcpConfig}
           />
         </TabsContent>
       </Tabs>

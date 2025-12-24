@@ -39,8 +39,10 @@ async def enable_progressive_discovery(
     """
     try:
         from vmcp.vmcps.vmcp_config_manager import VMCPConfigManager
+        from vmcp.vmcps.router_typesafe import get_cached_vmcp_config_manager
         
-        vmcp_config_manager = VMCPConfigManager(user_context.user_id, vmcp_id)
+        # Use cached manager to ensure cache invalidation works across all endpoints
+        vmcp_config_manager = get_cached_vmcp_config_manager(user_context.user_id, vmcp_id)
         vmcp_config = vmcp_config_manager.load_vmcp_config()
         
         if not vmcp_config:
@@ -69,6 +71,8 @@ async def enable_progressive_discovery(
             vmcp_id=vmcp_id,
             metadata=metadata
         )
+        # Invalidate cache to ensure fresh data on next load
+        vmcp_config_manager.invalidate_config_cache(vmcp_id)
         logger.info(f"Persisted progressive discovery enabled state for vMCP {vmcp_id}")
         
         return {
@@ -104,8 +108,10 @@ async def disable_progressive_discovery(
     """
     try:
         from vmcp.vmcps.vmcp_config_manager import VMCPConfigManager
+        from vmcp.vmcps.router_typesafe import get_cached_vmcp_config_manager
         
-        vmcp_config_manager = VMCPConfigManager(user_context.user_id, vmcp_id)
+        # Use cached manager to ensure cache invalidation works across all endpoints
+        vmcp_config_manager = get_cached_vmcp_config_manager(user_context.user_id, vmcp_id)
         vmcp_config = vmcp_config_manager.load_vmcp_config()
         
         if not vmcp_config:
@@ -134,6 +140,8 @@ async def disable_progressive_discovery(
             vmcp_id=vmcp_id,
             metadata=metadata
         )
+        # Invalidate cache to ensure fresh data on next load
+        vmcp_config_manager.invalidate_config_cache(vmcp_id)
         logger.info(f"Persisted progressive discovery disabled state for vMCP {vmcp_id}")
         
         return {

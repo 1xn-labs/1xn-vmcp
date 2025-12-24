@@ -103,6 +103,7 @@ async def call_custom_tool(
     vmcp_id: str,
     execute_python_tool_func,
     execute_http_tool_func,
+    execute_bash_tool_func,
     parse_vmcp_text_func,
     arguments: Optional[Dict[str, Any]] = None,
     tool_as_prompt: bool = False,
@@ -117,6 +118,7 @@ async def call_custom_tool(
         vmcp_id: Virtual MCP identifier
         execute_python_tool_func: Function to execute Python tools
         execute_http_tool_func: Function to execute HTTP tools
+        execute_bash_tool_func: Function to execute bash tools
         parse_vmcp_text_func: Function to parse VMCP text
         arguments: Optional tool arguments
         tool_as_prompt: Whether to return as prompt result
@@ -151,7 +153,15 @@ async def call_custom_tool(
     # Handle different tool types
     tool_type = custom_tool.get('tool_type', 'prompt')
 
-    if tool_type == 'python':
+    if tool_type == 'bash':
+        logger.info(f"🔍 PROMPT_TOOL: Calling bash tool with arguments: {arguments}")
+        return await execute_bash_tool_func(
+            vmcp_id=vmcp_id,
+            command=arguments.get('command', ''),
+            timeout=arguments.get('timeout', 30),
+            user_id=storage.user_id if hasattr(storage, 'user_id') else "1"
+        )
+    elif tool_type == 'python':
         logger.info(f"🔍 PROMPT_TOOL: Calling Python tool with arguments: {arguments}")
         return await execute_python_tool_func(custom_tool, arguments, environment_variables, tool_as_prompt, vmcp_id, skip_sandbox)
     elif tool_type == 'http':

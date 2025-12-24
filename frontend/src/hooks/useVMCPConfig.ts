@@ -24,6 +24,7 @@ export const useVMCPConfig = (vmcpId: string, isNewVMCP: boolean) => {
       selected_resources: {},
       selected_prompts: {},
       selected_tool_overrides: {},
+      pd_enabled_tools: {},
       tags: [],
       is_default: false
     },
@@ -214,6 +215,9 @@ export const useVMCPConfig = (vmcpId: string, isNewVMCP: boolean) => {
     compareObjects('Resource', originalConfig.vmcp_config.selected_resources, vmcpConfig.vmcp_config.selected_resources);
     compareObjects('Prompt', originalConfig.vmcp_config.selected_prompts, vmcpConfig.vmcp_config.selected_prompts);
 
+    // Check PD enabled tools (same structure as selected_tools)
+    compareObjects('PD Enabled Tool', originalConfig.vmcp_config.pd_enabled_tools || {}, vmcpConfig.vmcp_config.pd_enabled_tools || {});
+
     // Check tool overrides (nested object structure)
     compareNestedObjects(
       'Tool Override',
@@ -358,17 +362,20 @@ export const useVMCPConfig = (vmcpId: string, isNewVMCP: boolean) => {
             environment_variables: (data as any).system_prompt.environment_variables || [],
             tool_calls: (data as any).system_prompt.tool_calls || []
           } : { text: '', variables: [], environment_variables: [], tool_calls: [] },
-          vmcp_config: data.vmcp_config || {
-            name: '',
-            description: '',
-            enabled: true,
-            selected_servers: [],
-            selected_tools: {},
-            selected_resources: {},
-            selected_prompts: {},
-            selected_tool_overrides: {},
-            tags: [],
-            is_default: false
+          vmcp_config: {
+            ...(data.vmcp_config || {
+              name: '',
+              description: '',
+              enabled: true,
+              selected_servers: [],
+              selected_tools: {},
+              selected_resources: {},
+              selected_prompts: {},
+              selected_tool_overrides: {},
+              tags: [],
+              is_default: false
+            }),
+            pd_enabled_tools: data.vmcp_config?.pd_enabled_tools || {}
           },
           custom_prompts: ((data as any).custom_prompts || []).map((prompt: any) => ({
             ...prompt,
