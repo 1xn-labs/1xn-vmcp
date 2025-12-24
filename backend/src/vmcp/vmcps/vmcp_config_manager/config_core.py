@@ -82,7 +82,7 @@ from . import resource_manager
 from . import server_manager
 from . import template_parser
 from . import logger as vmcp_logger
-from .custom_tool_engines import prompt_tool, python_tool, http_tool
+from .custom_tool_engines import prompt_tool, python_tool, http_tool, bash_tool
 from vmcp.utilities.logging import get_logger
 
 logger = get_logger("1xN_vMCP_CONFIG_MANAGER")
@@ -117,6 +117,8 @@ class VMCPConfigManager:
         vmcp_id: Optional[str] = None,
         logging_config: Optional[Dict[str, Any]] = None,
         mcp_keep_alive: Optional[bool] = False,
+        mcp_config_manager: Optional[MCPConfigManager] = None,
+        storage: Optional[StorageBase] = None,
     ):
         """
         Initialize the VMCP Configuration Manager.
@@ -126,11 +128,15 @@ class VMCPConfigManager:
             vmcp_id: Optional active vMCP identifier
             logging_config: Optional logging configuration dictionary
                           Defaults to web client configuration if not provided
+            mcp_config_manager: Optional MCPConfigManager instance to reuse (avoids duplicate creation)
+            storage: Optional StorageBase instance to reuse (avoids duplicate creation)
         """
-        self.storage = StorageBase(user_id)
+        # Use provided storage instance or create a new one
+        self.storage = storage if storage is not None else StorageBase(user_id)
         self.user_id = user_id
         self.vmcp_id = vmcp_id
-        self.mcp_config_manager = MCPConfigManager(user_id)
+        # Use provided MCPConfigManager or create a new one (sharing storage to avoid duplicate)
+        self.mcp_config_manager = mcp_config_manager if mcp_config_manager is not None else MCPConfigManager(user_id, storage=self.storage)
         self.mcp_client_manager = MCPClientManager(self.mcp_config_manager, mcp_keep_alive)
         self.logging_config = logging_config or {
             "agent_name": "1xn_web_client",
@@ -148,6 +154,9 @@ class VMCPConfigManager:
             comment_start_string='{#',
             comment_end_string='#}'
         )
+
+        # Cache for loaded vMCP configs to avoid repeated heavy loading
+        self._config_cache: Dict[str, Optional[VMCPConfig]] = {}
 
         logger.info(f"Initialized VMCPConfigManager for user {user_id}, vMCP {vmcp_id}")
 
@@ -185,18 +194,27 @@ class VMCPConfigManager:
     # =========================================================================
 
     @trace_method("[VMCPConfigManager]: Load VMCP Config")
-    def load_vmcp_config(self, specific_vmcp_id: Optional[str] = None) -> Optional[VMCPConfig]:
+    def load_vmcp_config(self, specific_vmcp_id: Optional[str] = None, use_cache: bool = True) -> Optional[VMCPConfig]:
         """
         Load vMCP configuration from storage.
 
         Args:
             specific_vmcp_id: Optional specific vMCP ID to load.
                             If not provided, uses self.vmcp_id
+            use_cache: Whether to use cached config if available (default: True)
 
         Returns:
             VMCPConfig object if found, None otherwise
         """
         vmcp_id_to_load = specific_vmcp_id or self.vmcp_id
+        
+        if not vmcp_id_to_load:
+            return None
+
+        # Check cache first if enabled
+        if use_cache and vmcp_id_to_load in self._config_cache:
+            logger.debug(f"Using cached vMCP config for {vmcp_id_to_load}")
+            return self._config_cache[vmcp_id_to_load]
 
         # Log the operation to span
         log_to_span(
@@ -211,6 +229,10 @@ class VMCPConfigManager:
             result = self.storage.load_vmcp_config(specific_vmcp_id)
         else:
             result = self.storage.load_vmcp_config(self.vmcp_id)
+
+        # Cache the result if enabled
+        if use_cache:
+            self._config_cache[vmcp_id_to_load] = result
 
         # Log the result
         if result:
@@ -235,6 +257,20 @@ class VMCPConfigManager:
             )
 
         return result
+    
+    def invalidate_config_cache(self, vmcp_id: Optional[str] = None) -> None:
+        """
+        Invalidate cached vMCP config.
+        
+        Args:
+            vmcp_id: Specific vMCP ID to invalidate, or None to clear all cache
+        """
+        if vmcp_id:
+            self._config_cache.pop(vmcp_id, None)
+            logger.debug(f"Invalidated cache for vMCP {vmcp_id}")
+        else:
+            self._config_cache.clear()
+            logger.debug("Cleared all vMCP config cache")
 
     @trace_method("[VMCPConfigManager]: Save VMCP Config")
     def save_vmcp_config(self, vmcp_config: VMCPConfig) -> bool:
@@ -247,7 +283,11 @@ class VMCPConfigManager:
         Returns:
             True if save successful, False otherwise
         """
-        return self.storage.save_vmcp(vmcp_config.id, vmcp_config.to_dict())
+        result = self.storage.save_vmcp(vmcp_config.id, vmcp_config.to_dict())
+        # Invalidate cache for this vMCP after saving
+        if result:
+            self.invalidate_config_cache(vmcp_config.id)
+        return result
 
     # =========================================================================
     # vMCP Listing and Discovery
@@ -848,13 +888,17 @@ class VMCPConfigManager:
         Returns:
             List of Tool objects from all sources
         """
+        # Load config using cache to avoid repeated heavy loading
+        vmcp_config = self.load_vmcp_config(use_cache=True)
+        
         return await protocol_handler.tools_list(
             storage=self.storage,
             vmcp_id=self.vmcp_id,
             user_id=self.user_id,
             mcp_config_manager=self.mcp_config_manager,
             log_vmcp_operation=self.log_vmcp_operation,
-            bypass_pd_filter=bypass_pd_filter
+            bypass_pd_filter=bypass_pd_filter,
+            vmcp_config=vmcp_config  # Pass cached config to avoid reloading
         )
 
     @trace_method("[VMCPConfigManager]: List Resources")
@@ -1412,6 +1456,7 @@ class VMCPConfigManager:
             vmcp_id=self.vmcp_id,
             execute_python_tool_func=python_tool.execute_python_tool,
             execute_http_tool_func=http_tool.execute_http_tool,
+            execute_bash_tool_func=bash_tool.execute_bash_tool,
             parse_vmcp_text_func=self._parse_vmcp_text,
             arguments=arguments,
             tool_as_prompt=tool_as_prompt,

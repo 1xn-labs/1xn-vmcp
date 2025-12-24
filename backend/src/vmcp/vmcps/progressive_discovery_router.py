@@ -169,8 +169,10 @@ async def get_progressive_discovery_status(
     """
     try:
         from vmcp.vmcps.vmcp_config_manager import VMCPConfigManager
+        from vmcp.vmcps.router_typesafe import get_cached_vmcp_config_manager
         
-        vmcp_config_manager = VMCPConfigManager(user_context.user_id, vmcp_id)
+        # Use cached manager to avoid repeated initialization
+        vmcp_config_manager = get_cached_vmcp_config_manager(user_context.user_id, vmcp_id)
         vmcp_config = vmcp_config_manager.load_vmcp_config()
         
         if not vmcp_config:

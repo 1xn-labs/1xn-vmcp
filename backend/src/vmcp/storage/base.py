@@ -551,29 +551,46 @@ class StorageBase:
             custom_tools = list(vmcp_config.custom_tools or [])
             custom_prompts = list(vmcp_config.custom_prompts or [])
             
-            # Always remove existing sandbox tools/prompts first (even if sandbox is disabled)
-            # This ensures that if sandbox was previously enabled and then disabled, 
-            # the tools are properly removed
-            # Remove both hardcoded sandbox tools AND dynamically discovered tools
-            sandbox_tool_names = {'execute_bash', 'execute_python'}
+            # Always remove ALL sandbox-discovered tools from database
+            # Python/sandbox tools should ONLY come from sandbox directory discovery, not from database
+            # This ensures sandbox tools are always fresh and discovered on-demand
             before_remove = len(custom_tools)
             custom_tools = [
                 tool for tool in custom_tools
                 if not (
-                    # Remove by name (hardcoded tools)
-                    (tool.get('name') if isinstance(tool, dict) else getattr(tool, 'name', None)) in sandbox_tool_names
+                    # Remove execute_bash (always injected fresh)
+                    (tool.get('name') if isinstance(tool, dict) else getattr(tool, 'name', None)) == 'execute_bash'
                     or
-                    # Remove by metadata source (discovered tools)
+                    # Remove execute_python (if it exists)
+                    (tool.get('name') if isinstance(tool, dict) else getattr(tool, 'name', None)) == 'execute_python'
+                    or
+                    # Remove ALL tools with script_path in meta (file-based sandbox tools)
+                    # These should ONLY come from sandbox directory discovery, not from database
+                    (
+                        isinstance(tool, dict) and 
+                        isinstance(tool.get('meta'), dict) and 
+                        'script_path' in tool.get('meta', {})
+                    )
+                    or
+                    # Remove tools with sandbox_discovered source
                     (
                         isinstance(tool, dict) and 
                         isinstance(tool.get('meta'), dict) and 
                         tool.get('meta', {}).get('source') == 'sandbox_discovered'
                     )
+                    or
+                    # Remove old Python tools with 'code' field (legacy, pre-file-based storage)
+                    (
+                        isinstance(tool, dict) and 
+                        tool.get('tool_type') == 'python' and 
+                        'code' in tool and 
+                        not (isinstance(tool.get('meta'), dict) and 'script_path' in tool.get('meta', {}))
+                    )
                 )
             ]
             removed_count = before_remove - len(custom_tools)
             if removed_count > 0:
-                logger.debug(f"Removed {removed_count} existing sandbox tools for vMCP {vmcp_id}")
+                logger.debug(f"Removed {removed_count} sandbox tools from database (sandbox tools are discovered on-demand only) for vMCP {vmcp_id}")
             
             # Remove sandbox prompt (by checking name to avoid duplicates)
             before_prompt_remove = len(custom_prompts)
@@ -585,13 +602,45 @@ class StorageBase:
                 logger.debug(f"Removed {before_prompt_remove - len(custom_prompts)} sandbox setup prompt(s) for vMCP {vmcp_id}")
             
             # Only inject sandbox tools/prompts if sandbox is enabled
+            # Sandbox tools are ALWAYS discovered fresh from sandbox directory, never from database
             if sandbox_service.is_enabled(vmcp_id, vmcp_config):
-                # Add sandbox tools
+                # Inject execute_bash as BACKEND-NATIVE tool (not Python tool)
+                execute_bash_tool = {
+                    'name': 'execute_bash',
+                    'description': 'Execute a bash command in a sandboxed environment. TO RUN BASH COMMANDS ALWAYS USE THIS TOOL. DO NOT EXECUTE BASH COMMANDS DIRECTLY.',
+                    'text': 'Execute bash commands in a sandboxed environment with filesystem and network restrictions.',
+                    'tool_type': 'bash',  # NEW tool type
+                    'variables': [
+                        {
+                            'name': 'command',
+                            'description': 'The bash command to execute',
+                            'required': True,
+                            'type': 'str'
+                        },
+                        {
+                            'name': 'timeout',
+                            'description': 'Maximum execution time in seconds',
+                            'required': False,
+                            'type': 'int'
+                        }
+                    ],
+                    'environment_variables': [],
+                    'tool_calls': [],
+                    'meta': {
+                        'source': 'backend_native',
+                        'executor': 'bash_tool'
+                    }
+                }
+                custom_tools.append(execute_bash_tool)
+                logger.debug(f"Injected execute_bash as backend-native tool for vMCP {vmcp_id}")
+                
+                # Discover and inject sandbox tools from vmcp_tools/ directory
+                # These are ALWAYS discovered fresh, never loaded from database
                 sandbox_tools = sandbox_service.get_sandbox_tools(vmcp_id)
                 # Filter out execute_python tool as requested
                 sandbox_tools = [t for t in sandbox_tools if t.get('name') != 'execute_python']
                 custom_tools.extend(sandbox_tools)
-                logger.debug(f"Injected {len(sandbox_tools)} sandbox tools for vMCP {vmcp_id}")
+                logger.debug(f"Discovered and injected {len(sandbox_tools)} sandbox tools from directory for vMCP {vmcp_id}")
                 
                 # Add sandbox prompt
                 sandbox_prompt = {

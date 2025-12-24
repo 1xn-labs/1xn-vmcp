@@ -77,9 +77,10 @@ class VMCPServer(FastMCP):
             notification_options=NotificationOptions(prompts_changed=True, resources_changed=True, tools_changed=True),
             experimental_capabilities={"1xn": {"vmcp": True}})
 
-        # vmcp server is completely stateless
-        # All managers will be created per user request
-        logger.info("[VMCPServer] Initialization complete (stateless)")
+        # vmcp server is stateful - maintains session state via VMCPSessionManager
+        # VMCPConfigManager instances are cached per session ID and reused across requests
+        # Sessions are cleaned up automatically when they end or expire (TTL-based)
+        logger.info("[VMCPServer] Initialization complete (stateful with session caching)")
 
     def streamable_http_app(self):
         """
@@ -628,9 +629,10 @@ class VMCPServer(FastMCP):
 
     def _format_tool_description(self, tool: Tool) -> str:
         """
-        Format tool description with Args, Returns, and outputSchema sections.
+        Format tool description with outputSchema section only.
         
-        Similar to how MCP tools format their descriptions for better LLM understanding.
+        Args and Returns sections are NOT added here to avoid duplicates,
+        as they are already included in the original description from docstrings.
         
         Args:
             tool: Tool object to format
@@ -642,54 +644,62 @@ class VMCPServer(FastMCP):
         
         description_parts = [tool.description or ""]
         
-        # Add Args section from inputSchema
-        input_schema = getattr(tool, 'inputSchema', None) or getattr(tool, 'parameters', None)
-        if input_schema and input_schema.get('properties'):
-            properties = input_schema.get('properties', {})
-            required = input_schema.get('required', [])
-            
-            if properties:
-                description_parts.append("\nArgs:")
-                for param_name, param_schema in properties.items():
-                    param_type = param_schema.get('type', 'any')
-                    param_desc = param_schema.get('description', '')
-                    is_required = param_name in required
-                    
-                    # Format: param_name: description (Required/Optional)
-                    if param_desc:
-                        if is_required:
-                            description_parts.append(f"    {param_name}: {param_desc} (Required)")
-                        else:
-                            description_parts.append(f"    {param_name}: {param_desc} (Optional)")
-                    else:
-                        if is_required:
-                            description_parts.append(f"    {param_name}: {param_type} (Required)")
-                        else:
-                            description_parts.append(f"    {param_name}: {param_type} (Optional)")
+        # COMMENTED OUT: Args section insertion - causes duplicates
+        # The original description already contains Args/Returns from docstrings
+        # # Add Args section from inputSchema
+        # input_schema = getattr(tool, 'inputSchema', None) or getattr(tool, 'parameters', None)
+        # if input_schema and input_schema.get('properties'):
+        #     properties = input_schema.get('properties', {})
+        #     required = input_schema.get('required', [])
+        #     
+        #     if properties:
+        #         description_parts.append("\nArgs:")
+        #         for param_name, param_schema in properties.items():
+        #             param_type = param_schema.get('type', 'any')
+        #             param_desc = param_schema.get('description', '')
+        #             is_required = param_name in required
+        #             
+        #             # Format: param_name: description (Required/Optional)
+        #             if param_desc:
+        #                 if is_required:
+        #                     description_parts.append(f"    {param_name}: {param_desc} (Required)")
+        #                 else:
+        #                     description_parts.append(f"    {param_name}: {param_desc} (Optional)")
+        #             else:
+        #                 if is_required:
+        #                     description_parts.append(f"    {param_name}: {param_type} (Required)")
+        #                 else:
+        #                     description_parts.append(f"    {param_name}: {param_type} (Optional)")
         
-        # Add Returns section
-        # Check both camelCase (outputSchema) and snake_case (output_schema) attributes
+        # COMMENTED OUT: Returns section insertion - causes duplicates
+        # The original description already contains Returns from docstrings
+        # # Add Returns section
+        # # Check both camelCase (outputSchema) and snake_case (output_schema) attributes
+        # output_schema = getattr(tool, 'outputSchema', None)
+        # if output_schema is None:
+        #     output_schema = getattr(tool, 'output_schema', None)
+        # 
+        # logger.debug(f"[VMCPServer] _format_tool_description({tool.name}): outputSchema={output_schema is not None}, "
+        #             f"outputSchema value={output_schema}")
+        # 
+        # if output_schema:
+        #     # For Python/sandbox tools, describe the DynamicToolOutput structure
+        #     returns_desc = "Tool execution result with structured output containing result, stdout, and stderr."
+        #     if 'title' in output_schema:
+        #         title = output_schema.get('title', '')
+        #         if title and 'Output' in title:
+        #             returns_desc = title.replace('Output', '').strip()
+        #     elif 'description' in output_schema:
+        #         returns_desc = output_schema.get('description', returns_desc)
+        #     
+        #     description_parts.append(f"\nReturns:")
+        #     description_parts.append(f"    {returns_desc}")
+        
+        # Add outputSchema JSON (keep this as it's useful for LLMs)
         output_schema = getattr(tool, 'outputSchema', None)
         if output_schema is None:
             output_schema = getattr(tool, 'output_schema', None)
         
-        logger.debug(f"[VMCPServer] _format_tool_description({tool.name}): outputSchema={output_schema is not None}, "
-                    f"outputSchema value={output_schema}")
-        
-        if output_schema:
-            # For Python/sandbox tools, describe the DynamicToolOutput structure
-            returns_desc = "Tool execution result with structured output containing result, stdout, and stderr."
-            if 'title' in output_schema:
-                title = output_schema.get('title', '')
-                if title and 'Output' in title:
-                    returns_desc = title.replace('Output', '').strip()
-            elif 'description' in output_schema:
-                returns_desc = output_schema.get('description', returns_desc)
-            
-            description_parts.append(f"\nReturns:")
-            description_parts.append(f"    {returns_desc}")
-        
-        # Add outputSchema JSON
         if output_schema:
             schema_str = json.dumps(output_schema, indent=2)
             description_parts.append(f'\n\n"outputSchema": {schema_str}')

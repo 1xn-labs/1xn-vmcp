@@ -21,14 +21,15 @@ logger = get_logger("1xN_MCP_CONFIG")
 class MCPConfigManager:
     """Manages MCP server configurations"""
 
-    def __init__(self, user_id: str):
+    def __init__(self, user_id: str, storage: Optional[StorageBase] = None):
         self._servers: Dict[str, MCPServerConfig] = {}
         try:
             self.user_id = int(user_id)
         except ValueError:
             logger.error(f"user_id '{user_id}' is not convertible to int, cannot initialize StorageBase.")
             raise
-        self.storage = StorageBase(self.user_id)
+        # Use provided storage instance or create a new one
+        self.storage = storage if storage is not None else StorageBase(self.user_id)
         self.load_mcp_servers()
 
         # OSS - no analytics tracking
@@ -42,7 +43,7 @@ class MCPConfigManager:
             try:
                 # logger.info(f"Loading server config for {id_}: {server_data}")
                 self._servers[id_] = MCPServerConfig.from_dict(server_data)
-                logger.debug(f"Loaded server config for {id_}: {self._servers[id_].name} : {self._servers[id_].headers}")
+                # logger.debug(f"Loaded server config for {id_}: {self._servers[id_].name} : {self._servers[id_].headers}")
             except Exception as e:
                 logger.error(f"❌ Traceback: {traceback.format_exc()}")
                 logger.warning(f"⚠️  Failed to load server config for {id_}: {e}")

@@ -130,6 +130,40 @@ class SandboxService:
         venv_path = sandbox_path / ".venv"
         return venv_path.exists() and venv_path.is_dir()
     
+    def is_sandbox_attached(self, vmcp_id: str, vmcp_config: Optional[Any] = None) -> bool:
+        """
+        Check if sandbox is attached (exists, has venv, and enabled).
+        
+        Returns True only if:
+        1. Sandbox directory exists
+        2. Venv exists
+        3. sandbox_enabled flag is True in metadata
+        
+        Args:
+            vmcp_id: The vMCP ID
+            vmcp_config: Optional vMCP config (will be loaded if not provided)
+            
+        Returns:
+            True if sandbox is fully attached and ready
+        """
+        if not vmcp_config:
+            from vmcp.storage.base import StorageBase
+            storage = StorageBase(user_id=1)  # Default for OSS
+            vmcp_config = storage.load_vmcp_config(vmcp_id)
+        
+        if not vmcp_config:
+            return False
+        
+        metadata = getattr(vmcp_config, 'metadata', {}) or {}
+        if not isinstance(metadata, dict):
+            return False
+        
+        sandbox_enabled = metadata.get('sandbox_enabled', False) is True
+        sandbox_exists = self.sandbox_exists(vmcp_id)
+        venv_exists = self.venv_exists(vmcp_id)
+        
+        return sandbox_enabled and sandbox_exists and venv_exists
+    
     def is_enabled(self, vmcp_id: str, vmcp_config: Optional[Any] = None) -> bool:
         """
         Check if sandbox is enabled.
@@ -749,7 +783,8 @@ build-backend = "hatchling.build"
     def get_sandbox_tools(self, vmcp_id: str) -> List[Dict[str, Any]]:
         """
         Get sandbox tool definitions to inject into vMCP.
-        Includes base tools (execute_bash) and dynamically discovered tools.
+        Now only includes dynamically discovered tools from vmcp_tools/ directory.
+        execute_bash is handled separately as a backend-native tool.
         Note: execute_python tool is kept in _get_execute_python_tool() but not surfaced.
         
         Args:
@@ -759,37 +794,9 @@ build-backend = "hatchling.build"
             List of tool definitions
         """
         sandbox_path = self.get_sandbox_path(vmcp_id)
-        sandbox_path_str = str(sandbox_path)
         
-        # Load execute_bash code from file and inject sandbox path
-        execute_bash_code = self._load_tool_code("tool_execute_bash.py").replace("{sandbox_path_str}", sandbox_path_str)
-        
-        # Base sandbox tools (execute_python is not included but kept in _get_execute_python_tool())
-        base_tools = [
-            {
-                "name": "execute_bash",
-                "description": "TO RUN BASH TOOLS ALWAYS USE THIS TOOL. DO NOT EXECUTE BASH COMMANDS DIRECTLY. Execute a bash command in a sandboxed environment.",
-                "text": f"The command will be executed in a sandboxed environment. The sandbox directory appears as /root/ to the LLM (e.g., 'pwd' returns /root). The actual sandbox is located at {sandbox_path_str} with filesystem and network restrictions applied. The sandbox prevents access to sensitive directories like ~/.ssh, ~/.aws, and restricts network access.",
-                "tool_type": "python",
-                "code": execute_bash_code,
-                "variables": [
-                    {
-                        "name": "command",
-                        "description": "The bash command to execute",
-                        "required": True,
-                        "type": "str"
-                    },
-                    {
-                        "name": "timeout",
-                        "description": "Maximum execution time in seconds",
-                        "required": False,
-                        "type": "int"
-                    }
-                ],
-                "environment_variables": [],
-                "tool_calls": []
-            }
-        ]
+        # execute_bash is now a backend-native tool, not included here
+        base_tools = []
         
         # Discover dynamic tools from vmcp_tools/ directory
         # CRITICAL: Do NOT attempt discovery if sandbox directory doesn't exist.

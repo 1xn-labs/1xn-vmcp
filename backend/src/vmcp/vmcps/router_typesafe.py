@@ -85,6 +85,60 @@ router = APIRouter(prefix="/vmcps", tags=["vMCPs"])
 logger = get_logger(__name__)
 
 # ============================================================================
+# Manager Cache for HTTP API Requests
+# ============================================================================
+# Cache managers per user_id to avoid repeated initialization
+# This reduces redundant StorageBase and MCPConfigManager creation
+_manager_cache: Dict[str, Dict[str, Any]] = {}
+_cache_lock = None
+
+def _get_cache_lock():
+    """Lazy initialization of lock to avoid import issues"""
+    global _cache_lock
+    if _cache_lock is None:
+        import threading
+        _cache_lock = threading.Lock()
+    return _cache_lock
+
+def get_cached_mcp_config_manager(user_id: str) -> MCPConfigManager:
+    """Get or create a cached MCPConfigManager for a user."""
+    cache_key = f"mcp_config_{user_id}"
+    with _get_cache_lock():
+        if cache_key not in _manager_cache:
+            logger.debug(f"Creating new MCPConfigManager for user {user_id} (cache miss)")
+            _manager_cache[cache_key] = MCPConfigManager(user_id)
+        else:
+            logger.debug(f"Reusing cached MCPConfigManager for user {user_id}")
+        return _manager_cache[cache_key]
+
+def get_cached_vmcp_config_manager(user_id: str, vmcp_id: Optional[str] = None) -> VMCPConfigManager:
+    """Get or create a cached VMCPConfigManager for a user.
+    
+    Caches managers by (user_id, vmcp_id) tuple to avoid repeated initialization.
+    For operations without vmcp_id, uses a default cache key.
+    """
+    # Get cached MCPConfigManager to share across all VMCPConfigManager instances
+    mcp_config = get_cached_mcp_config_manager(user_id)
+    
+    # Create cache key based on vmcp_id
+    cache_key = f"vmcp_config_{user_id}_{vmcp_id if vmcp_id else 'default'}"
+    
+    with _get_cache_lock():
+        if cache_key not in _manager_cache:
+            logger.debug(f"Creating new VMCPConfigManager for user {user_id}, vmcp_id {vmcp_id} (cache miss)")
+            # Create VMCPConfigManager with cached MCPConfigManager to avoid duplicate creation
+            vmcp_manager = VMCPConfigManager(
+                user_id=user_id,
+                vmcp_id=vmcp_id,
+                mcp_config_manager=mcp_config,
+                storage=mcp_config.storage  # Share storage too
+            )
+            _manager_cache[cache_key] = vmcp_manager
+        else:
+            logger.debug(f"Reusing cached VMCPConfigManager for user {user_id}, vmcp_id {vmcp_id}")
+        return _manager_cache[cache_key]
+
+# ============================================================================
 # PYTHON TOOL GENERATION MODELS (Keep existing functionality)
 # ============================================================================
 
@@ -423,6 +477,112 @@ async def generate_python_tools(request: GeneratePythonToolsRequest) -> Generate
         )
 
 # ============================================================================
+# HELPER FUNCTIONS FOR PYTHON TOOL FILE STORAGE
+# ============================================================================
+
+def process_python_tools_for_storage(
+    tools: List[Dict[str, Any]],
+    vmcp_id: str,
+    user_id: str,
+    existing_tools: Optional[List[Dict[str, Any]]] = None
+) -> List[Dict[str, Any]]:
+    """
+    Process Python tools: save code to files, update metadata, remove code field.
+    Also handles deletion of removed tools' files.
+    
+    Args:
+        tools: List of tool dictionaries (new tools)
+        vmcp_id: The vMCP ID
+        user_id: User ID
+        existing_tools: Optional list of existing tools (for deletion detection)
+        
+    Returns:
+        Updated list of tools with file-based storage
+    """
+    from vmcp.vmcps.sandbox_service import get_sandbox_service
+    import uuid
+    from pathlib import Path
+    
+    sandbox_service = get_sandbox_service()
+    updated_tools = []
+    
+    # Track existing Python tool files to delete ones that are removed
+    existing_python_tool_files = set()
+    if existing_tools:
+        for tool in existing_tools:
+            tool_meta = tool.get('meta', {})
+            if isinstance(tool_meta, dict) and tool_meta.get('source') == 'sandbox_attached':
+                script_path = tool_meta.get('script_path')
+                if script_path:
+                    existing_python_tool_files.add(script_path)
+    
+    # Track new Python tool files
+    new_python_tool_files = set()
+    
+    for tool in tools:
+        tool_type = tool.get('tool_type')
+        tool_code = tool.get('code')
+        tool_meta = tool.get('meta', {})
+        existing_script_path = tool_meta.get('script_path') if isinstance(tool_meta, dict) else None
+        
+        if tool_type == 'python' and tool_code:
+            # Check if sandbox is attached
+            if not sandbox_service.is_sandbox_attached(vmcp_id):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Sandbox must be attached before creating Python tools. Please attach a sandbox first."
+                )
+            
+            sandbox_path = sandbox_service.get_sandbox_path(vmcp_id)
+            
+            # Determine script path: reuse existing if available, otherwise create new
+            if existing_script_path and (sandbox_path / existing_script_path).exists():
+                script_path = existing_script_path
+            else:
+                # Generate new filename
+                tool_name = tool.get('name', 'tool')
+                # Sanitize tool name for filename
+                sanitized_name = re.sub(r'[^a-zA-Z0-9_-]', '_', tool_name)
+                tool_filename = f"{sanitized_name}_{uuid.uuid4().hex[:8]}.py"
+                script_path = f"vmcp_tools/{tool_filename}"
+            
+            # Save code to file
+            tool_file = sandbox_path / script_path
+            tool_file.parent.mkdir(parents=True, exist_ok=True)
+            tool_file.write_text(tool_code, encoding='utf-8')
+            new_python_tool_files.add(script_path)
+            
+            # Update tool metadata (remove code, add script_path)
+            if not isinstance(tool_meta, dict):
+                tool_meta = {}
+            tool_meta['source'] = 'sandbox_attached'
+            tool_meta['script_path'] = script_path
+            tool_meta['vmcp_id'] = vmcp_id
+            
+            # Create tool dict without code field
+            tool_dict = {k: v for k, v in tool.items() if k != 'code'}
+            tool_dict['meta'] = tool_meta
+            updated_tools.append(tool_dict)
+        else:
+            # Non-Python tools: keep as-is
+            updated_tools.append(tool)
+    
+    # Delete files for removed Python tools
+    files_to_delete = existing_python_tool_files - new_python_tool_files
+    if files_to_delete:
+        sandbox_path = sandbox_service.get_sandbox_path(vmcp_id)
+        for script_path in files_to_delete:
+            tool_file = sandbox_path / script_path
+            try:
+                if tool_file.exists():
+                    tool_file.unlink()
+                    logger.info(f"Deleted Python tool file: {script_path}")
+            except Exception as e:
+                logger.warning(f"Failed to delete Python tool file {script_path}: {e}")
+    
+    return updated_tools
+
+# ============================================================================
 # vMCP MANAGEMENT ENDPOINTS
 # ============================================================================
 
@@ -562,14 +722,14 @@ async def create_vmcp(
             else:
                 updated_custom_tools.append(tool_dict)
         
-        # Create vMCP configuration
+        # Create vMCP configuration first (to get vmcp_id)
         vmcp_id = user_vmcp_manager.create_vmcp_config(
             name=request.name,
             description=request.description,
             system_prompt=request.system_prompt,
             vmcp_config=request.vmcp_config,
             custom_prompts=request.custom_prompts,
-            custom_tools=updated_custom_tools,
+            custom_tools=updated_custom_tools,  # Will be updated after file processing
             custom_context=request.custom_context,
             custom_resources=request.custom_resources,
             custom_resource_uris=request.custom_resource_uris,
@@ -579,6 +739,28 @@ async def create_vmcp(
         
         if not vmcp_id:
             raise HTTPException(status_code=400, detail="Failed to create vMCP")
+        
+        # Process Python tools: save to files and update metadata
+        try:
+            processed_tools = process_python_tools_for_storage(
+                updated_custom_tools,
+                vmcp_id,
+                str(user_context.user_id),
+                existing_tools=None  # No existing tools for create
+            )
+            
+            # Update vMCP with processed tools (if any Python tools were processed)
+            if processed_tools != updated_custom_tools:
+                user_vmcp_manager.update_vmcp_config(
+                    vmcp_id=vmcp_id,
+                    custom_tools=processed_tools
+                )
+                updated_custom_tools = processed_tools
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.warning(f"Failed to process Python tools for file storage: {e}")
+            # Continue without failing - tools are in DB, just not in files yet
         
         # Get the created vMCP details
         vmcp_manager_with_id = VMCPConfigManager(user_context.user_id, vmcp_id)
@@ -1286,10 +1468,10 @@ async def list_vmcps(user_context: UserContext = Depends(get_user_context)) -> V
     logger.info(f"   👤 User context: {user_context.user_id if user_context else 'None'}")
     
     try:
-        # Get managers from global connection manager
-        config_manager = MCPConfigManager(user_context.user_id)
+        # Get managers from cache to avoid repeated initialization
+        config_manager = get_cached_mcp_config_manager(user_context.user_id)
         client_manager = MCPClientManager(config_manager)
-        user_vmcp_manager = VMCPConfigManager(user_context.user_id)
+        user_vmcp_manager = get_cached_vmcp_config_manager(user_context.user_id)
         vmcps = user_vmcp_manager.list_available_vmcps()
         logger.info(f"   📊 Found {len(vmcps)} vMCPs")
         # # Return full vMCP configuration data instead of just VMCPInfo
@@ -1584,8 +1766,8 @@ async def get_vmcp_details(
     logger.info(f"   👤 User context: {user_context.user_id if user_context else 'None'}")
     
     try:
-        # Get managers
-        vmcp_config_manager = VMCPConfigManager(user_context.user_id)
+        # Get cached manager for this specific vmcp_id
+        vmcp_config_manager = get_cached_vmcp_config_manager(user_context.user_id, vmcp_id)
         
         # Get vMCP config
         vmcp_config = vmcp_config_manager.load_vmcp_config(vmcp_id)
@@ -1633,6 +1815,37 @@ async def update_vmcp(
                 raise HTTPException(status_code=409, detail=f"vMCP with name '{new_name}' already exists")
             logger.info(f"   🔄 vMCP name will be changed from '{vmcp_config.name}' to '{new_name}'")
         
+        # Process Python tools: save to files and update metadata
+        custom_tools = request.custom_tools or []
+        try:
+            # Convert Pydantic models to dicts if needed
+            tools_as_dicts = []
+            for tool in custom_tools:
+                if isinstance(tool, dict):
+                    tools_as_dicts.append(tool)
+                elif hasattr(tool, 'model_dump'):
+                    tools_as_dicts.append(tool.model_dump())
+                elif hasattr(tool, 'dict'):
+                    tools_as_dicts.append(tool.dict())
+                else:
+                    tools_as_dicts.append(dict(tool) if hasattr(tool, '__dict__') else {})
+            
+            # Get existing tools for deletion detection
+            existing_tools = vmcp_config.custom_tools or []
+            
+            processed_tools = process_python_tools_for_storage(
+                tools_as_dicts,
+                vmcp_id,
+                str(user_context.user_id),
+                existing_tools=existing_tools
+            )
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.warning(f"Failed to process Python tools for file storage: {e}")
+            # Use original tools if processing fails
+            processed_tools = tools_as_dicts
+        
         # Update vMCP configuration using the exact same logic as original router
         success = user_vmcp_manager.update_vmcp_config(
             vmcp_id=vmcp_id,
@@ -1641,7 +1854,7 @@ async def update_vmcp(
             system_prompt=request.system_prompt,
             vmcp_config=request.vmcp_config,
             custom_prompts=request.custom_prompts,
-            custom_tools=request.custom_tools,
+            custom_tools=processed_tools,
             custom_context=request.custom_context,
             custom_resources=request.custom_resources,
             custom_resource_uris=request.custom_resource_uris,
@@ -1764,8 +1977,8 @@ async def list_public_vmcps(
     logger.info(f"   👤 User context: {user_context.user_id if user_context else 'None'}")
     
     try:
-        # Get managers using user context (works for both OSS and enterprise)
-        vmcp_config_manager = VMCPConfigManager(user_context.user_id)
+        # Get managers using cached instances to avoid repeated initialization
+        vmcp_config_manager = get_cached_vmcp_config_manager(user_context.user_id)
         
         # Get all public vMCPs (returns List[Dict[str, Any]])
         public_vmcps_dicts = vmcp_config_manager.list_public_vmcps()
@@ -1957,8 +2170,8 @@ async def list_vmcp_tools(
     logger.info(f"   👤 User context: {user_context.user_id if user_context else 'None'}")
     
     try:
-        # Match original router logic exactly
-        user_vmcp_manager = VMCPConfigManager(user_context.user_id, vmcp_id)    
+        # Use cached manager to avoid repeated initialization
+        user_vmcp_manager = get_cached_vmcp_config_manager(user_context.user_id, vmcp_id)
         tools_list = await user_vmcp_manager.tools_list()
         
         # Handle request filters if provided

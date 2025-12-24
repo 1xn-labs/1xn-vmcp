@@ -241,7 +241,8 @@ async def tools_list(
     storage: StorageBase,
     mcp_config_manager: MCPConfigManager,
     log_vmcp_operation: Optional[callable] = None,
-    bypass_pd_filter: bool = False
+    bypass_pd_filter: bool = False,
+    vmcp_config: Optional[Any] = None  # Optional cached config to avoid reloading
 ) -> List[Tool]:
     """
     List all tools from the vMCP's selected servers and custom tools.
@@ -257,6 +258,8 @@ async def tools_list(
         storage: Storage instance for loading vMCP config
         mcp_config_manager: MCP config manager for accessing server tools
         log_vmcp_operation: Optional callback for logging operations
+        bypass_pd_filter: If True, bypass progressive discovery filter
+        vmcp_config: Optional cached VMCPConfig to avoid reloading from storage
 
     Returns:
         List of Tool objects available in this vMCP
@@ -271,7 +274,9 @@ async def tools_list(
         )
         return []
 
-    vmcp_config = storage.load_vmcp_config(vmcp_id)
+    # Use provided cached config if available, otherwise load from storage
+    if vmcp_config is None:
+        vmcp_config = storage.load_vmcp_config(vmcp_id)
     if not vmcp_config:
         log_to_span(
             f"VMCP config not found for {vmcp_id}",
@@ -363,7 +368,26 @@ async def tools_list(
         for custom_tool in vmcp_config.custom_tools:
             tool_type = custom_tool.get('tool_type', 'prompt')
 
-            if tool_type == 'python':
+            if tool_type == 'bash':
+                # Bash tools have simple string parameters
+                tool_input_schema = {
+                    "type": "object",
+                    "properties": {
+                        "command": {
+                            "type": "string",
+                            "description": "The bash command to execute"
+                        },
+                        "timeout": {
+                            "type": "integer",
+                            "description": "Maximum execution time in seconds",
+                            "default": 30
+                        }
+                    },
+                    "required": ["command"],
+                    "additionalProperties": False,
+                    "$schema": "http://json-schema.org/draft-07/schema#"
+                }
+            elif tool_type == 'python':
                 # For Python tools, parse the function to extract parameters
                 tool_input_schema = _parse_python_function_schema(custom_tool)
             else:
